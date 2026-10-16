@@ -104,10 +104,10 @@ def main():
             payload={
                 'tcgplayerProductId':int(pid),
                 'market':chosen.get('marketPrice'),
-                'marketLow':chosen.get('lowPrice'),
-                'marketMid':chosen.get('midPrice'),
-                'marketHigh':chosen.get('highPrice'),
-                'marketDirectLow':chosen.get('directLowPrice'),
+                'low':chosen.get('lowPrice'),
+                'median':chosen.get('midPrice'),
+                'high':chosen.get('highPrice'),
+                'directLow':chosen.get('directLowPrice'),
                 'marketSubtype':chosen.get('subTypeName'),
                 'tcgcsvGroupId':gid,
                 'tcgcsvGroupName':g.get('name'),
@@ -115,6 +115,9 @@ def main():
                 'tcgplayerUrl':p.get('url'),
                 'tcgplayerImage':p.get('imageUrl'),
                 'tcgcsvMatch':'exact-collector-number',
+                'priceSource':'TCGCSV / TCGplayer daily mirror',
+                'marketSourceUrl':p.get('url'),
+                'marketAsOf':datetime.now(timezone.utc).date().isoformat(),
             }
             # In the unlikely event multiple TCGplayer products share the same collector
             # number, prefer the product whose group/card name is closest to our record;
