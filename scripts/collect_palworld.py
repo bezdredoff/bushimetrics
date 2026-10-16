@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Build the current Palworld OCG printing catalog from a GitHub-hosted
-official-card mirror plus versioned BushiMetrics overrides for newly-released
+official-card mirror plus versioned BushiMetrics overrides for newly released
 printings not yet present upstream.
 
-Current released-catalog target is versioned in data/palworld-current-overrides.json.
+CI uses a local checkout of dragogodev/cgs, so catalog refreshes are GitHub-native
+and do not depend on anti-bot-protected websites.
 """
 from __future__ import annotations
 import argparse,json
@@ -14,6 +15,7 @@ import requests
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'data/raw/palworld.json'
 OVERRIDES=ROOT/'data/palworld-current-overrides.json'
+DEFAULT_LOCAL=ROOT/'external/cgs/Palworld/AllCards.json'
 BASE_URL='https://raw.githubusercontent.com/dragogodev/cgs/master/Palworld/AllCards.json'
 UA='BushiMetrics/0.4 (+https://github.com/bezdredoff/bushimetrics)'
 
@@ -36,13 +38,20 @@ def from_upstream(raw):
         'availability':'released',
     }
 
+def load_upstream(local_path,url):
+    p=Path(local_path)
+    if p.exists():
+        return json.loads(p.read_text(encoding='utf-8')), f'file://{p}'
+    r=requests.get(url,headers={'User-Agent':UA},timeout=40)
+    r.raise_for_status()
+    return r.json(),url
+
 def main():
     ap=argparse.ArgumentParser()
+    ap.add_argument('--source-file',default=str(DEFAULT_LOCAL))
     ap.add_argument('--upstream-url',default=BASE_URL)
     args=ap.parse_args()
-    r=requests.get(args.upstream_url,headers={'User-Agent':UA},timeout=40)
-    r.raise_for_status()
-    upstream=r.json()
+    upstream,source=load_upstream(args.source_file,args.upstream_url)
     if not isinstance(upstream,list):
         raise RuntimeError('Unexpected Palworld upstream schema')
     by_code={c['code']:c for c in (from_upstream(x) for x in upstream) if c.get('code')}
@@ -55,7 +64,7 @@ def main():
         raise RuntimeError(f'Palworld released catalog mismatch: got {len(cards)}, expected {expected}')
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),
-        'source':args.upstream_url,
+        'source':source,
         'expectedReleasedCount':expected,
         'cards':cards,
         'announcedCards':o.get('announcedCards',[])
