@@ -5,7 +5,7 @@ function safeJson(raw, fallback) {
   try { return JSON.parse(raw); } catch { return fallback; }
 }
 const state = {
-  cards: [], byId: new Map(), sets: [], history: {}, sources: {},
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], history: {}, sources: {},
   game: 'weiss', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
@@ -59,6 +59,15 @@ async function load() {
   ]);
   state.cards = (catalog.cards || []).map(enrichCard);
   state.byId = new Map(state.cards.map(c => [c.id, c]));
+  state.printingFamilies = new Map();
+  for (const c of state.cards) {
+    const key = [c.game,c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
+    if (!state.printingFamilies.has(key)) state.printingFamilies.set(key,[]);
+    state.printingFamilies.get(key).push(c);
+  }
+  for (const family of state.printingFamilies.values()) {
+    family.sort((a,b)=>(Number(b.rarityRank)||0)-(Number(a.rarityRank)||0) || (a.code||'').localeCompare(b.code||''));
+  }
   state.sets = catalog.sets || [];
   state.history = history;
   state.sources = sources;
@@ -321,6 +330,21 @@ function renderViewer() {
     c.isPremium ? '<span class="badge badge-accent">Premium</span>' : '',
     !c.market ? '<span class="badge">Market pending</span>' : ''
   ].join('');
+
+  const familyKey=[c.game,c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
+  const family=state.printingFamilies.get(familyKey)||[c];
+  $('#printingFamilyCount').textContent=family.length + (family.length===1?' printing':' printings');
+  $('#printingFamily').innerHTML=family.map(x => `<button class="printing-chip ${x.id===c.id?'active':''}" data-family-id="${esc(x.id)}" title="${esc(x.code||'')}">
+    ${x.image?`<img src="${esc(x.image)}" loading="lazy" alt="">`:''}
+    <span><b>${esc(x.rarity||'—')}</b><small>${esc(x.code||'')}</small><em>${observedLabel(x)}</em></span>
+  </button>`).join('');
+  $('#printingFamily [data-family-id]').forEach(btn=>btn.onclick=()=>{
+    const target=state.byId.get(btn.dataset.familyId); if(!target)return;
+    const idx=state.viewerList.findIndex(x=>x.id===target.id);
+    if(idx>=0) state.viewerIndex=idx;
+    else { state.viewerList=family; state.viewerIndex=family.findIndex(x=>x.id===target.id); }
+    renderViewer(); updateViewerHash();
+  });
 
   $('#viewerStats').innerHTML = [
     ['Cardmarket trend (EUR)',euro(c.marketEUR)],['Cardmarket low (EUR)',euro(c.marketEURLow)],
