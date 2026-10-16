@@ -10,7 +10,8 @@ const state = {
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
   compare: safeJson(localStorage.getItem('bm-compare') || '[]', []).slice(0, 4),
-  portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {})
+  portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {}),
+  historyCache: new Map(), historyCurrency: 'EUR'
 };
 
 const currencyMoney = (v,currency='USD') => v == null || v === '' ? '—' : new Intl.NumberFormat(currency==='EUR'?'de-DE':'en-US', {
@@ -464,6 +465,7 @@ function renderViewer() {
     renderViewer(); updateViewerHash();
   });
 
+  renderCardHistory(c);
   $('#viewerStats').innerHTML = [
     ['Cardmarket trend (EUR)',euro(c.marketEUR)],['Cardmarket low (EUR)',euro(c.marketEURLow)],
     ['Cardmarket 7d avg',euro(c.marketEURAvg7)],['Cardmarket 30d avg',euro(c.marketEURAvg30)],
@@ -509,6 +511,77 @@ function renderViewer() {
   ).join('');
   $$('#thumbStrip img').forEach(i => i.onclick = () => { state.viewerIndex = Number(i.dataset.i); renderViewer(); updateViewerHash(); });
 }
+
+
+async function historyForCard(cardId) {
+  const shard=String(cardId||'0')[0].toLowerCase();
+  if (!state.historyCache.has(shard)) {
+    state.historyCache.set(shard, fetch(`data/history-shards/${shard}.json`,{cache:'no-cache'})
+      .then(r=>r.ok?r.json():({cards:{}})).catch(()=>({cards:{}})));
+  }
+  const data=await state.historyCache.get(shard);
+  return (data.cards||{})[cardId]||[];
+}
+
+function chartPath(points,key,min,max,w,h,pad) {
+  const rows=points.filter(p=>p[key]!=null);
+  if(!rows.length)return '';
+  const n=Math.max(1,points.length-1),span=Math.max(.0001,max-min);
+  return rows.map(p=>{
+    const i=points.indexOf(p);
+    const x=pad+(w-pad*2)*(i/n);
+    const y=pad+(h-pad*2)*(1-(Number(p[key])-min)/span);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+}
+
+async function renderCardHistory(c) {
+  const targetId=c.id;
+  $('#historySummary').textContent='Loading history…';
+  $('#historyChart').innerHTML='';
+  const points=await historyForCard(targetId);
+  const active=state.viewerList[state.viewerIndex];
+  if(!active||active.id!==targetId)return;
+  const useEUR=state.historyCurrency==='EUR';
+  const marketKey=useEUR?'e':'u', fairKey=useEUR?'fe':'fu';
+  const marketRows=points.filter(p=>p[marketKey]!=null);
+  const fairRows=points.filter(p=>p[fairKey]!=null);
+  $('#historyEURBtn').classList.toggle('active',useEUR);
+  $('#historyUSDBtn').classList.toggle('active',!useEUR);
+  if(!marketRows.length){
+    $('#historySummary').textContent=`No ${state.historyCurrency} history yet for this printing.`;
+    $('#historyChart').innerHTML='<div class="empty-state compact-empty">History starts when an observed market price enters a daily snapshot.</div>';
+    return;
+  }
+  const vals=[...marketRows.map(p=>Number(p[marketKey])),...fairRows.map(p=>Number(p[fairKey]))].filter(Number.isFinite);
+  let min=Math.min(...vals),max=Math.max(...vals);
+  if(max===min){min*=.95;max*=1.05;if(max===min){min-=1;max+=1}}
+  const first=marketRows[0],last=marketRows[marketRows.length-1];
+  const change=Number(first[marketKey]) ? (Number(last[marketKey])/Number(first[marketKey])-1)*100 : null;
+  const fmt=useEUR?euro:money;
+  $('#historySummary').innerHTML=`<b>${fmt(last[marketKey])}</b><span class="${(change||0)>=0?'pos':'neg'}">${marketRows.length>1?pct(change):'first snapshot'}</span><small>${marketRows.length} daily point${marketRows.length===1?'':'s'} · ${esc(first.d)} → ${esc(last.d)}</small>`;
+  const w=720,h=220,pad=28;
+  const marketLine=chartPath(points,marketKey,min,max,w,h,pad);
+  const fairLine=chartPath(points,fairKey,min,max,w,h,pad);
+  const yTop=fmt(max),yBottom=fmt(min);
+  const lastIndex=points.findIndex(p=>p===last);
+  const n=Math.max(1,points.length-1);
+  const lx=pad+(w-pad*2)*(lastIndex/n);
+  const ly=pad+(h-pad*2)*(1-(Number(last[marketKey])-min)/(max-min));
+  $('#historyChart').innerHTML=`<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Price history">
+    <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${h-pad}" class="chart-axis"/>
+    <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" class="chart-axis"/>
+    <text x="4" y="${pad+4}" class="chart-label">${esc(yTop)}</text>
+    <text x="4" y="${h-pad}" class="chart-label">${esc(yBottom)}</text>
+    ${fairLine?`<polyline points="${fairLine}" class="chart-line chart-fair"/>`:''}
+    <polyline points="${marketLine}" class="chart-line chart-market"/>
+    <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4" class="chart-dot"/>
+  </svg>
+  <div class="chart-legend"><span><i class="legend-market"></i>Observed market</span><span><i class="legend-fair"></i>Model fair value</span></div>`;
+}
+$('#historyEURBtn').onclick=()=>{state.historyCurrency='EUR';const c=state.viewerList[state.viewerIndex];if(c)renderCardHistory(c);};
+$('#historyUSDBtn').onclick=()=>{state.historyCurrency='USD';const c=state.viewerList[state.viewerIndex];if(c)renderCardHistory(c);};
+
 
 function updateViewerHash() {
   const c = state.viewerList[state.viewerIndex];
