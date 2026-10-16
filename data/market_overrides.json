@@ -37,10 +37,12 @@
       "priceSource": "recent sold-price snapshot",
       "confidence": "Medium"
     },
-    "EBP01-SSS": {
-      "market": 2400,
-      "priceSource": "thin sold-price snapshot",
-      "confidence": "Low"
+    "ESOUL-002": {
+      "market": 2250,
+      "tcgplayerMarket": 2480,
+      "priceSource": "Cardlogs sold-price / nightly TCGPlayer snapshot",
+      "confidence": "Medium",
+      "asOf": "2026-10-06"
     }
   }
 }
