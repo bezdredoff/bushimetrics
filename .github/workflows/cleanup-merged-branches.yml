@@ -45,8 +45,22 @@ jobs:
                 pr.head.repo?.full_name === owner + '/' + repo &&
                 pr.head.sha === branch.commit.sha
               );
-              if (!mergedExactHead) {
-                core.info('Kept (no matching merged PR or new commits): ' + name);
+              let obsoleteAncestor = false;
+              // Narrow one-time exception: this named work branch is known to
+              // be 0 commits ahead of main. Re-check immediately before deletion.
+              if (name === 'feature/jp-cardmarket-prices') {
+                const openPRs = await github.paginate(github.rest.pulls.list, {
+                  owner, repo, state: 'open', head: owner + ':' + name, per_page: 100
+                });
+                if (!openPRs.length) {
+                  const comparison = await github.rest.repos.compareCommits({
+                    owner, repo, base: 'main', head: name
+                  });
+                  obsoleteAncestor = comparison.data.ahead_by === 0;
+                }
+              }
+              if (!mergedExactHead && !obsoleteAncestor) {
+                core.info('Kept (unique commits or open work): ' + name);
                 kept++;
                 continue;
               }
@@ -64,5 +78,5 @@ jobs:
             await core.summary
               .addHeading('Merged branch cleanup')
               .addRaw('Deleted: ' + removed + ', kept: ' + kept)
-              .addRaw('Only unchanged branch heads of merged PRs into main were eligible.')
+              .addRaw('Only unchanged merged PR heads or the specifically verified obsolete JP branch were eligible.')
               .write();
