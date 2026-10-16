@@ -358,9 +358,21 @@ function applyFilters() {
   renderCards();
 }
 
-['setFilter','rarityFilter','availabilityFilter','signalFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
+['rarityFilter','availabilityFilter','signalFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
   $('#'+id).addEventListener('change', () => { state.page = 1; applyFilters(); })
 );
+$('#setFilter').addEventListener('change', async () => {
+  const name=$('#setFilter').value;
+  if(name!=='all'){
+    const game=$('#gameFilter').value,lang=$('#languageFilter').value;
+    const meta=state.sets.find(x=>x.name===name&&(game==='all'||x.game===game)&&(lang==='all'||(x.language||'EN')===lang));
+    if(meta){
+      const payload=await fetchSetPayload(meta.key);
+      if(payload){applySetPayload(payload);rebuildCardIndexes();}
+    }
+  }
+  state.page=1;applyFilters();
+});
 let searchTimer=null;
 $('#search').addEventListener('input',()=>{ clearTimeout(searchTimer); searchTimer=setTimeout(()=>{state.page=1;applyFilters();},120); });
 $('#languageFilter').addEventListener('change', async () => {
@@ -471,6 +483,11 @@ function renderSets() {
     updateSetOptions();
     $('#setFilter').value = el.dataset.set;
     $('#availabilityFilter').value = 'released';
+    const meta=state.sets.find(x=>x.name===el.dataset.set&&x.game===el.dataset.game&&(x.language||'EN')===lang);
+    if(meta){
+      const payload=await fetchSetPayload(meta.key);
+      if(payload){applySetPayload(payload);rebuildCardIndexes();}
+    }
     state.page = 1; applyFilters(); goto('cards');
   });
 }
