@@ -49,14 +49,22 @@ def main():
         shutil.rmtree(OUT)
     DETAIL.mkdir(parents=True,exist_ok=True)
 
-    payload={
+    common={
         'generatedAt':full.get('generatedAt'),
         'modelVersion':full.get('modelVersion'),
         'counts':full.get('counts') or {},
-        'sets':full.get('sets') or [],
-        'cards':browser
+        'sets':full.get('sets') or []
     }
+    payload={**common,'cards':browser}
     (OUT/'catalog-en.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+
+    # Tiny first-paint payload: all current Palworld + highest-conviction EN Weiss.
+    # This is intentionally a visible subset only until catalog-en.json arrives.
+    en_weiss=[c for c in cards if c.get('game')=='weiss' and (c.get('language') or 'EN')=='EN' and c.get('availability')=='released']
+    en_weiss.sort(key=lambda c:(-int(c.get('investment') or 0),-int(c.get('rarityRank') or 0),str(c.get('name') or '')))
+    pal=[c for c in cards if c.get('game')=='palworld' and (c.get('language') or 'EN')=='EN']
+    bootstrap_cards=[compact_card(c) for c in [*en_weiss[:240],*pal]]
+    (OUT/'bootstrap.json').write_text(json.dumps({**common,'bootstrap':True,'cards':bootstrap_cards},ensure_ascii=False,separators=(',',':')),encoding='utf-8')
 
     shards={h:{} for h in '0123456789abcdef'}
     for c in cards:
@@ -73,7 +81,7 @@ def main():
     shard_sizes={h:(DETAIL/f'{h}.json').stat().st_size for h in shards}
     meta={
         'legacyBytes':legacy,'compactBytes':compact,
-        'compactCards':len(browser),'detailCards':len(cards),
+        'compactCards':len(browser),'bootstrapCards':len(bootstrap_cards),'bootstrapBytes':(OUT/'bootstrap.json').stat().st_size,'detailCards':len(cards),
         'detailShardMaxBytes':max(shard_sizes.values()) if shard_sizes else 0,
         'detailShardBytes':shard_sizes
     }
@@ -83,6 +91,8 @@ def main():
         raise RuntimeError(f'Browser payload compression insufficient: {compact} vs {legacy}')
     if compact > 20_000_000:
         raise RuntimeError(f'Browser payload still too large: {compact}')
+    if (OUT/'bootstrap.json').stat().st_size > 2_000_000:
+        raise RuntimeError('Bootstrap payload too large')
     if max(shard_sizes.values(),default=0) > 8_000_000:
         raise RuntimeError('Detail shard too large')
 
