@@ -1,0 +1,22 @@
+{
+  "source": "https://github.com/GachaWiki/gacha-wiki/tree/main/src/data/ws-cards",
+  "sourceFiles": 851,
+  "englishSetFiles": 288,
+  "nonEnglishSetFiles": 563,
+  "invalidSetFiles": 0,
+  "cardRows": 30983,
+  "validCodeRows": 30983,
+  "missingCodeRows": 0,
+  "invalidCardRows": 0,
+  "uniquePrintingsByCode": 30983,
+  "duplicateCodeRows": 0,
+  "duplicateCodeGroups": 0,
+  "conflictingCodeGroups": 0,
+  "conflictExamples": [],
+  "invalidExamples": [],
+  "notes": [
+    "Conflicting source metadata is a review candidate, not proof of another physical printing.",
+    "A source-file image mismatch may reflect only metadata quality.",
+    "This report audits the imported open dataset, not full live official product coverage."
+  ]
+}
