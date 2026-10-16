@@ -328,7 +328,7 @@ function renderViewer() {
   $('#factorBars').innerHTML = Object.entries(labels).map(([k,label]) => {
     const v = Number(factors[k] ?? 0);
     return `<div class="factor"><div><span>${label}</span><b>${v}</b></div><div class="factor-track"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></div></div>`;
-  }).join('');
+  }).join('') + (c.scarcityEvidence ? `<div class="evidence-note"><b>Scarcity evidence:</b> ~1 in ${c.scarcityEvidence.packsPerHit} packs · n=${Number(c.scarcityEvidence.samplePacks||0).toLocaleString()} · ${esc(c.scarcityEvidence.confidence||'')} confidence ${c.scarcityEvidence.source ? `· <a href="${esc(c.scarcityEvidence.source)}" target="_blank" rel="noreferrer">source</a>` : ''}</div>` : '');
 
   const p = state.portfolio[c.id] || {qty:0,cost:0};
   $('#portfolioQty').value = p.qty || 0;
