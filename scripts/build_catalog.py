@@ -108,6 +108,9 @@ def main():
     printing=read(DATA/'printing_overrides.json',{'cards':{}}).get('cards',{})
     market_overrides=read(DATA/'market_overrides.json',{'cards':{}}).get('cards',{})
     tcgapi=read(MARKET/'tcgapi.json',{'cards':{}}).get('cards',{})
+    cardmarket_file=read(MARKET/'cardmarket.json',{'cards':{}})
+    cardmarket=cardmarket_file.get('cards',{})
+    cardmarket_asof=cardmarket_file.get('cardmarketCreatedAt') or cardmarket_file.get('generatedAt')
     set_priors=manual.get('setPriors',{}); game_priors=manual.get('gamePriors',{})
     scarcity_evidence=read(DATA/'scarcity.json',{'evidence':[]}).get('evidence',[])
 
@@ -137,7 +140,12 @@ def main():
                 if v is not None:c[k]=v
 
         apply_market(c,tcgapi,market_overrides,seed_market)
-        c['priceSource']=c.get('priceSource') or 'Market enrichment pending'
+        cm=cardmarket.get(code)
+        if cm:
+            for k,v in cm.items():
+                if v is not None:c[k]=v
+            c['cardmarketAsOf']=cardmarket_asof
+        c['priceSource']=c.get('priceSource') or ('Cardmarket EUR' if c.get('marketEUR') is not None else 'Market enrichment pending')
         c['id']=stable(c)
         if c['id'] in seen:continue
         seen.add(c['id'])
@@ -152,12 +160,17 @@ def main():
     for (game,name),cards in groups.items():
         released=[c for c in cards if c.get('availability')=='released']
         priced=[c for c in released if c.get('market')]
+        priced_eur=[c for c in released if c.get('marketEUR') is not None]
+        priced_any=[c for c in released if c.get('market') or c.get('marketEUR') is not None]
         premiums=[c for c in released if c.get('isPremium')]
         set_rows.append({
             'game':game,'name':name,'total':len(cards),'released':len(released),
             'announced':len(cards)-len(released),'premium':len(premiums),'priced':len(priced),
+            'pricedEUR':len(priced_eur),'pricedAny':len(priced_any),
             'imageCoverage':round(sum(bool(c.get('image')) for c in cards)/len(cards)*100,1),
-            'priceCoverage':round(len(priced)/len(released)*100,1) if released else 0,
+            'priceCoverage':round(len(priced_any)/len(released)*100,1) if released else 0,
+            'priceCoverageUSD':round(len(priced)/len(released)*100,1) if released else 0,
+            'priceCoverageEUR':round(len(priced_eur)/len(released)*100,1) if released else 0,
             'avgInvestment':round(sum(c.get('investment',0) for c in released)/len(released),1) if released else None,
             'topMarket':max((float(c.get('market') or 0) for c in priced),default=0) or None
         })
@@ -170,6 +183,8 @@ def main():
         'weiss':sum(c['game']=='weiss' for c in out),
         'palworld':sum(c['game']=='palworld' for c in out),
         'priced':sum(bool(c.get('market')) for c in out),
+        'pricedEUR':sum(c.get('marketEUR') is not None for c in out),
+        'pricedAny':sum(bool(c.get('market')) or c.get('marketEUR') is not None for c in out),
         'imaged':sum(bool(c.get('image')) for c in out),
         'premium':sum(bool(c.get('isPremium')) for c in out),
         'sets':len(set_rows)
