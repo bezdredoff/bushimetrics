@@ -33,7 +33,10 @@ def main():
             errors=[]
             page.on("pageerror",lambda error: errors.append(str(error)))
             page.goto(f"http://127.0.0.1:{port}/",wait_until="domcontentloaded")
-            page.locator("#marketCards").locator(".metric-card, .metric, .stat-card").first.wait_for(timeout=45000) if page.locator("#marketCards .metric-card, #marketCards .metric, #marketCards .stat-card").count() else page.wait_for_function("document.querySelector('#globalStatus').textContent !== 'loading…'",timeout=45000)
+            # Wait for the *actual catalog*, not a status string changed by a failed request.
+            page.wait_for_function(
+                "() => document.querySelector('#catalogStatus').textContent.includes('loaded printings')",
+                timeout=60000)
             assert "Failed to load" not in page.locator("#catalogStatus").inner_text()
             page.locator('[data-tab="cards"]').click()
             page.locator("#cardGrid .card-tile").first.wait_for(timeout=60000)
@@ -57,6 +60,14 @@ def main():
             assert page.locator("#compareGrid").inner_text().strip()
             page.locator('[data-tab="sources"]').click()
             assert "Research model availability" in page.locator("#sourcesContent").inner_text()
+            # The full Japanese index must load on demand, rather than being claimed by metadata alone.
+            page.locator('[data-tab="cards"]').click()
+            page.locator('[data-preset="jp-weiss"]').click()
+            page.wait_for_function(
+                "() => document.querySelector('#catalogStatus').textContent.includes('JP loaded')",
+                timeout=90000)
+            page.locator("#cardGrid .card-tile").first.wait_for(timeout=45000)
+            assert "JP" in page.locator("#catalogStatus").inner_text()
             assert not errors, "Browser JavaScript errors: "+"; ".join(errors[:6])
             browser.close()
         print("Chromium acceptance smoke passed")
