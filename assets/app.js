@@ -11,7 +11,8 @@ const state = {
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
   compare: safeJson(localStorage.getItem('bm-compare') || '[]', []).slice(0, 4),
   portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {}),
-  historyCache: new Map(), historyCurrency: 'EUR'
+  historyCache: new Map(), historyCurrency: 'EUR',
+  setCache: new Map(), loadedSetKeys: new Set(), setManifest: new Map(), fullCatalogLoaded: false, catalogGeneratedAt: null
 };
 
 const currencyMoney = (v,currency='USD') => v == null || v === '' ? '—' : new Intl.NumberFormat(currency==='EUR'?'de-DE':'en-US', {
@@ -49,32 +50,79 @@ function enrichCard(c) {
   };
 }
 
+function expandBrowserCard(x) {
+  return enrichCard({
+    id:x.i, game:x.g, language:x.l||'EN', availability:x.a||'released', _setKey:x.k,
+    name:x.n, set:x.s, code:x.c, rarity:x.r, image:x.im,
+    marketEUR:x.me, market:x.mu, fairEUR:x.fe, fair:x.fu,
+    investment:x.iq, momentum:x.mo, isPremium:!!x.p, rarityRank:x.rr,
+    marketHeatPercentile:x.hp, marketHeatLabel:x.hl,
+    characterPremiumIndex:x.cp, characterPremiumObservations:x.co,
+    marketKind:x.mk, marketConfidence:x.mc, confidence:x.cf,
+    fairValueConfidence:x.fc, change7d:x.d7, change30d:x.d30,
+    demandPressure:x.dp, demandPressureSales:x.ds, demandPressureAsks:x.da,
+    priceSource:x.ps, priceSourceEUR:x.pe, marketAsOf:x.ma, cardmarketAsOf:x.ca,
+    cardType:x.ct, color:x.cl
+  });
+}
+
 async function load() {
-  const [catalog, history, sources, jpMeta] = await Promise.all([
-    fetch('data/catalog.json', {cache:'no-cache'}).then(r => {
-      if (!r.ok) throw new Error('catalog.json ' + r.status);
+  const [bootstrap, history, sources, jpMeta] = await Promise.all([
+    fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
+      if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
     }),
     fetch('data/history.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
   ]);
-  state.cards = (catalog.cards || []).map(enrichCard);
+
+  state.cards = (bootstrap.cards || []).map(expandBrowserCard);
   state.jpMeta = jpMeta || {};
-  state.sets = [...(catalog.sets || []), ...((jpMeta && jpMeta.sets) || [])];
+  state.sets = bootstrap.sets || [];
+  state.setManifest = new Map((bootstrap.sets||[]).map(x=>[x.key,x]));
   state.history = history;
   state.sources = sources;
+  state.catalogGeneratedAt = bootstrap.generatedAt || null;
   rebuildCardIndexes();
 
-  const counts = catalog.counts || {};
+  const counts = bootstrap.counts || {};
   const jpCounts = (jpMeta && jpMeta.counts) || {};
-  const totalReleased = Number(counts.released || state.cards.length) + Number(jpCounts.released || 0);
+  const totalReleased = Number(counts.released || 0) + Number(jpCounts.released || 0);
   $('#globalStatus').textContent = `${totalReleased.toLocaleString()} released`;
-  updateCatalogStatus(catalog.generatedAt);
+  updateCatalogStatus(bootstrap.generatedAt);
 
   initFilters();
   renderAll();
   restoreDeepLink();
+  loadFullBrowserCatalog();
+}
+
+async function loadFullBrowserCatalog() {
+  try {
+    $('#catalogStatus').textContent += ' · loading full EN catalog…';
+    const r=await fetch('data/web/search-en.json',{cache:'no-cache'});
+    if(!r.ok) throw new Error('web/search-en.json '+r.status);
+    const full=await r.json();
+    const previous=new Map(state.cards.map(c=>[c.id,c]));
+    const jp=state.jpLoaded ? state.cards.filter(c=>(c.language||'EN')==='JP') : [];
+    const en=(full.cards||[]).map(expandBrowserCard).map(c=>{
+      const old=previous.get(c.id);
+      return old && (old.image || old._detailLoaded) ? enrichCard({...c,...old}) : c;
+    });
+    state.cards=[...en,...jp];
+    state.fullCatalogLoaded=true;
+    state.catalogGeneratedAt=full.generatedAt||state.catalogGeneratedAt;
+    rebuildCardIndexes();
+    initFilters();
+    renderAll();
+    updateCatalogStatus(state.catalogGeneratedAt);
+    toast(`Full catalog loaded: ${state.cards.length.toLocaleString()} cards in browser.`);
+  } catch(e) {
+    console.error(e);
+    $('#catalogStatus').textContent += ' · full catalog unavailable; showing bootstrap cards';
+    toast('Full catalog is temporarily unavailable; bootstrap cards remain usable.');
+  }
 }
 
 function rebuildCardIndexes() {
@@ -94,8 +142,9 @@ function updateCatalogStatus(generatedAt=null) {
   const jpAvailable=Number(state.jpMeta?.counts?.total||0);
   const loaded=state.cards.length;
   const jpText=jpAvailable ? (state.jpLoaded ? ' · JP loaded' : ` · +${jpAvailable.toLocaleString()} JP on demand`) : '';
+  const stage=state.fullCatalogLoaded ? '' : ' · bootstrap visible';
   $('#catalogStatus').textContent =
-    `${loaded.toLocaleString()} loaded printings${jpText} · ${state.sets.length.toLocaleString()} set/language groups` +
+    `${loaded.toLocaleString()} loaded printings${stage}${jpText} · ${state.sets.length.toLocaleString()} set/language groups` +
     (generatedAt ? ` · updated ${new Date(generatedAt).toLocaleString()}` : '');
 }
 
@@ -103,9 +152,9 @@ function expandJPCompact(x) {
   const rr=Number(x.rr||30);
   const treatment=rr>=86?82:(rr>=62?55:30);
   return enrichCard({
-    id:x.id,game:'weiss',language:'JP',availability:'released',
-    name:x.n,set:x.s,setId:x.si,code:x.c,rarity:x.r,cardType:x.t,color:x.co,image:x.im,
-    rarityRank:rr,isPremium:!!x.p,investment:Number(x.iq||0),momentum:50,confidence:'Low',
+    id:x.id||x.i,game:'weiss',language:'JP',availability:'released',_setKey:x.k,
+    name:x.n,set:x.s,setId:x.si,code:x.c,rarity:x.r,cardType:x.t||x.ct,color:x.co||x.cl,image:x.im,
+    rarityRank:Number(x.rr||rr),isPremium:!!x.p,investment:Number(x.iq||0),momentum:Number(x.mo||50),confidence:x.cf||'Low',
     identitySource:x.sf ? 'https://github.com/Akenaide/wsoffdata/blob/master/'+x.sf : null,
     catalogSource:'Akenaide/wsoffdata / official ws-tcg.com artwork',
     modelStatus:'jp-generic-v0.8',
@@ -121,8 +170,8 @@ async function ensureJPCatalog() {
   if (state.jpLoading) return state.jpLoading;
   state.jpLoading=(async()=>{
     toast('Loading Japanese Weiss catalog…');
-    const r=await fetch('data/catalog-weiss-jp.json',{cache:'no-cache'});
-    if(!r.ok) throw new Error('JP catalog '+r.status);
+    const r=await fetch('data/web/search-jp.json',{cache:'no-cache'});
+    if(!r.ok) throw new Error('JP search index '+r.status);
     const jp=await r.json();
     const incoming=(jp.cards||[]).map(expandJPCompact);
     state.cards.push(...incoming);
@@ -213,7 +262,8 @@ function renderMarket() {
   const pricedEUR = cards.filter(c => c.marketEUR != null);
   const pricedUSD = cards.filter(c => c.market != null);
   const premiumCards = cards.filter(c => c.isPremium || premium.has(c.rarity));
-  const imaged = cards.filter(c => c.image).length;
+  const layerSets=state.sets.filter(x=>x.game===state.game && (x.language||'EN')===state.marketLanguage);
+  const imaged = layerSets.reduce((a,x)=>a+Number(x.imaged||0),0) || cards.filter(c => c.image).length;
   const with30 = priced.filter(c => c.change30d != null);
   const avg30 = with30.length ? with30.reduce((a,c) => a + Number(c.change30d), 0) / with30.length : null;
 
@@ -231,6 +281,7 @@ function renderMarket() {
   const conviction = premiumCards.slice().sort((a,b) => b.investment - a.investment || (b.market||0)-(a.market||0)).slice(0,12);
   $('#convictionTable').innerHTML = opportunityTable(conviction, true);
   bindRows('#convictionTable');
+  hydrateSetKeys([...opportunities,...conviction].map(c=>c._setKey)).then(changed=>{if(changed) renderMarket();});
 
   const pressure = cards.filter(c => c.demandPressure != null).sort((a,b)=>(b.marketHeatPercentile??-1)-(a.marketHeatPercentile??-1)).slice(0,15);
   $('#pressureTable').innerHTML = pressure.length ? `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Rarity</th><th>Sales</th><th>Fresh asks</th><th>Pressure</th><th>Heat</th></tr></thead><tbody>${pressure.map(c=>`<tr class="click-row" data-id="${esc(c.id)}"><td><div class="mini-card">${c.image?`<img src="${esc(c.image)}" loading="lazy">`:''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set||'')}</small></div></div></td><td><span class="badge">${esc(c.rarity||'—')}</span></td><td>${c.demandPressureSales??'—'}</td><td>${c.demandPressureAsks??'—'}</td><td><b>${c.demandPressure.toFixed(1)}%</b></td><td><span class="badge">${esc(c.marketHeatLabel||'—')} · P${c.marketHeatPercentile??'—'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No sales + asks pressure data for this game yet.</div>';
@@ -303,9 +354,21 @@ function applyFilters() {
   renderCards();
 }
 
-['setFilter','rarityFilter','availabilityFilter','signalFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
+['rarityFilter','availabilityFilter','signalFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
   $('#'+id).addEventListener('change', () => { state.page = 1; applyFilters(); })
 );
+$('#setFilter').addEventListener('change', async () => {
+  const name=$('#setFilter').value;
+  if(name!=='all'){
+    const game=$('#gameFilter').value,lang=$('#languageFilter').value;
+    const meta=state.sets.find(x=>x.name===name&&(game==='all'||x.game===game)&&(lang==='all'||(x.language||'EN')===lang));
+    if(meta){
+      const payload=await fetchSetPayload(meta.key);
+      if(payload){applySetPayload(payload);rebuildCardIndexes();}
+    }
+  }
+  state.page=1;applyFilters();
+});
 let searchTimer=null;
 $('#search').addEventListener('input',()=>{ clearTimeout(searchTimer); searchTimer=setTimeout(()=>{state.page=1;applyFilters();},120); });
 $('#languageFilter').addEventListener('change', async () => {
@@ -363,6 +426,8 @@ function renderCards() {
 
   $('#pageInfo').textContent = `${state.page} / ${pages} · ${state.filtered.length.toLocaleString()} cards`; $('#pageJump').max=String(pages); $('#pageJump').value=String(state.page);
   renderWatch();
+  const missing=rows.filter(c=>c._setKey && !c.image).map(c=>c._setKey);
+  if(missing.length){ hydrateSetKeys(missing).then(changed=>{if(changed) renderCards();}); }
 }
 
 $('#gridViewBtn').onclick = () => setCardView('grid');
@@ -411,6 +476,11 @@ function renderSets() {
     updateSetOptions();
     $('#setFilter').value = el.dataset.set;
     $('#availabilityFilter').value = 'released';
+    const meta=state.sets.find(x=>x.name===el.dataset.set&&x.game===el.dataset.game&&(x.language||'EN')===lang);
+    if(meta){
+      const payload=await fetchSetPayload(meta.key);
+      if(payload){applySetPayload(payload);rebuildCardIndexes();}
+    }
     state.page = 1; applyFilters(); goto('cards');
   });
 }
@@ -418,12 +488,74 @@ function renderSets() {
   $('#'+id).addEventListener(id === 'setSearch' ? 'input' : 'change', renderSets)
 );
 
+async function fetchSetPayload(setKey) {
+  if (!setKey) return null;
+  if (state.setCache.has(setKey)) return state.setCache.get(setKey);
+  const meta=state.setManifest.get(setKey);
+  if(!meta || !meta.path) return null;
+  const promise=fetch(meta.path,{cache:'no-cache'})
+    .then(r=>{if(!r.ok) throw new Error(meta.path+' '+r.status);return r.json();})
+    .catch(e=>{console.error('set load failed',setKey,e);return null;});
+  state.setCache.set(setKey,promise);
+  return promise;
+}
+
+function applySetPayload(payload) {
+  if(!payload || !Array.isArray(payload.cards)) return [];
+  const rows=payload.compactJP ? payload.cards.map(expandJPCompact) : payload.cards.map(c=>enrichCard({...c,_setKey:payload.key}));
+  const pos=new Map(state.cards.map((c,i)=>[c.id,i]));
+  const filteredPos=new Map(state.filtered.map((c,i)=>[c.id,i]));
+  const viewerPos=new Map(state.viewerList.map((c,i)=>[c.id,i]));
+  for(const c of rows){
+    const i=pos.get(c.id);
+    if(i==null){ state.cards.push(c); pos.set(c.id,state.cards.length-1); }
+    else state.cards[i]=c;
+    const fi=filteredPos.get(c.id); if(fi!=null) state.filtered[fi]=c;
+    const vi=viewerPos.get(c.id); if(vi!=null) state.viewerList[vi]=c;
+    state.byId.set(c.id,c);
+  }
+  if(payload.key) state.loadedSetKeys.add(payload.key);
+  return rows;
+}
+
+async function hydrateSetKeys(keys) {
+  const wanted=[...new Set(keys.filter(Boolean))].filter(k=>!state.loadedSetKeys.has(k));
+  if(!wanted.length) return false;
+  const payloads=await Promise.all(wanted.map(fetchSetPayload));
+  let changed=false;
+  for(const p of payloads){ if(p){applySetPayload(p);changed=true;} }
+  if(changed) rebuildCardIndexes();
+  return changed;
+}
+
+async function ensureCardDetail(id) {
+  const current=state.byId.get(id);
+  if (!current) return null;
+  if (current._detailLoaded) return current;
+  const payload=await fetchSetPayload(current._setKey);
+  if(payload){
+    const rows=applySetPayload(payload);
+    for(const row of rows) row._detailLoaded=true;
+    rebuildCardIndexes();
+  }
+  const hydrated=state.byId.get(id)||current;
+  hydrated._detailLoaded=true;
+  return hydrated;
+}
+
 function openViewer(id) {
   const c = state.byId.get(id);
   if (!c) return;
   state.viewerList = state.filtered.length && state.filtered.some(x => x.id === id) ? state.filtered : state.cards;
   state.viewerIndex = Math.max(0, state.viewerList.findIndex(x => x.id === id));
   renderViewer();
+  ensureCardDetail(id).then(full=>{
+    const active=state.viewerList[state.viewerIndex];
+    if (!full || !active || active.id!==id) return;
+    const pos=state.viewerList.findIndex(x=>x.id===id);
+    if (pos>=0) state.viewerList[pos]=full;
+    renderViewer();
+  });
   $('#viewer').classList.add('open');
   $('#viewer').setAttribute('aria-hidden','false');
   document.body.style.overflow = 'hidden';
@@ -819,7 +951,12 @@ function renderCoverage(){
   const enSets=new Set(en.map(c=>c.set).filter(Boolean)).size;
   const jpSets=Number(state.jpMeta?.counts?.sets||new Set(jpLoaded.map(c=>c.set).filter(Boolean)).size||0);
   const palSets=new Set(pal.map(c=>c.set).filter(Boolean)).size;
-  const enPrice=en.filter(c=>observed(c)).length, palPrice=pal.filter(c=>observed(c)).length, enImg=en.filter(c=>c.image).length, palImg=pal.filter(c=>c.image).length;
+  const enPrice=en.filter(c=>observed(c)).length, palPrice=pal.filter(c=>observed(c)).length;
+  const enLayer=state.sets.filter(x=>x.game==='weiss'&&(x.language||'EN')==='EN');
+  const jpLayer=state.sets.filter(x=>x.game==='weiss'&&(x.language||'EN')==='JP');
+  const palLayer=state.sets.filter(x=>x.game==='palworld'&&(x.language||'EN')==='EN');
+  const enImg=enLayer.reduce((a,x)=>a+Number(x.imaged||0),0);
+  const palImg=palLayer.reduce((a,x)=>a+Number(x.imaged||0),0);
   $('#coverageMetrics').innerHTML=[
     ['Released printings',releasedTotal.toLocaleString(),'EN Weiss + JP Weiss + Palworld'],
     ['English Weiss',en.length.toLocaleString(),enSets.toLocaleString()+' sets'],
@@ -829,7 +966,7 @@ function renderCoverage(){
 
   const layers=[
     ['Weiss Schwarz · EN',en.length,enSets,enImg,enPrice,'Loaded immediately'],
-    ['Weiss Schwarz · JP',jpCount,jpSets,Number(state.jpMeta?.counts?.imaged||0),0,state.jpLoaded?'Loaded in browser':'Loaded on demand'],
+    ['Weiss Schwarz · JP',jpCount,jpSets,jpLayer.reduce((a,x)=>a+Number(x.imaged||0),0),0,state.jpLoaded?'Search index loaded':'Search index on demand'],
     ['Palworld OCG · EN',pal.length,palSets,palImg,palPrice,'Loaded immediately'],
     ['Palworld announced',announced.length,new Set(announced.map(c=>c.set).filter(Boolean)).size,announced.filter(c=>c.image).length,0,'Excluded from released inventory']
   ];
@@ -887,7 +1024,8 @@ function renderAll() {
 }
 
 load().catch(e => {
-  $('#catalogStatus').textContent='Failed to load catalog: '+e.message;
+  $('#catalogStatus').textContent='Failed to load browser catalog: '+e.message;
   $('#globalStatus').textContent='load failed';
+  const grid=$('#cardGrid'); if(grid) grid.innerHTML='<div class="empty-state">Card data failed to load. Refresh the page or use the GitHub link from the header.</div>';
   console.error(e);
 });
