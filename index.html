@@ -97,9 +97,18 @@
     <select id="setFilter"><option value="all">All sets</option></select>
     <select id="rarityFilter"><option value="all">All rarities</option></select>
     <select id="availabilityFilter"><option value="released">Released</option><option value="all">Released + announced</option><option value="announced">Announced only</option></select>
+    <select id="signalFilter">
+      <option value="all">All signals</option>
+      <option value="undervalued">Undervalued</option>
+      <option value="conviction">High conviction</option>
+      <option value="hot">Hot demand</option>
+      <option value="character">Character premium</option>
+      <option value="thin">Thin-market risk</option>
+    </select>
     <select id="sort"><option value="investment-desc">Investment score ↓</option><option value="market-desc">Market price ↓</option><option value="gap-desc">Fair-value gap ↓</option><option value="momentum-desc">Momentum ↓</option><option value="heat-desc">Market heat ↓</option><option value="name">Name A–Z</option></select>
     <label class="check"><input id="premiumOnly" type="checkbox"> Premium only</label>
     <label class="check"><input id="pricedOnly" type="checkbox"> With market price</label>
+    <button id="resetFiltersBtn" class="ghost">Reset</button>
   </div>
 
   <div class="catalog-layout">
