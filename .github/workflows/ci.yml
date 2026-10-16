@@ -24,6 +24,13 @@ jobs:
           sparse-checkout-cone-mode: false
           filter: blob:none
 
+      - name: Checkout Japanese Weiss catalog source
+        uses: actions/checkout@v4
+        with:
+          repository: Akenaide/wsoffdata
+          ref: master
+          path: external/wsoffdata
+
       - name: Checkout Palworld catalog source
         uses: actions/checkout@v4
         with:
@@ -47,6 +54,8 @@ jobs:
       - run: node --check assets/app.js
       - run: python scripts/collect_weiss.py
       - run: python scripts/collect_palworld.py
+      - run: python scripts/collect_weiss_jp.py
+      - run: python scripts/build_weiss_jp_catalog.py
       - run: python scripts/enrich_market_palworldprices.py
       - run: python scripts/build_catalog.py
 
@@ -73,6 +82,10 @@ jobs:
           pressure=[x for x in pal if x.get('demandPressure') is not None]
           print('Demand pressure observations on',len(pressure),'Palworld printings')
           assert len(pressure) >= 100, f'demand pressure coverage too low: {len(pressure)}'
+          jp=json.load(open('data/catalog-weiss-jp-meta.json',encoding='utf-8'))
+          print('JP Weiss',jp['counts'])
+          assert jp['counts']['total'] >= 50000, jp['counts']
+          assert jp['counts']['imaged'] >= jp['counts']['released'] * .90, jp['counts']
           fair=[x for x in d['cards'] if x.get('fairValueConfidence') in ('High','Medium') and (x.get('fair') is not None or x.get('fairEUR') is not None)]
           print('High/medium peer fair value on',len(fair),'printings')
           assert len(fair) >= 250, f'peer fair-value coverage too low: {len(fair)}'
