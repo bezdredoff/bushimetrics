@@ -1,4 +1,4 @@
-name: Refresh market data
+name: Refresh catalog data
 on:
   push:
     branches: [main]
@@ -13,28 +13,38 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: refresh-market-data
+  group: refresh-catalog-data
   cancel-in-progress: false
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
       - run: pip install -r requirements.txt
-      - name: Collect Weiss Schwarz full catalog
+      - name: Collect full Weiss Schwarz printing catalog
         run: python scripts/collect_weiss.py
-      - name: Collect Palworld official full catalog
+      - name: Collect full Palworld printing catalog
         run: python scripts/collect_palworld.py
-      - name: Enrich premium Weiss images
-        run: python scripts/enrich_weiss_images.py --limit 800
-        continue-on-error: true
-      - name: Build catalog
+      - name: Build browser catalog
         run: python scripts/build_catalog.py
+      - name: Validate catalog scale
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('data/catalog.json',encoding='utf-8'))
+          c=d['counts']
+          print(c)
+          assert c['weiss'] >= 5000, c
+          assert c['palworld'] >= 150, c
+          assert c['imaged'] >= c['total'] * .90, c
+          PY
       - name: Store immutable daily snapshot
         shell: bash
         run: |
