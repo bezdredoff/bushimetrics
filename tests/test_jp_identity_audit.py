@@ -45,6 +45,44 @@ class JapaneseIdentityAuditTests(unittest.TestCase):
             # Keep legacy behavior until a physical variant is independently verified.
             self.assertEqual(first['rarity'],'R')
 
+    def test_verified_rr_and_sec_parallel_are_both_retained(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder=Path(tmp)/'GZL'/'SE33'
+            folder.mkdir(parents=True)
+            variants=[
+                ('normal.json',{'cardcode':'GZL/SE33-12','rarity':'RR',
+                                'imageURL':'https://example.org/rr.png'}),
+                ('special.json',{'cardcode':'GZL/SE33-12','rarity':'SEC',
+                                 'imageURL':'https://example.org/sec.png'})
+            ]
+            for name,row in variants:
+                (folder/name).write_text(json.dumps(row),encoding='utf-8')
+            files=sorted(folder.glob('*.json'))
+            old_cards,old_audit=scan_source(files)
+            self.assertEqual(len(old_cards),1)
+            self.assertEqual(old_audit['discardedDuplicateFiles'],1)
+            approved={'GZL/SE33-12':{'rarities':['RR','SEC']}}
+            cards,audit=scan_source(files,verified_variants=approved)
+            self.assertEqual(len(cards),2)
+            self.assertEqual({x['rarity'] for x in cards},{'RR','SEC'})
+            self.assertEqual(audit['uniqueCollectorCodes'],1)
+            self.assertEqual(audit['uniquePrintingsByCode'],2)
+            self.assertEqual(audit['duplicateCodeFiles'],1)
+            self.assertEqual(audit['discardedDuplicateFiles'],0)
+            self.assertEqual(audit['verifiedVariantRows'],1)
+            self.assertEqual(audit['verifiedConflictCodeGroups'],1)
+            self.assertEqual(audit['unresolvedConflictingCodeGroups'],0)
+
+    def test_verified_code_with_unreviewed_rarity_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            folder=Path(tmp)/'GZL'/'SE33'
+            folder.mkdir(parents=True)
+            (folder/'bad.json').write_text(
+                json.dumps({'cardcode':'GZL/SE33-12','rarity':'SSP'}),encoding='utf-8')
+            with self.assertRaises(ValueError):
+                scan_source(sorted(folder.glob('*.json')),
+                    verified_variants={'GZL/SE33-12':{'rarities':['RR','SEC']}})
+
     def test_empty_input_is_reported_not_silently_accepted(self):
         cards,audit=scan_source([])
         self.assertEqual(cards,[])

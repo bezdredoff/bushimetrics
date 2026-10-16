@@ -46,3 +46,11 @@ The English importer now writes `data/en-identity-audit.json` after reading the 
 The current first-by-code policy (except preferring a later available image) is preserved until physical-printing differences are independently verified. Audit counts are available in Coverage after the scheduled data refresh, and their internal arithmetic is checked in CI.
 
 These checks establish source-import consistency, **not full official-market catalog completeness** or verified artwork reachability.
+
+## Verified Godzilla Japanese parallel printings (GZL/SE33)
+
+The upstream Akenaide source includes two confirmed **RR versus SEC** collector variants sharing their normalized base codes: `GZL/SE33-12` (Godzilla Earth) and `GZL/SE33-23` (Vulture). The RR and SEC variants have different artwork/treatment and must be separate collectible printings. The original source JSON contains both but the old code-only deduplication discarded both SEC versions.
+
+Documented external verification and permitted rarity pairs are stored in `data/verified-jp-variants.json`, including official/retailer URLs. The importer now retains **only those explicitly verified pairs** as distinct rarities. This adds two JP printings while preserving all existing identities and leaving other codes unchanged. No unrelated first-edition or reprint labels are inferred.
+
+Retail **asking prices** used to verify that these distinct products exist are not converted into observed market prices or Fair Value. Confirmed printing identity does not imply verified completed-sale economics.
