@@ -183,7 +183,7 @@ function renderMarket() {
 
 function matchesSignal(c, signal) {
   if (signal === 'all') return true;
-  if (signal === 'undervalued') return c.gap != null && c.gap >= 15 && c.investment >= 65 && !['Low','NONE','None'].includes(c.confidence);
+  if (signal === 'undervalued') return c.gap != null && c.gap >= 15 && c.investment >= 65 && ['High','Medium'].includes(c.fairValueConfidence) && !['Low','NONE','None'].includes(c.confidence);
   if (signal === 'conviction') return c.investment >= 80 && (c.isPremium || premium.has(c.rarity));
   if (signal === 'hot') return Number(c.marketHeatPercentile) >= 80;
   if (signal === 'character') return Number(c.characterPremiumIndex) >= 150 && Number(c.characterPremiumObservations) >= 2;
@@ -385,9 +385,9 @@ function renderViewer() {
     ['Cardmarket 7d avg',euro(c.marketEURAvg7)],['Cardmarket 30d avg',euro(c.marketEURAvg30)],
     ['Observed sold market (USD)',c.marketKind==='thin' ? '~'+money(c.market) : money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
     ['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
-    ['Model fair (primary)',fairLabel(c)],['Fair-value gap',pct(c.gap)],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
+    ['Peer fair value',fairLabel(c)],['Fair-value gap',pct(c.gap)],['Fair confidence',c.fairValueConfidence||'None'],['Fair method',c.fairValueMethod||'Insufficient peers'],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
     ['Momentum',`${c.momentum}/100`],['Demand pressure',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · ${c.marketHeatLabel||''} P${c.marketHeatPercentile??'—'}`:'N/A'],['Investment quality',`${c.investment}/100`],
-    ['Character premium',c.characterPremiumIndex!=null ? `${c.characterPremiumIndex} index · ${c.characterPremiumObservations||0} obs · ${c.characterPremiumConfidence||'Low'}` : 'Not enough peer pricing'],
+    ['Character premium',c.characterPremiumIndex!=null ? `${c.characterPremiumIndex} index · ${c.characterPremiumObservations||0} obs · ${c.characterPremiumConfidence||'Low'}` : 'Not enough peer pricing'],['Fair peers',c.fairValuePeerCount!=null ? `${c.fairValuePeerCount} rarity peers · ${c.fairValueSubjectObservations||0} subject obs` : '—'],
     ['Confidence',c.confidence || 'Low'],
     ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending'],['Price qualifier',c.marketQualifier || (c.marketKind==='bare' ? 'Completed-sale estimate' : '—')]
   ].map(([a,b]) => `<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
