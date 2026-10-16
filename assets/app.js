@@ -5,8 +5,8 @@ function safeJson(raw, fallback) {
   try { return JSON.parse(raw); } catch { return fallback; }
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], history: {}, sources: {},
-  game: 'weiss', tab: 'market', page: 1, pageSize: 60, filtered: [],
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], history: {}, sources: {}, jpMeta: {}, jpLoaded: false, jpLoading: null,
+  game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
   compare: safeJson(localStorage.getItem('bm-compare') || '[]', []).slice(0, 4),
@@ -49,58 +49,97 @@ function enrichCard(c) {
 }
 
 async function load() {
-  const [catalog, history, sources] = await Promise.all([
+  const [catalog, history, sources, jpMeta] = await Promise.all([
     fetch('data/catalog.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('catalog.json ' + r.status);
       return r.json();
     }),
     fetch('data/history.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
-    fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
+    fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
   ]);
   state.cards = (catalog.cards || []).map(enrichCard);
-  state.byId = new Map(state.cards.map(c => [c.id, c]));
-  state.printingFamilies = new Map();
-  for (const c of state.cards) {
-    const key = [c.game,c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
-    if (!state.printingFamilies.has(key)) state.printingFamilies.set(key,[]);
-    state.printingFamilies.get(key).push(c);
-  }
-  for (const family of state.printingFamilies.values()) {
-    family.sort((a,b)=>(Number(b.rarityRank)||0)-(Number(a.rarityRank)||0) || (a.code||'').localeCompare(b.code||''));
-  }
-  state.sets = catalog.sets || [];
+  state.jpMeta = jpMeta || {};
+  state.sets = [...(catalog.sets || []), ...((jpMeta && jpMeta.sets) || [])];
   state.history = history;
   state.sources = sources;
+  rebuildCardIndexes();
 
   const counts = catalog.counts || {};
-  $('#globalStatus').textContent = `${(counts.released || state.cards.length).toLocaleString()} released`;
-  $('#catalogStatus').textContent =
-    `${state.cards.length.toLocaleString()} printings · ${(counts.sets || state.sets.length).toLocaleString()} sets · ` +
-    `${(counts.premium || state.cards.filter(c => c.isPremium).length).toLocaleString()} premium · updated ` +
-    (catalog.generatedAt ? new Date(catalog.generatedAt).toLocaleString() : 'unknown');
+  const jpCounts = (jpMeta && jpMeta.counts) || {};
+  const totalReleased = Number(counts.released || state.cards.length) + Number(jpCounts.released || 0);
+  $('#globalStatus').textContent = `${totalReleased.toLocaleString()} released`;
+  updateCatalogStatus(catalog.generatedAt);
 
   initFilters();
   renderAll();
   restoreDeepLink();
 }
 
+function rebuildCardIndexes() {
+  state.byId = new Map(state.cards.map(c => [c.id, c]));
+  state.printingFamilies = new Map();
+  for (const c of state.cards) {
+    const key = [c.game,c.language||'EN',c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
+    if (!state.printingFamilies.has(key)) state.printingFamilies.set(key,[]);
+    state.printingFamilies.get(key).push(c);
+  }
+  for (const family of state.printingFamilies.values()) {
+    family.sort((a,b)=>(Number(b.rarityRank)||0)-(Number(a.rarityRank)||0) || (a.code||'').localeCompare(b.code||''));
+  }
+}
+
+function updateCatalogStatus(generatedAt=null) {
+  const jpAvailable=Number(state.jpMeta?.counts?.total||0);
+  const loaded=state.cards.length;
+  const jpText=jpAvailable ? (state.jpLoaded ? ' · JP loaded' : ` · +${jpAvailable.toLocaleString()} JP on demand`) : '';
+  $('#catalogStatus').textContent =
+    `${loaded.toLocaleString()} loaded printings${jpText} · ${state.sets.length.toLocaleString()} set/language groups` +
+    (generatedAt ? ` · updated ${new Date(generatedAt).toLocaleString()}` : '');
+}
+
+async function ensureJPCatalog() {
+  if (state.jpLoaded) return true;
+  if (state.jpLoading) return state.jpLoading;
+  state.jpLoading=(async()=>{
+    toast('Loading Japanese Weiss catalog…');
+    const r=await fetch('data/catalog-weiss-jp.json',{cache:'no-cache'});
+    if(!r.ok) throw new Error('JP catalog '+r.status);
+    const jp=await r.json();
+    const incoming=(jp.cards||[]).map(enrichCard);
+    state.cards.push(...incoming);
+    state.jpLoaded=true;
+    rebuildCardIndexes();
+    initRarityOptions();
+    updateCatalogStatus();
+    toast(`Loaded ${incoming.length.toLocaleString()} Japanese printings.`);
+    return true;
+  })().catch(e=>{console.error(e);toast('Japanese catalog is not published yet.');return false;}).finally(()=>{state.jpLoading=null;});
+  return state.jpLoading;
+}
+
 function initFilters() {
+  initRarityOptions();
+  updateSetOptions();
+  $('#gridViewBtn').classList.toggle('active', state.cardView === 'grid');
+  $('#tableViewBtn').classList.toggle('active', state.cardView === 'table');
+}
+function initRarityOptions() {
+  const current=$('#rarityFilter').value;
   const rarities = [...new Set(state.cards.map(c => c.rarity).filter(Boolean))].sort((a,b) => a.localeCompare(b));
   $('#rarityFilter').innerHTML = '<option value="all">All rarities</option>' +
     rarities.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
-  updateSetOptions();
-
-  $('#gridViewBtn').classList.toggle('active', state.cardView === 'grid');
-  $('#tableViewBtn').classList.toggle('active', state.cardView === 'table');
+  if(rarities.includes(current)) $('#rarityFilter').value=current;
 }
 
 function updateSetOptions() {
   const game = $('#gameFilter').value;
+  const language = $('#languageFilter').value;
   const current = $('#setFilter').value;
-  const sets = [...new Set(state.cards
-    .filter(c => game === 'all' || c.game === game)
-    .map(c => c.set).filter(Boolean))]
-    .sort((a,b) => a.localeCompare(b));
+  const sourceSets = state.sets
+    .filter(s => (game === 'all' || s.game === game) && (language === 'all' || (s.language||'EN') === language))
+    .map(s=>s.name).filter(Boolean);
+  const sets = [...new Set(sourceSets)].sort((a,b) => a.localeCompare(b));
   $('#setFilter').innerHTML = '<option value="all">All sets</option>' +
     sets.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
   if (sets.includes(current)) $('#setFilter').value = current;
@@ -118,9 +157,17 @@ $$('#tabs button').forEach(b => b.onclick = () => goto(b.dataset.tab));
 $$('[data-go]').forEach(b => b.onclick = () => goto(b.dataset.go));
 $('#themeBtn').onclick = () => document.body.classList.toggle('light');
 
-$$('#gameSeg button').forEach(b => b.onclick = () => {
+$('#gameSeg button').forEach(b => b.onclick = async () => {
   state.game = b.dataset.game;
-  $$('#gameSeg button').forEach(x => x.classList.toggle('active', x === b));
+  $('#gameSeg button').forEach(x => x.classList.toggle('active', x === b));
+  const lang=$('#marketLanguage');
+  if(state.game==='palworld'){ state.marketLanguage='EN'; lang.value='EN'; lang.disabled=true; }
+  else { lang.disabled=false; state.marketLanguage=lang.value; if(state.marketLanguage==='JP') await ensureJPCatalog(); }
+  renderMarket();
+});
+$('#marketLanguage').addEventListener('change', async e => {
+  state.marketLanguage=e.target.value;
+  if(state.marketLanguage==='JP') await ensureJPCatalog();
   renderMarket();
 });
 
@@ -142,7 +189,7 @@ function bindRows(root) {
 }
 
 function renderMarket() {
-  const cards = state.cards.filter(c => c.game === state.game && c.availability === 'released');
+  const cards = state.cards.filter(c => c.game === state.game && (c.language||'EN') === state.marketLanguage && c.availability === 'released');
   const priced = cards.filter(c => observed(c)); 
   const pricedEUR = cards.filter(c => c.marketEUR != null);
   const pricedUSD = cards.filter(c => c.market != null);
@@ -170,7 +217,7 @@ function renderMarket() {
   $('#pressureTable').innerHTML = pressure.length ? `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Rarity</th><th>Sales</th><th>Fresh asks</th><th>Pressure</th><th>Heat</th></tr></thead><tbody>${pressure.map(c=>`<tr class="click-row" data-id="${esc(c.id)}"><td><div class="mini-card">${c.image?`<img src="${esc(c.image)}" loading="lazy">`:''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set||'')}</small></div></div></td><td><span class="badge">${esc(c.rarity||'—')}</span></td><td>${c.demandPressureSales??'—'}</td><td>${c.demandPressureAsks??'—'}</td><td><b>${c.demandPressure.toFixed(1)}%</b></td><td><span class="badge">${esc(c.marketHeatLabel||'—')} · P${c.marketHeatPercentile??'—'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No sales + asks pressure data for this game yet.</div>';
   bindRows('#pressureTable');
 
-  const announced = state.cards.filter(c => c.game === state.game && c.availability !== 'released').length;
+  const announced = state.cards.filter(c => c.game === state.game && (c.language||'EN') === state.marketLanguage && c.availability !== 'released').length;
   const marketFresh = priced.filter(c => c.marketAsOf || c.cardmarketAsOf).length;
   $('#dataHealth').innerHTML = [
     ['Image coverage', `${Math.round(imaged / Math.max(1,cards.length)*100)}%`, `${imaged.toLocaleString()} / ${cards.length.toLocaleString()}`],
@@ -204,6 +251,7 @@ function signalBadges(c) {
 function applyFilters() {
   const q = $('#search').value.trim().toLowerCase();
   const gf = $('#gameFilter').value;
+  const lf = $('#languageFilter').value;
   const sf = $('#setFilter').value;
   const rf = $('#rarityFilter').value;
   const af = $('#availabilityFilter').value;
@@ -213,6 +261,7 @@ function applyFilters() {
 
   let a = state.cards.filter(c =>
     (gf === 'all' || c.game === gf) &&
+    (lf === 'all' || (c.language||'EN') === lf) &&
     (sf === 'all' || c.set === sf) &&
     (rf === 'all' || c.rarity === rf) &&
     (af === 'all' || c.availability === af) &&
@@ -235,14 +284,23 @@ function applyFilters() {
   renderCards();
 }
 
-['search','setFilter','rarityFilter','availabilityFilter','signalFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
-  $('#'+id).addEventListener(id === 'search' ? 'input' : 'change', () => { state.page = 1; applyFilters(); })
+['setFilter','rarityFilter','availabilityFilter','signalFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
+  $('#'+id).addEventListener('change', () => { state.page = 1; applyFilters(); })
 );
-$('#gameFilter').addEventListener('change', () => {
+let searchTimer=null;
+$('#search').addEventListener('input',()=>{ clearTimeout(searchTimer); searchTimer=setTimeout(()=>{state.page=1;applyFilters();},120); });
+$('#languageFilter').addEventListener('change', async () => {
+  const lang=$('#languageFilter').value;
+  if(lang==='JP' || lang==='all') await ensureJPCatalog();
+  updateSetOptions(); state.page=1; applyFilters();
+});
+$('#gameFilter').addEventListener('change', async () => {
+  if($('#gameFilter').value==='palworld' && $('#languageFilter').value==='JP') $('#languageFilter').value='EN';
+  if($('#languageFilter').value==='JP' || $('#languageFilter').value==='all') await ensureJPCatalog();
   updateSetOptions(); state.page = 1; applyFilters();
 });
 $('#resetFiltersBtn').onclick = () => {
-  $('#search').value=''; $('#gameFilter').value='all'; updateSetOptions(); $('#setFilter').value='all';
+  $('#search').value=''; $('#gameFilter').value='all'; $('#languageFilter').value='EN'; updateSetOptions(); $('#setFilter').value='all';
   $('#rarityFilter').value='all'; $('#availabilityFilter').value='released'; $('#signalFilter').value='all';
   $('#sort').value='investment-desc'; $('#premiumOnly').checked=false; $('#pricedOnly').checked=false;
   state.page=1; applyFilters();
@@ -302,15 +360,20 @@ $('#nextPage').onclick = () => { if (state.page < Math.ceil(state.filtered.lengt
 function renderSets() {
   const q = $('#setSearch').value.trim().toLowerCase();
   const game = $('#setGameFilter').value;
-  let a = state.sets.filter(s => (game === 'all' || s.game === game) && (!q || s.name.toLowerCase().includes(q)));
+  const language = $('#setLanguageFilter').value;
+  let a = state.sets.filter(s =>
+    (game === 'all' || s.game === game) &&
+    (language === 'all' || (s.language||'EN') === language) &&
+    (!q || s.name.toLowerCase().includes(q))
+  );
   const sort = $('#setSort').value;
   if (sort === 'name') a.sort((x,y) => x.name.localeCompare(y.name));
   else {
     const key = {premium:'premium',total:'total',investment:'avgInvestment',coverage:'priceCoverage'}[sort.split('-')[0]];
     a.sort((x,y) => (Number(y[key])||0)-(Number(x[key])||0));
   }
-  $('#setGrid').innerHTML = a.map(s => `<article class="set-card" data-set="${esc(s.name)}" data-game="${esc(s.game)}">
-    <div class="set-card-top"><span class="eyebrow">${esc(gameLabel(s.game))}</span><span class="badge">${s.released} released${s.announced ? ` + ${s.announced} announced` : ''}</span></div>
+  $('#setGrid').innerHTML = a.map(s => `<article class="set-card" data-set="${esc(s.name)}" data-game="${esc(s.game)}" data-language="${esc(s.language||'EN')}">
+    <div class="set-card-top"><span class="eyebrow">${esc(gameLabel(s.game))} · ${esc(s.language||'EN')}</span><span class="badge">${s.released} released${s.announced ? ` + ${s.announced} announced` : ''}</span></div>
     <h3>${esc(s.name)}</h3>
     <div class="set-stats">
       <div><b>${s.premium}</b><span>premium</span></div>
@@ -321,15 +384,18 @@ function renderSets() {
     <div class="progress"><i style="width:${Math.min(100,s.priceCoverage)}%"></i></div>
   </article>`).join('') || '<div class="empty-state">No sets match.</div>';
 
-  $$('#setGrid [data-set]').forEach(el => el.onclick = () => {
+  $$('#setGrid [data-set]').forEach(el => el.onclick = async () => {
+    const lang=el.dataset.language||'EN';
+    if(lang==='JP') await ensureJPCatalog();
     $('#gameFilter').value = el.dataset.game;
+    $('#languageFilter').value = lang;
     updateSetOptions();
     $('#setFilter').value = el.dataset.set;
     $('#availabilityFilter').value = 'released';
     state.page = 1; applyFilters(); goto('cards');
   });
 }
-['setSearch','setGameFilter','setSort'].forEach(id =>
+['setSearch','setGameFilter','setLanguageFilter','setSort'].forEach(id =>
   $('#'+id).addEventListener(id === 'setSearch' ? 'input' : 'change', renderSets)
 );
 
@@ -358,14 +424,14 @@ function renderViewer() {
 
   $('#viewerGame').textContent = gameLabel(c.game);
   $('#viewerName').textContent = c.name;
-  $('#viewerMeta').textContent = [c.set,c.code,c.rarity,c.edition,c.treatment].filter(Boolean).join(' · ');
+  $('#viewerMeta').textContent = [c.language||'EN',c.set,c.code,c.rarity,c.edition,c.treatment].filter(Boolean).join(' · ');
   $('#viewerBadges').innerHTML = [
     c.availability !== 'released' ? '<span class="badge badge-warn">Announced</span>' : '<span class="badge">Released</span>',
     c.isPremium ? '<span class="badge badge-accent">Premium</span>' : '',
     !c.market ? '<span class="badge">Market pending</span>' : ''
   ].join('');
 
-  const familyKey=[c.game,c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
+  const familyKey=[c.game,c.language||'EN',c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
   const family=state.printingFamilies.get(familyKey)||[c];
   $('#printingFamilyCount').textContent=family.length + (family.length===1?' printing':' printings');
   $('#printingFamily').innerHTML=family.map(x => `<button class="printing-chip ${x.id===c.id?'active':''}" data-family-id="${esc(x.id)}" title="${esc(x.code||'')}">

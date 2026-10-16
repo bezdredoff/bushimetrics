@@ -147,3 +147,7 @@ A collector number is not always enough to distinguish a physical investment obj
 - Bushiroad / Weiss Schwarz card images and marks belong to their respective rights holders.
 - Palworld Official Card Game card images and marks belong to Pocketpair / Bushiroad and their respective rights holders.
 - BushiMetrics is an independent research project and is not affiliated with or endorsed by Bushiroad, Pocketpair, TCGPlayer or TCG API.
+
+## Language architecture
+
+English Weiss + Palworld load initially. The Japanese Weiss catalog is generated separately and lazy-loaded by the browser only when JP/All is requested. This keeps initial Pages payload reasonable while retaining the full JP printing catalog.

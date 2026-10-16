@@ -35,13 +35,16 @@
 <section id="market" class="view active">
   <div class="hero">
     <div>
-      <p class="eyebrow">BushiMetrics v0.4</p>
+      <p class="eyebrow">BushiMetrics v0.8</p>
       <h1>Collector analytics built for Bushiroad markets.</h1>
-      <p>Browse the complete catalog, separate observed prices from model outputs, compare structural scarcity and character/IP strength, and track your own collection locally.</p>
+      <p>Browse English and Japanese Weiss Schwarz plus Palworld OCG, separate observed prices from peer-model outputs, compare scarcity and character demand, and track your own collection locally.</p>
     </div>
-    <div class="seg" id="gameSeg">
-      <button data-game="weiss" class="active">Weiss Schwarz</button>
-      <button data-game="palworld">Palworld OCG</button>
+    <div class="hero-controls">
+      <div class="seg" id="gameSeg">
+        <button data-game="weiss" class="active">Weiss Schwarz</button>
+        <button data-game="palworld">Palworld OCG</button>
+      </div>
+      <select id="marketLanguage" class="compact-select"><option value="EN">EN</option><option value="JP">JP</option></select>
     </div>
   </div>
 
@@ -94,6 +97,7 @@
   <div class="filters filters-wide">
     <input id="search" placeholder="Search name, set, card number…">
     <select id="gameFilter"><option value="all">All games</option><option value="weiss">Weiss Schwarz</option><option value="palworld">Palworld OCG</option></select>
+    <select id="languageFilter"><option value="EN">English</option><option value="JP">Japanese</option><option value="all">All languages</option></select>
     <select id="setFilter"><option value="all">All sets</option></select>
     <select id="rarityFilter"><option value="all">All rarities</option></select>
     <select id="availabilityFilter"><option value="released">Released</option><option value="all">Released + announced</option><option value="announced">Announced only</option></select>
@@ -146,6 +150,7 @@
   <div class="filters set-filters">
     <input id="setSearch" placeholder="Search set or franchise…">
     <select id="setGameFilter"><option value="all">All games</option><option value="weiss">Weiss Schwarz</option><option value="palworld">Palworld OCG</option></select>
+    <select id="setLanguageFilter"><option value="all">All languages</option><option value="EN">English</option><option value="JP">Japanese</option></select>
     <select id="setSort"><option value="premium-desc">Premium count ↓</option><option value="total-desc">Total printings ↓</option><option value="investment-desc">Avg investment ↓</option><option value="coverage-desc">Price coverage ↓</option><option value="name">Name A–Z</option></select>
   </div>
   <div id="setGrid" class="set-grid"></div>
