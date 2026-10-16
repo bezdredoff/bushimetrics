@@ -1,10 +1,12 @@
-name: One-time merged branch cleanup
+name: Merged branch hygiene
 
 on:
   push:
     branches: [main]
     paths:
       - .github/workflows/cleanup-merged-branches.yml
+  pull_request:
+    types: [closed]
   workflow_dispatch:
 
 permissions:
@@ -13,6 +15,7 @@ permissions:
 
 jobs:
   cleanup:
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Delete only unchanged heads of merged PRs
