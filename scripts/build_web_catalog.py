@@ -86,7 +86,10 @@ def main():
             'announced':sum((x.get('availability') or 'released')!='released' for x in rows),
             'premium':sum(bool(x.get('isPremium')) for x in rows),
             'imaged':sum(bool(x.get('image')) for x in rows),
-            'priced':sum(x.get('market') is not None or x.get('marketEUR') is not None for x in rows)
+            'priced':sum(x.get('market') is not None or x.get('marketEUR') is not None for x in rows),
+            'imageCoverage':round(sum(bool(x.get('image')) for x in rows)/max(1,len(rows))*100,1),
+            'priceCoverage':round(sum(x.get('market') is not None or x.get('marketEUR') is not None for x in rows)/max(1,len(rows))*100,1),
+            'avgInvestment':round(sum(float(x.get('investment') or 0) for x in rows)/max(1,len(rows)),1)
         })
 
     for row in jp.get('cards') or []:
@@ -102,7 +105,10 @@ def main():
         manifest.append({
             'key':key,'game':'weiss','language':'JP','name':name,'path':f'data/web/{rel}',
             'total':len(rows),'released':len(rows),'announced':0,
-            'premium':sum(bool(x.get('p')) for x in rows),'imaged':sum(bool(x.get('im')) for x in rows),'priced':0
+            'premium':sum(bool(x.get('p')) for x in rows),'imaged':sum(bool(x.get('im')) for x in rows),'priced':0,
+            'imageCoverage':round(sum(bool(x.get('im')) for x in rows)/max(1,len(rows))*100,1),
+            'priceCoverage':0,
+            'avgInvestment':round(sum(float(x.get('iq') or 0) for x in rows)/max(1,len(rows)),1)
         })
 
     en_index.sort(key=lambda x:(x.get('g',''),x.get('s',''),x.get('c',''),x.get('r','')))
