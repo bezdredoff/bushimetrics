@@ -12,7 +12,7 @@ The script is intentionally polite:
 - prior cache is kept if the source is temporarily unavailable.
 """
 from __future__ import annotations
-import json,time,re
+import argparse,json,time,re
 from datetime import datetime,timezone
 from pathlib import Path
 import requests
@@ -52,6 +52,9 @@ def choose_price(rows):
     return sorted(usable,key=rank)[0]
 
 def main():
+    ap=argparse.ArgumentParser()
+    ap.add_argument('--max-groups',type=int,default=0,help='Smoke-test only the first N groups; 0 means all groups.')
+    args=ap.parse_args()
     if not WEISS.exists():
         print('Weiss identity catalog missing; TCGCSV skipped.')
         return
@@ -62,6 +65,8 @@ def main():
     s=requests.Session()
     try:
         groups=(get_json(s,f'{BASE}/{CATEGORY}/groups').get('results') or [])
+        if args.max_groups:
+            groups=groups[:args.max_groups]
     except Exception as e:
         if OUT.exists():
             print('TCGCSV groups unavailable; keeping prior cache:',repr(e))
