@@ -5,8 +5,8 @@ function safeJson(raw, fallback) {
   try { return JSON.parse(raw); } catch { return fallback; }
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], history: {}, sources: {},
-  game: 'weiss', tab: 'market', page: 1, pageSize: 60, filtered: [],
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], history: {}, sources: {}, jpMeta: {}, jpLoaded: false, jpLoading: null,
+  game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
   compare: safeJson(localStorage.getItem('bm-compare') || '[]', []).slice(0, 4),
@@ -49,39 +49,73 @@ function enrichCard(c) {
 }
 
 async function load() {
-  const [catalog, history, sources] = await Promise.all([
+  const [catalog, history, sources, jpMeta] = await Promise.all([
     fetch('data/catalog.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('catalog.json ' + r.status);
       return r.json();
     }),
     fetch('data/history.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
-    fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
+    fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
   ]);
   state.cards = (catalog.cards || []).map(enrichCard);
+  state.jpMeta = jpMeta || {};
+  state.sets = [...(catalog.sets || []), ...((jpMeta && jpMeta.sets) || [])];
+  state.history = history;
+  state.sources = sources;
+  rebuildCardIndexes();
+
+  const counts = catalog.counts || {};
+  const jpCounts = (jpMeta && jpMeta.counts) || {};
+  const totalReleased = Number(counts.released || state.cards.length) + Number(jpCounts.released || 0);
+  $('#globalStatus').textContent = `${totalReleased.toLocaleString()} released`;
+  updateCatalogStatus(catalog.generatedAt);
+
+  initFilters();
+  renderAll();
+  restoreDeepLink();
+}
+
+function rebuildCardIndexes() {
   state.byId = new Map(state.cards.map(c => [c.id, c]));
   state.printingFamilies = new Map();
   for (const c of state.cards) {
-    const key = [c.game,c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
+    const key = [c.game,c.language||'EN',c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
     if (!state.printingFamilies.has(key)) state.printingFamilies.set(key,[]);
     state.printingFamilies.get(key).push(c);
   }
   for (const family of state.printingFamilies.values()) {
     family.sort((a,b)=>(Number(b.rarityRank)||0)-(Number(a.rarityRank)||0) || (a.code||'').localeCompare(b.code||''));
   }
-  state.sets = catalog.sets || [];
-  state.history = history;
-  state.sources = sources;
+}
 
-  const counts = catalog.counts || {};
-  $('#globalStatus').textContent = `${(counts.released || state.cards.length).toLocaleString()} released`;
+function updateCatalogStatus(generatedAt=null) {
+  const jpAvailable=Number(state.jpMeta?.counts?.total||0);
+  const loaded=state.cards.length;
+  const jpText=jpAvailable ? (state.jpLoaded ? ' · JP loaded' : ` · +${jpAvailable.toLocaleString()} JP on demand`) : '';
   $('#catalogStatus').textContent =
-    `${state.cards.length.toLocaleString()} printings · ${(counts.sets || state.sets.length).toLocaleString()} sets · ` +
-    `${(counts.premium || state.cards.filter(c => c.isPremium).length).toLocaleString()} premium · updated ` +
-    (catalog.generatedAt ? new Date(catalog.generatedAt).toLocaleString() : 'unknown');
+    `${loaded.toLocaleString()} loaded printings${jpText} · ${state.sets.length.toLocaleString()} set/language groups` +
+    (generatedAt ? ` · updated ${new Date(generatedAt).toLocaleString()}` : '');
+}
 
-  initFilters();
-  renderAll();
-  restoreDeepLink();
+async function ensureJPCatalog() {
+  if (state.jpLoaded) return true;
+  if (state.jpLoading) return state.jpLoading;
+  state.jpLoading=(async()=>{
+    toast('Loading Japanese Weiss catalog…');
+    const r=await fetch('data/catalog-weiss-jp.json',{cache:'no-cache'});
+    if(!r.ok) throw new Error('JP catalog '+r.status);
+    const jp=await r.json();
+    const incoming=(jp.cards||[]).map(enrichCard);
+    state.cards.push(...incoming);
+    state.jpLoaded=true;
+    rebuildCardIndexes();
+    initRarityOptions();
+    updateCatalogStatus();
+    toast(`Loaded ${incoming.length.toLocaleString()} Japanese printings.`);
+    return true;
+  })().catch(e=>{console.error(e);toast('Japanese catalog is not published yet.');return false;}).finally(()=>{state.jpLoading=null;});
+  return state.jpLoading;
 }
 
 function initFilters() {
