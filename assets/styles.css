@@ -18,3 +18,11 @@
 .printing-chip img{width:34px;height:48px;object-fit:contain;border-radius:4px;flex:none}
 .printing-chip span{display:grid;min-width:0}
 .printing-chip b{font-size:12px}.printing-chip small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.printing-chip em{font-style:normal;color:var(--accent);font-size:11px}
+
+.signal-row{display:flex;flex-wrap:wrap;gap:4px;min-height:18px;margin-top:6px}
+.signal{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 6px;font-size:9px;font-weight:850;letter-spacing:.05em}
+.signal-value{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,var(--line))}
+.signal-iq{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.signal-hot{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,var(--line))}
+.signal-char{color:#c9a7ff;border-color:color-mix(in srgb,#c9a7ff 45%,var(--line))}
+.signal-risk{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
