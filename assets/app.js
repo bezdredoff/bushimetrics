@@ -5,7 +5,7 @@ function safeJson(raw, fallback) {
   try { return JSON.parse(raw); } catch { return fallback; }
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, marketAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, marketAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
@@ -68,7 +68,7 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, sources, jpMeta, research, marketAudit, jpIdentityAudit] = await Promise.all([
+  const [bootstrap, history, sources, jpMeta, research, marketAudit, jpIdentityAudit, enIdentityAudit] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
@@ -78,7 +78,8 @@ async function load() {
     fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/research_status.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {records:[]}).catch(() => ({records:[]})),
     fetch('data/market-source-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
-    fetch('data/jp-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null)
+    fetch('data/jp-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch('data/en-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null)
   ]);
 
   state.cards = (bootstrap.cards || []).map(expandBrowserCard);
@@ -89,6 +90,7 @@ async function load() {
   state.sources = sources;
   state.marketAudit = marketAudit || {};
   state.jpIdentityAudit = jpIdentityAudit;
+  state.enIdentityAudit = enIdentityAudit;
   state.research = research || {records:[]};
   state.researchById = new Map((state.research.records||[]).map(x=>[x.id,x]));
   state.catalogGeneratedAt = bootstrap.generatedAt || null;
@@ -1043,6 +1045,15 @@ function renderCoverage(){
 
   const top=[...state.sets].sort((a,b)=>(Number(b.total)||0)-(Number(a.total)||0)).slice(0,20);
   $('#coverageSets').innerHTML=`<div class="table-scroll"><table><thead><tr><th>Set</th><th>Game</th><th>Lang</th><th>Total</th><th>Premium</th><th>Images</th><th>Priced</th></tr></thead><tbody>${top.map(x=>`<tr><td><b>${esc(x.name)}</b></td><td>${esc(gameLabel(x.game))}</td><td>${esc(x.language||'EN')}</td><td>${Number(x.total||0).toLocaleString()}</td><td>${Number(x.premium||0).toLocaleString()}</td><td>${x.imageCoverage??0}%</td><td>${x.priceCoverage??0}%</td></tr>`).join('')}</tbody></table></div>`;
+  const ea=state.enIdentityAudit;
+  $('#enIdentityAudit').innerHTML=ea && typeof ea.sourceFiles==='number' ? `<div class="stat-list">
+    <div class="stat"><span>English-source set files examined</span><b>${Number(ea.sourceFiles).toLocaleString()}</b></div>
+    <div class="stat"><span>Printings retained by collector code</span><b>${Number(ea.uniquePrintingsByCode).toLocaleString()}</b></div>
+    <div class="stat"><span>Source rows with duplicate code</span><b>${Number(ea.duplicateCodeRows).toLocaleString()}</b></div>
+    <div class="stat"><span>Code groups with conflicting metadata</span><b>${Number(ea.conflictingCodeGroups).toLocaleString()} · verify manually</b></div>
+    <div class="stat"><span>Invalid set files / missing card codes</span><b>${Number(ea.invalidSetFiles).toLocaleString()} / ${Number(ea.missingCodeRows).toLocaleString()}</b></div>
+  </div><p>Repeated collector numbers are not automatically assumed to be distinct physical cards. <a href="data/en-identity-audit.json" target="_blank" rel="noreferrer">View detailed audit</a>.</p>` :
+    '<p>English upstream identity audit is pending the next full data refresh. Unique numbering does not by itself prove physical-variant completeness.</p>';
   const qa=state.jpIdentityAudit;
   $('#jpIdentityAudit').innerHTML=qa && typeof qa.sourceFiles==='number' ? `<div class="stat-list">
     <div class="stat"><span>Upstream card JSON files examined</span><b>${Number(qa.sourceFiles).toLocaleString()}</b></div>
