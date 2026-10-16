@@ -59,6 +59,7 @@ jobs:
       - run: python scripts/enrich_market_tcgcsv.py --max-groups 30 --require-match
       - run: python scripts/enrich_market_palworldprices.py
       - run: python scripts/build_catalog.py
+      - run: python scripts/build_web_catalog.py
 
       - name: Validate complete generated catalog
         run: |
@@ -83,6 +84,11 @@ jobs:
           pressure=[x for x in pal if x.get('demandPressure') is not None]
           print('Demand pressure observations on',len(pressure),'Palworld printings')
           assert len(pressure) >= 100, f'demand pressure coverage too low: {len(pressure)}'
+          web=json.load(open('data/web/meta.json',encoding='utf-8'))
+          print('Web payload',web)
+          assert web['compactCards'] >= 30000, web
+          assert web['compactBytes'] < 20_000_000, web
+          assert web['detailShardMaxBytes'] < 8_000_000, web
           jp=json.load(open('data/catalog-weiss-jp-meta.json',encoding='utf-8'))
           print('JP Weiss',jp['counts'])
           assert jp['counts']['total'] >= 50000, jp['counts']
