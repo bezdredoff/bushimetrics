@@ -1,0 +1,458 @@
+{
+  "asOf": "2026-10-16",
+  "expectedReleasedCount": 276,
+  "releasedCards": [
+    {
+      "code": "ESS01-001",
+      "name": "Grizzbolt – Cascading Voltage",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "R",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-001.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "ESS01-001OSR",
+      "name": "Grizzbolt – Cascading Voltage",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "OSR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-001OSR.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "ESS01-002",
+      "name": "Chillet – Final Frostneedle",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "R",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-002.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "ESS01-002OSR",
+      "name": "Chillet – Final Frostneedle",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "OSR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-002OSR.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "ESS01-003",
+      "name": "Depresso – Midnight Overdrive",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "R",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-003.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "ESS01-003OSR",
+      "name": "Depresso – Midnight Overdrive",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "OSR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-003OSR.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "ESS01-004",
+      "name": "Cattiva – Brimming Bravado",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "R",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-004.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "ESS01-004OSR",
+      "name": "Cattiva – Brimming Bravado",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "OSR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-004OSR.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "ESS01-005",
+      "name": "Quivern – Breath of the Wyvern",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "R",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-005.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "ESS01-005OSR",
+      "name": "Quivern – Breath of the Wyvern",
+      "set": "ESS01 · Sleeve & Card Set Vol. 1",
+      "rarity": "OSR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/ESS01/ESS01-005OSR.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "catalogSource": "Official Palworld card list supplement"
+    },
+    {
+      "code": "EPR-002",
+      "name": "Flambelle – Scorching Tears",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-002.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-002S",
+      "name": "Flambelle – Scorching Tears",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-002S.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-003",
+      "name": "Blazehowl – Hellflame Defender",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-003.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-003S",
+      "name": "Blazehowl – Hellflame Defender",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-003S.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-004",
+      "name": "Fuack – Manic Wave Ripper",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-004.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-004S",
+      "name": "Fuack – Manic Wave Ripper",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-004S.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-005",
+      "name": "Cryolinx – Arctic Ordeal",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-005.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-005S",
+      "name": "Cryolinx – Arctic Ordeal",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-005S.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-006",
+      "name": "Gumoss – Curious Sprout",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-006.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-006S",
+      "name": "Gumoss – Curious Sprout",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-006S.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-007",
+      "name": "Digtoise – Keen Needleback",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-007.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-007S",
+      "name": "Digtoise – Keen Needleback",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-007S.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-008",
+      "name": "Daedream – Deep Slumber",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-008.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-008S",
+      "name": "Daedream – Deep Slumber",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-008S.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-009",
+      "name": "Loupmoon – Glinting Moonlight",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-009.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-009S",
+      "name": "Loupmoon – Glinting Moonlight",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-009S.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Bushiroad event supplement"
+    },
+    {
+      "code": "EPR-010",
+      "name": "Jormuntide Ignis – Savage Lava Dragon",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-010.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/challengerscup",
+      "catalogSource": "Official Grand Challengers Cup supplement"
+    },
+    {
+      "code": "EPR-011",
+      "name": "Lovander – Heartstealer",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-011.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/challengerscup",
+      "catalogSource": "Official Grand Challengers Cup supplement"
+    },
+    {
+      "code": "ESOUL-004",
+      "name": "Soul",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-004.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Palworld/Bushiroad promo supplement"
+    },
+    {
+      "code": "ESOUL-005",
+      "name": "Soul",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-005.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Palworld/Bushiroad promo supplement"
+    },
+    {
+      "code": "ESOUL-006",
+      "name": "Soul",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-006.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Palworld/Bushiroad promo supplement"
+    },
+    {
+      "code": "ESOUL-007",
+      "name": "Soul",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-007.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Palworld/Bushiroad promo supplement"
+    },
+    {
+      "code": "ESOUL-008",
+      "name": "Soul",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-008.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/challengerscup",
+      "catalogSource": "Official Palworld/Bushiroad promo supplement"
+    },
+    {
+      "code": "ESOUL-010",
+      "name": "Soul",
+      "set": "PR Cards (2026)",
+      "rarity": "PR",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-010.png",
+      "identitySource": "https://en.bushiroad.com/events/bushiroad-expo-2026/",
+      "catalogSource": "Official Palworld/Bushiroad promo supplement"
+    }
+  ],
+  "announcedCards": [
+    {
+      "game": "palworld",
+      "code": "EPR-012",
+      "name": "Promo Card EPR-012",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-012.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "EPR-013",
+      "name": "Promo Card EPR-013",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-013.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "EPR-014",
+      "name": "Promo Card EPR-014",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-014.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "EPR-015",
+      "name": "Promo Card EPR-015",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-015.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "EPR-016",
+      "name": "Promo Card EPR-016",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-016.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "EPR-017",
+      "name": "Promo Card EPR-017",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-017.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "EPR-018",
+      "name": "Promo Card EPR-018",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-018.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "EPR-019",
+      "name": "Promo Card EPR-019",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-019.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "EPR-020",
+      "name": "Cattiva",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/EPR-020.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "ESOUL-014",
+      "name": "Lamball, Cattiva & Chikipi Soul",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-014.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "ESOUL-015",
+      "name": "Depresso & Grizzbolt Soul",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-015.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "ESOUL-016",
+      "name": "Chillet Ignis & Chillet Soul",
+      "set": "Masters League 26/27",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-016.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/masters-league",
+      "catalogSource": "Official Masters League announcement"
+    },
+    {
+      "game": "palworld",
+      "code": "ESOUL-017",
+      "name": "Soul",
+      "set": "Legends Awaken Release Tournament",
+      "rarity": "PR",
+      "availability": "announced",
+      "image": "https://en.palworld-official-cardgame.com/wordpress/wp-content/images/cardlist/PR/ESOUL-017.png",
+      "identitySource": "https://en.palworld-official-cardgame.com/events/legends-awaken-release-tournament",
+      "catalogSource": "Official release tournament announcement"
+    }
+  ],
+  "notes": "Released supplement closes the gap between the 242-card GitHub mirror and the official 276-card catalog on 2026-10-16. Announced cards are kept separate and do not count toward 276."
+}

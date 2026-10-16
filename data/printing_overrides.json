@@ -1,0 +1,7 @@
+{
+  "cards": {},
+  "notes": [
+    "Physical edition/treatment variants are not synthesized when the source cannot distinguish them by collector number.",
+    "Examples such as Weiss gold-vs-silver reprints and Palworld BP01 I-vs-II require verified edition metadata before they are split into separate investment objects."
+  ]
+}

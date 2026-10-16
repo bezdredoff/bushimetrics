@@ -1,92 +1,77 @@
 #!/usr/bin/env python3
-"""Collect every English Weiss Schwarz printing from Trading Card Dex set pages.
+"""Build the complete English Weiss Schwarz printing catalog from GachaWiki's
+MIT-licensed GitHub dataset.
 
-Why this source: set pages expose base cards *and* parallel printings (SR/SP/SSP/SEC+,
-promos, etc.) and each detail slug maps deterministically to a card image URL.
-Market price enrichment is intentionally separate.
+Expected source checkout:
+  external/gacha-wiki/src/data/ws-cards/*.json
+
+Every premium parallel is its own row in the source (SP/SSP/SEC/SEC+/SR/etc.)
+and carries an official Bushiroad image URL.
 """
 from __future__ import annotations
-import json,re,time
+import argparse,json
 from datetime import datetime,timezone
 from pathlib import Path
-from urllib.parse import urljoin,urlparse
-import requests
-from bs4 import BeautifulSoup
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'data/raw/weiss.json'
-BASE='https://weissschwarz.tradingcarddex.com'
-SETS=BASE+'/sets'
-UA='BushiMetrics/0.3 (+https://github.com/bezdredoff/bushimetrics)'
 
-CODE_RE=re.compile(r'([A-Za-z0-9]+/[A-Za-z0-9]+-[A-Za-z0-9]+)')
-RARITY_RE=re.compile(r'^\s*([A-Z][A-Z0-9+]{0,7})\b')
-
-def get(session,url):
-    r=session.get(url,headers={'User-Agent':UA,'Accept-Language':'en-US,en;q=0.9'},timeout=40)
-    r.raise_for_status()
-    return r
-
-def discover_sets(session):
-    soup=BeautifulSoup(get(session,SETS).text,'html.parser')
-    out=[]
-    for a in soup.find_all('a',href=True):
-        u=urljoin(BASE,a['href'])
-        if '/sets/' not in u or not urlparse(u).path.endswith('-card-list'):
-            continue
-        name=a.get_text(' ',strip=True)
-        if name and (u,name) not in out: out.append((u,name))
-    return out
-
-def parse_set(session,url,set_name):
-    soup=BeautifulSoup(get(session,url).text,'html.parser')
-    cards=[]
-    for a in soup.find_all('a',href=True):
-        href=urljoin(BASE,a['href'])
-        path=urlparse(href).path
-        if '/database/' not in path or not path.endswith('-details'):
-            continue
-        txt=a.get_text(' ',strip=True)
-        m=CODE_RE.search(txt)
-        if not m: continue
-        code=m.group(1)
-        name=txt[:m.start()].strip(' ·-')
-        tail=txt[m.end():].strip()
-        rm=RARITY_RE.search(tail)
-        rarity=rm.group(1) if rm else None
-        slug=path.rsplit('/',1)[-1][:-len('-details')]
-        image=f'{BASE}/images/CARDDEX/WEISSSCHWARZ/{slug}-card.jpg'
-        treatment=None
-        tm=re.search(r'\((SP|SSP|SEC\+?|SR|RRR\+?|OFR|SIR|AGR|PR\+?|Foil|Gold Stamp|Silver Stamp)[^)]*\)',name,re.I)
-        if tm: treatment=tm.group(1)
-        cards.append({
-            'game':'weiss','name':name,'set':set_name,'code':code,'rarity':rarity,
-            'image':image,'identitySource':href,'source':url,'treatment':treatment,
-            'market':None,'priceSource':None
-        })
-    uniq={}
-    for c in cards:
-        uniq[(c['code'],c.get('rarity'),c.get('name'),c.get('identitySource'))]=c
-    return list(uniq.values())
+def normalize_card(set_meta, card, source_path):
+    code=(card.get('num') or '').strip()
+    if not code: return None
+    return {
+        'game':'weiss',
+        'name':(card.get('name') or code).strip(),
+        'set':set_meta.get('name') or set_meta.get('id') or source_path.stem,
+        'setId':set_meta.get('id') or source_path.stem,
+        'code':code,
+        'rarity':(card.get('rarity') or '').strip() or None,
+        'cardType':card.get('type'),
+        'color':card.get('color'),
+        'image':card.get('img'),
+        'variant':card.get('variant'),
+        'identitySource':f'https://github.com/GachaWiki/gacha-wiki/blob/main/src/data/ws-cards/{source_path.name}',
+        'catalogSource':'GachaWiki / official Bushiroad image metadata',
+        'market':None,
+        'priceSource':None,
+        'availability':'released',
+    }
 
 def main():
-    s=requests.Session()
-    sets=discover_sets(s)
-    print('Weiss sets discovered:',len(sets),flush=True)
-    allcards=[]
-    for i,(url,name) in enumerate(sets,1):
+    ap=argparse.ArgumentParser()
+    ap.add_argument('--source-dir',default=str(ROOT/'external/gacha-wiki/src/data/ws-cards'))
+    args=ap.parse_args()
+    src=Path(args.source_dir)
+    if not src.exists():
+        raise SystemExit(f'Missing Weiss source directory: {src}')
+    by_code={}
+    files=sorted(src.glob('*.json'))
+    for i,p in enumerate(files,1):
         try:
-            time.sleep(.12)
-            cs=parse_set(s,url,name)
-            allcards.extend(cs)
-            print(f'{i}/{len(sets)} {name}: {len(cs)}',flush=True)
+            d=json.loads(p.read_text(encoding='utf-8'))
         except Exception as e:
-            print('WARN',name,url,repr(e),flush=True)
-    if len(allcards)<5000:
-        raise RuntimeError(f'Weiss catalog unexpectedly small: {len(allcards)} printings')
-    payload={'generatedAt':datetime.now(timezone.utc).isoformat(),'source':SETS,'sets':len(sets),'cards':allcards}
+            print('WARN parse',p.name,e,flush=True); continue
+        if d.get('lang') not in (None,'en'):
+            continue
+        for raw in d.get('cards') or []:
+            c=normalize_card(d,raw,p)
+            if not c: continue
+            old=by_code.get(c['code'])
+            # Prefer records that have an official image and a specific set name.
+            if old is None or (not old.get('image') and c.get('image')):
+                by_code[c['code']]=c
+        if i%100==0: print('parsed files',i,'cards',len(by_code),flush=True)
+    cards=list(by_code.values())
+    if len(cards)<10000:
+        raise RuntimeError(f'Weiss catalog unexpectedly small: {len(cards)} unique printings')
+    payload={
+        'generatedAt':datetime.now(timezone.utc).isoformat(),
+        'source':'https://github.com/GachaWiki/gacha-wiki/tree/main/src/data/ws-cards',
+        'sourceFiles':len(files),
+        'cards':cards
+    }
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
-    print('saved',OUT,len(allcards),flush=True)
+    print('saved Weiss',len(cards),flush=True)
 
 if __name__=='__main__': main()

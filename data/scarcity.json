@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "evidence": [
+    {
+      "game": "palworld",
+      "set": "EBP01",
+      "rarity": "RR",
+      "packsPerHit": 5,
+      "probabilityPerPack": 0.201,
+      "samplePacks": 7296,
+      "confidence": "Medium",
+      "evidenceType": "community-logged",
+      "source": "https://palworldtcg.gg/pulltracker",
+      "asOf": "2026-10-16"
+    },
+    {
+      "game": "palworld",
+      "set": "EBP01",
+      "rarity": "SR",
+      "packsPerHit": 7.9,
+      "probabilityPerPack": 0.127,
+      "samplePacks": 7296,
+      "confidence": "Medium",
+      "evidenceType": "community-logged",
+      "source": "https://palworldtcg.gg/pulltracker",
+      "asOf": "2026-10-16"
+    },
+    {
+      "game": "palworld",
+      "set": "EBP01",
+      "rarity": "OSR",
+      "packsPerHit": 14,
+      "probabilityPerPack": 0.0709,
+      "samplePacks": 7296,
+      "confidence": "Medium",
+      "evidenceType": "community-logged",
+      "source": "https://palworldtcg.gg/pulltracker",
+      "asOf": "2026-10-16"
+    },
+    {
+      "game": "palworld",
+      "set": "EBP01",
+      "rarity": "SP",
+      "packsPerHit": 40,
+      "probabilityPerPack": 0.0249,
+      "samplePacks": 7296,
+      "confidence": "Medium",
+      "evidenceType": "community-logged",
+      "source": "https://palworldtcg.gg/pulltracker",
+      "asOf": "2026-10-16"
+    },
+    {
+      "game": "palworld",
+      "set": "EBP01",
+      "rarity": "SSP",
+      "packsPerHit": 97,
+      "probabilityPerPack": 0.0103,
+      "samplePacks": 7296,
+      "confidence": "Medium",
+      "evidenceType": "community-logged",
+      "source": "https://palworldtcg.gg/pulltracker",
+      "asOf": "2026-10-16"
+    }
+  ],
+  "notes": [
+    "Community rates are empirical observations, not manufacturer-guaranteed odds.",
+    "Weiss case/carton rates are intentionally not generalized across all sets because collation structure differs by product generation and title."
+  ]
+}

@@ -1,41 +1,89 @@
 {
   "sources": [
     {
-      "name": "Trading Card Dex",
-      "role": "Full printing catalog + previews",
-      "url": "https://weissschwarz.tradingcarddex.com/sets",
-      "description": "Set pages enumerate English Weiss base cards and parallel printings (SR/SP/SSP/SEC+, promos, etc.). Detail slugs provide card preview images."
+      "name": "GachaWiki Weiss dataset",
+      "role": "Weiss master catalog + official artwork URLs",
+      "url": "https://github.com/GachaWiki/gacha-wiki/tree/main/src/data/ws-cards",
+      "description": "MIT-licensed English Weiss Schwarz dataset. Premium parallel printings such as SR, SP, SSP and SEC+ are stored as distinct card numbers and point to official Bushiroad artwork URLs."
     },
     {
-      "name": "Weiss Schwarz official / ENG DB mirror",
-      "role": "Rules and identity validation",
-      "url": "https://github.com/CCondeluci/WeissSchwarz-ENG-DB",
-      "description": "Community-maintained mirror of official English Bushiroad card metadata and official image URLs for base printings."
+      "name": "Bushiroad Weiss Schwarz",
+      "role": "Official identity / rules / reprint validation",
+      "url": "https://en.ws-tcg.com/",
+      "description": "Primary reference for products, card rules, reprint announcements and physical treatment changes. Used to validate collector-sensitive edition metadata."
     },
     {
-      "name": "TCG API / TCGPlayer",
-      "role": "Optional market enrichment",
-      "url": "https://tcgapi.dev/games/weiss-schwarz/",
-      "description": "Daily Weiss TCGPlayer market prices and changes. Enrichment requires an API key and is kept separate from catalog identity."
-    },
-    {
-      "name": "TCGRate / TCGPlayer",
-      "role": "Historical validation / manual snapshots",
-      "url": "https://tcgrate.com/weiss-schwarz/",
-      "description": "Useful browser-facing Weiss market/history reference; GitHub Actions access is blocked, so it is not a required automation dependency."
-    },
-    {
-      "name": "TCG Republic",
-      "role": "Store ask / secondary image reference",
-      "url": "https://tcgrepublic.com/",
-      "description": "Optional store-ask and image reference. Store asks are never treated as market prices."
+      "name": "dragogodev/cgs Palworld mirror",
+      "role": "Palworld released catalog baseline",
+      "url": "https://github.com/dragogodev/cgs/blob/master/Palworld/AllCards.json",
+      "description": "GitHub-hosted mirror of official Palworld card data, including BP01, Trial Deck printings, promos and official image URLs."
     },
     {
       "name": "Palworld Official Card Game",
-      "role": "Official Palworld validation",
+      "role": "Current Palworld validation + new promos",
       "url": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
-      "description": "Official Palworld card list used to validate identity, rarity and release information."
+      "description": "Official source used to close the gap between the GitHub baseline and newly released ESS/promotional printings, and to keep announced future promos separate from released cards."
+    },
+    {
+      "name": "TCG API / TCGPlayer",
+      "role": "Optional observed market enrichment",
+      "url": "https://tcgapi.dev/games/weiss-schwarz/",
+      "description": "Daily Weiss market prices and 24h/7d/30d changes. Requires TCGAPI_KEY; missing price data never blocks the catalog and is never replaced with a retailer ask."
+    },
+    {
+      "name": "Manual validated snapshots",
+      "role": "Thin-market fallback",
+      "url": "https://github.com/bezdredoff/bushimetrics/blob/main/data/market_overrides.json",
+      "description": "Versioned observations for selected cards when automated coverage is missing. Every override includes an as-of context and remains distinct from model fair value."
     }
   ],
-  "model": "Observed market, store ask, catalog identity and model outputs are distinct fields. A missing market price remains missing rather than being imputed from a store ask."
+  "methodology": {
+    "title": "Investment Quality v0.4",
+    "description": "The current model is deliberately transparent and heuristic until enough immutable daily snapshots exist for a walk-forward fitted model.",
+    "factors": [
+      {
+        "name": "Structural scarcity",
+        "weight": 24,
+        "description": "Rarity/treatment pressure; later versions will substitute empirical case/carton pull-rate evidence where available."
+      },
+      {
+        "name": "IP / character strength",
+        "weight": 20,
+        "description": "Versioned franchise priors now; intended to evolve into cross-rarity character premiums and external fandom signals."
+      },
+      {
+        "name": "Reprint durability",
+        "weight": 13,
+        "description": "How resistant the physical collectible is to identical future supply."
+      },
+      {
+        "name": "Historical significance",
+        "weight": 11,
+        "description": "First-set, launch, prototype, early promo and event significance."
+      },
+      {
+        "name": "Treatment premium",
+        "weight": 10,
+        "description": "Signature, serialized, hot-stamp and premium-art treatment."
+      },
+      {
+        "name": "Momentum",
+        "weight": 10,
+        "description": "Observed 7d/30d price movement where available."
+      },
+      {
+        "name": "Liquidity",
+        "weight": 7,
+        "description": "Current price/sales proxy until sell-through/listing data coverage grows."
+      },
+      {
+        "name": "Edition durability",
+        "weight": 5,
+        "description": "First edition / distinguishable reprint structure, only when verified."
+      }
+    ],
+    "fairValue": "Fair Value is only calculated when an observed market price exists. It is a relative model estimate, not an appraisal or guaranteed future price.",
+    "backtest": "Daily compact market snapshots are stored without future data. 30/90/180-day MAE and directional accuracy will only be shown after each horizon has genuinely elapsed."
+  },
+  "model": "Catalog identity, image source, observed market, store asks and model outputs are separate fields. Missing market data remains missing."
 }
