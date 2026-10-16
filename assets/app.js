@@ -157,9 +157,17 @@ $$('#tabs button').forEach(b => b.onclick = () => goto(b.dataset.tab));
 $$('[data-go]').forEach(b => b.onclick = () => goto(b.dataset.go));
 $('#themeBtn').onclick = () => document.body.classList.toggle('light');
 
-$$('#gameSeg button').forEach(b => b.onclick = () => {
+$('#gameSeg button').forEach(b => b.onclick = async () => {
   state.game = b.dataset.game;
-  $$('#gameSeg button').forEach(x => x.classList.toggle('active', x === b));
+  $('#gameSeg button').forEach(x => x.classList.toggle('active', x === b));
+  const lang=$('#marketLanguage');
+  if(state.game==='palworld'){ state.marketLanguage='EN'; lang.value='EN'; lang.disabled=true; }
+  else { lang.disabled=false; state.marketLanguage=lang.value; if(state.marketLanguage==='JP') await ensureJPCatalog(); }
+  renderMarket();
+});
+$('#marketLanguage').addEventListener('change', async e => {
+  state.marketLanguage=e.target.value;
+  if(state.marketLanguage==='JP') await ensureJPCatalog();
   renderMarket();
 });
 
@@ -181,7 +189,7 @@ function bindRows(root) {
 }
 
 function renderMarket() {
-  const cards = state.cards.filter(c => c.game === state.game && c.availability === 'released');
+  const cards = state.cards.filter(c => c.game === state.game && (c.language||'EN') === state.marketLanguage && c.availability === 'released');
   const priced = cards.filter(c => observed(c)); 
   const pricedEUR = cards.filter(c => c.marketEUR != null);
   const pricedUSD = cards.filter(c => c.market != null);
@@ -209,7 +217,7 @@ function renderMarket() {
   $('#pressureTable').innerHTML = pressure.length ? `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Rarity</th><th>Sales</th><th>Fresh asks</th><th>Pressure</th><th>Heat</th></tr></thead><tbody>${pressure.map(c=>`<tr class="click-row" data-id="${esc(c.id)}"><td><div class="mini-card">${c.image?`<img src="${esc(c.image)}" loading="lazy">`:''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set||'')}</small></div></div></td><td><span class="badge">${esc(c.rarity||'—')}</span></td><td>${c.demandPressureSales??'—'}</td><td>${c.demandPressureAsks??'—'}</td><td><b>${c.demandPressure.toFixed(1)}%</b></td><td><span class="badge">${esc(c.marketHeatLabel||'—')} · P${c.marketHeatPercentile??'—'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No sales + asks pressure data for this game yet.</div>';
   bindRows('#pressureTable');
 
-  const announced = state.cards.filter(c => c.game === state.game && c.availability !== 'released').length;
+  const announced = state.cards.filter(c => c.game === state.game && (c.language||'EN') === state.marketLanguage && c.availability !== 'released').length;
   const marketFresh = priced.filter(c => c.marketAsOf || c.cardmarketAsOf).length;
   $('#dataHealth').innerHTML = [
     ['Image coverage', `${Math.round(imaged / Math.max(1,cards.length)*100)}%`, `${imaged.toLocaleString()} / ${cards.length.toLocaleString()}`],
@@ -243,6 +251,7 @@ function signalBadges(c) {
 function applyFilters() {
   const q = $('#search').value.trim().toLowerCase();
   const gf = $('#gameFilter').value;
+  const lf = $('#languageFilter').value;
   const sf = $('#setFilter').value;
   const rf = $('#rarityFilter').value;
   const af = $('#availabilityFilter').value;
@@ -252,6 +261,7 @@ function applyFilters() {
 
   let a = state.cards.filter(c =>
     (gf === 'all' || c.game === gf) &&
+    (lf === 'all' || (c.language||'EN') === lf) &&
     (sf === 'all' || c.set === sf) &&
     (rf === 'all' || c.rarity === rf) &&
     (af === 'all' || c.availability === af) &&
@@ -274,14 +284,23 @@ function applyFilters() {
   renderCards();
 }
 
-['search','setFilter','rarityFilter','availabilityFilter','signalFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
-  $('#'+id).addEventListener(id === 'search' ? 'input' : 'change', () => { state.page = 1; applyFilters(); })
+['setFilter','rarityFilter','availabilityFilter','signalFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
+  $('#'+id).addEventListener('change', () => { state.page = 1; applyFilters(); })
 );
-$('#gameFilter').addEventListener('change', () => {
+let searchTimer=null;
+$('#search').addEventListener('input',()=>{ clearTimeout(searchTimer); searchTimer=setTimeout(()=>{state.page=1;applyFilters();},120); });
+$('#languageFilter').addEventListener('change', async () => {
+  const lang=$('#languageFilter').value;
+  if(lang==='JP' || lang==='all') await ensureJPCatalog();
+  updateSetOptions(); state.page=1; applyFilters();
+});
+$('#gameFilter').addEventListener('change', async () => {
+  if($('#gameFilter').value==='palworld' && $('#languageFilter').value==='JP') $('#languageFilter').value='EN';
+  if($('#languageFilter').value==='JP' || $('#languageFilter').value==='all') await ensureJPCatalog();
   updateSetOptions(); state.page = 1; applyFilters();
 });
 $('#resetFiltersBtn').onclick = () => {
-  $('#search').value=''; $('#gameFilter').value='all'; updateSetOptions(); $('#setFilter').value='all';
+  $('#search').value=''; $('#gameFilter').value='all'; $('#languageFilter').value='EN'; updateSetOptions(); $('#setFilter').value='all';
   $('#rarityFilter').value='all'; $('#availabilityFilter').value='released'; $('#signalFilter').value='all';
   $('#sort').value='investment-desc'; $('#premiumOnly').checked=false; $('#pricedOnly').checked=false;
   state.page=1; applyFilters();
@@ -404,7 +423,7 @@ function renderViewer() {
     !c.market ? '<span class="badge">Market pending</span>' : ''
   ].join('');
 
-  const familyKey=[c.game,c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
+  const familyKey=[c.game,c.language||'EN',c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
   const family=state.printingFamilies.get(familyKey)||[c];
   $('#printingFamilyCount').textContent=family.length + (family.length===1?' printing':' printings');
   $('#printingFamily').innerHTML=family.map(x => `<button class="printing-chip ${x.id===c.id?'active':''}" data-family-id="${esc(x.id)}" title="${esc(x.code||'')}">
