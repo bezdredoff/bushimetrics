@@ -26,8 +26,7 @@ def compact(raw,path):
       'cardType':TYPE_MAP.get(str(raw.get('cardType') or '').upper(),raw.get('cardType')),
       'color':str(raw.get('colour') or '').title() or None,
       'image':raw.get('imageURL'),
-      'identitySource':f'https://github.com/Akenaide/wsoffdata/blob/master/{set_id}/{path.name}',
-      'catalogSource':'Akenaide/wsoffdata / official ws-tcg.com artwork',
+      'sourceFile':f'{set_id}/{path.name}',
       'availability':'released',
       'market':None,'priceSource':None
     }
