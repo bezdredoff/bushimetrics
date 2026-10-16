@@ -83,6 +83,42 @@ def attach_character_premium(cards):
         c['characterPremiumConfidence']='High' if n>=4 else ('Medium' if n>=2 else 'Low')
     return cards
 
+def attach_market_pressure(cards):
+    """Attach a current absorption proxy where completed-sales + fresh-ask data exist.
+
+    This is deliberately NOT called historical HYPE. HYPE needs an own-card time
+    baseline and will only be derived after enough daily snapshots accumulate.
+    """
+    measured=[]
+    for c in cards:
+        sales=c.get('salesInWindow')
+        if sales is None:sales=c.get('salesInBasis')
+        asks=c.get('marketAskCount')
+        try:sales=float(sales) if sales is not None else None
+        except:sales=None
+        try:asks=float(asks) if asks is not None else None
+        except:asks=None
+        if sales is None or asks is None or sales+asks<=0:
+            c['demandPressure']=None
+            c['marketHeatPercentile']=None
+            continue
+        pressure=100*sales/(sales+asks)
+        c['demandPressure']=round(pressure,1)
+        c['demandPressureSales']=int(sales)
+        c['demandPressureAsks']=int(asks)
+        measured.append((pressure,c))
+    if measured:
+        ordered=sorted(measured,key=lambda x:x[0])
+        n=len(ordered)
+        for i,(pressure,c) in enumerate(ordered):
+            # Mid-rank percentile; cross-sectional, not historical.
+            c['marketHeatPercentile']=round(100*(i+.5)/n)
+            c['marketHeatLabel']=('Hot' if c['marketHeatPercentile']>=80 else
+                                  'Warm' if c['marketHeatPercentile']>=60 else
+                                  'Neutral' if c['marketHeatPercentile']>=40 else
+                                  'Cool' if c['marketHeatPercentile']>=20 else 'Cold')
+    return cards
+
 def stable(c):
     raw='|'.join(str(c.get(k) or '') for k in ('game','code','rarity','edition','treatment','availability'))
     return hashlib.sha1(raw.encode()).hexdigest()[:16]
@@ -234,6 +270,7 @@ def main():
         out.append(c)
 
     attach_character_premium(out)
+    attach_market_pressure(out)
     out=[score(c,set_priors,game_priors,scarcity_evidence) for c in out]
 
     out.sort(key=lambda c:(c['game'],c.get('availability')!='released',c.get('set') or '',c.get('code') or ''))
@@ -276,7 +313,7 @@ def main():
     }
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),
-        'modelVersion':'0.5-character-premium',
+        'modelVersion':'0.6-demand-pressure',
         'counts':counts,
         'sets':set_rows,
         'cards':out
