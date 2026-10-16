@@ -1,0 +1,17 @@
+{
+  "manualPriced": 8,
+  "linkedDated": 0,
+  "indicationOnly": 8,
+  "indicationOnlyCodes": [
+    "SFN/S108-E074SSP",
+    "SFN/S108-E073SSP",
+    "NIK/S117-E087EX",
+    "NIK/S117-E085EX",
+    "EBP01-025SSP",
+    "EBP01-049SSP",
+    "EBP01-001SSP",
+    "ESOUL-002"
+  ],
+  "asOf": "2026-10-16",
+  "notice": "Unlinked manually entered prices are indications, not observed-market values or peer-model inputs. A dataset-level asOf is not a per-card observation date."
+}
