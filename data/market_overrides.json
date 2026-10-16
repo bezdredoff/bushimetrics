@@ -1,0 +1,46 @@
+{
+  "asOf": "2026-10-16",
+  "cards": {
+    "SFN/S108-E074SSP": {
+      "market": 1552.93,
+      "priceSource": "seeded validated market snapshot",
+      "confidence": "Medium"
+    },
+    "SFN/S108-E073SSP": {
+      "market": 649.99,
+      "priceSource": "seeded validated market snapshot",
+      "confidence": "Medium"
+    },
+    "NIK/S117-E087EX": {
+      "market": 1500,
+      "priceSource": "seeded validated market snapshot",
+      "confidence": "Medium"
+    },
+    "NIK/S117-E085EX": {
+      "market": 563.3,
+      "change7d": -0.3,
+      "priceSource": "seeded validated market snapshot",
+      "confidence": "Medium"
+    },
+    "EBP01-025SSP": {
+      "market": 795,
+      "priceSource": "recent sold-price snapshot",
+      "confidence": "Medium"
+    },
+    "EBP01-049SSP": {
+      "market": 380,
+      "priceSource": "recent sold-price snapshot",
+      "confidence": "Medium"
+    },
+    "EBP01-001SSP": {
+      "market": 450,
+      "priceSource": "recent sold-price snapshot",
+      "confidence": "Medium"
+    },
+    "EBP01-SSS": {
+      "market": 2400,
+      "priceSource": "thin sold-price snapshot",
+      "confidence": "Low"
+    }
+  }
+}
