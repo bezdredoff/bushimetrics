@@ -10,7 +10,8 @@ const state = {
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
   compare: safeJson(localStorage.getItem('bm-compare') || '[]', []).slice(0, 4),
-  portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {})
+  portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {}),
+  detailCache: new Map()
 };
 
 const currencyMoney = (v,currency='USD') => v == null || v === '' ? '—' : new Intl.NumberFormat(currency==='EUR'?'de-DE':'en-US', {
@@ -48,17 +49,33 @@ function enrichCard(c) {
   };
 }
 
+function expandBrowserCard(x) {
+  return enrichCard({
+    id:x.i, game:x.g, language:x.l||'EN', availability:x.a||'released',
+    name:x.n, set:x.s, code:x.c, rarity:x.r, image:x.im,
+    marketEUR:x.me, market:x.mu, fairEUR:x.fe, fair:x.fu,
+    investment:x.iq, momentum:x.mo, isPremium:!!x.p, rarityRank:x.rr,
+    marketHeatPercentile:x.hp, marketHeatLabel:x.hl,
+    characterPremiumIndex:x.cp, characterPremiumObservations:x.co,
+    marketKind:x.mk, marketConfidence:x.mc, confidence:x.cf,
+    fairValueConfidence:x.fc, change7d:x.d7, change30d:x.d30,
+    demandPressure:x.dp, demandPressureSales:x.ds, demandPressureAsks:x.da,
+    priceSource:x.ps, priceSourceEUR:x.pe, marketAsOf:x.ma, cardmarketAsOf:x.ca,
+    cardType:x.ct, color:x.cl
+  });
+}
+
 async function load() {
   const [catalog, history, sources, jpMeta] = await Promise.all([
-    fetch('data/catalog.json', {cache:'no-cache'}).then(r => {
-      if (!r.ok) throw new Error('catalog.json ' + r.status);
+    fetch('data/web/catalog-en.json', {cache:'no-cache'}).then(r => {
+      if (!r.ok) throw new Error('web/catalog-en.json ' + r.status);
       return r.json();
     }),
     fetch('data/history.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
   ]);
-  state.cards = (catalog.cards || []).map(enrichCard);
+  state.cards = (catalog.cards || []).map(expandBrowserCard);
   state.jpMeta = jpMeta || {};
   state.sets = [...(catalog.sets || []), ...((jpMeta && jpMeta.sets) || [])];
   state.history = history;
@@ -417,12 +434,38 @@ function renderSets() {
   $('#'+id).addEventListener(id === 'setSearch' ? 'input' : 'change', renderSets)
 );
 
+async function ensureCardDetail(id) {
+  const current=state.byId.get(id);
+  if (!current || current._detailLoaded) return current;
+  const shard=String(id||'0')[0].toLowerCase();
+  if (!state.detailCache.has(shard)) {
+    state.detailCache.set(shard, fetch(`data/web/details/${shard}.json`,{cache:'no-cache'})
+      .then(r=>r.ok?r.json():({cards:{}})).catch(()=>({cards:{}})));
+  }
+  const data=await state.detailCache.get(shard);
+  const full=(data.cards||{})[id];
+  if (!full) { current._detailLoaded=true; return current; }
+  const hydrated=enrichCard({...current,...full,_detailLoaded:true});
+  const idx=state.cards.findIndex(c=>c.id===id);
+  if (idx>=0) state.cards[idx]=hydrated;
+  state.byId.set(id,hydrated);
+  rebuildCardIndexes();
+  return hydrated;
+}
+
 function openViewer(id) {
   const c = state.byId.get(id);
   if (!c) return;
   state.viewerList = state.filtered.length && state.filtered.some(x => x.id === id) ? state.filtered : state.cards;
   state.viewerIndex = Math.max(0, state.viewerList.findIndex(x => x.id === id));
   renderViewer();
+  ensureCardDetail(id).then(full=>{
+    const active=state.viewerList[state.viewerIndex];
+    if (!full || !active || active.id!==id) return;
+    const pos=state.viewerList.findIndex(x=>x.id===id);
+    if (pos>=0) state.viewerList[pos]=full;
+    renderViewer();
+  });
   $('#viewer').classList.add('open');
   $('#viewer').setAttribute('aria-hidden','false');
   document.body.style.overflow = 'hidden';
@@ -814,7 +857,8 @@ function renderAll() {
 }
 
 load().catch(e => {
-  $('#catalogStatus').textContent='Failed to load catalog: '+e.message;
+  $('#catalogStatus').textContent='Failed to load compact browser catalog: '+e.message;
   $('#globalStatus').textContent='load failed';
+  const grid=$('#cardGrid'); if(grid) grid.innerHTML='<div class="empty-state">Card data failed to load. Refresh the page or open the GitHub issue link from the header.</div>';
   console.error(e);
 });
