@@ -10,7 +10,7 @@ cards={}
 for c in catalog.get('cards',[]):
     if c.get('availability')!='released': continue
     if c.get('market') is None and c.get('fair') is None: continue
-    cards[c['id']]={k:c.get(k) for k in ('market','fair','investment','momentum','confidence') if c.get(k) is not None}
+    cards[c['id']]={k:c.get(k) for k in ('market','fair','investment','momentum','confidence','demandPressure','marketHeatPercentile','characterPremiumIndex') if c.get(k) is not None}
 out={'date':today,'modelVersion':catalog.get('modelVersion'),'cards':cards}
 p=ROOT/'data/snapshots'/f'market-{today}.json';p.parent.mkdir(parents=True,exist_ok=True)
 p.write_text(json.dumps(out,separators=(',',':')),encoding='utf-8')

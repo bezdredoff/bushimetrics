@@ -166,12 +166,17 @@ function renderMarket() {
   $('#convictionTable').innerHTML = opportunityTable(conviction, true);
   bindRows('#convictionTable');
 
+  const pressure = cards.filter(c => c.demandPressure != null).sort((a,b)=>(b.marketHeatPercentile??-1)-(a.marketHeatPercentile??-1)).slice(0,15);
+  $('#pressureTable').innerHTML = pressure.length ? `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Rarity</th><th>Sales</th><th>Fresh asks</th><th>Pressure</th><th>Heat</th></tr></thead><tbody>${pressure.map(c=>`<tr class="click-row" data-id="${esc(c.id)}"><td><div class="mini-card">${c.image?`<img src="${esc(c.image)}" loading="lazy">`:''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set||'')}</small></div></div></td><td><span class="badge">${esc(c.rarity||'—')}</span></td><td>${c.demandPressureSales??'—'}</td><td>${c.demandPressureAsks??'—'}</td><td><b>${c.demandPressure.toFixed(1)}%</b></td><td><span class="badge">${esc(c.marketHeatLabel||'—')} · P${c.marketHeatPercentile??'—'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No sales + asks pressure data for this game yet.</div>';
+  bindRows('#pressureTable');
+
   const announced = state.cards.filter(c => c.game === state.game && c.availability !== 'released').length;
   const marketFresh = priced.filter(c => c.marketAsOf || c.cardmarketAsOf).length;
   $('#dataHealth').innerHTML = [
     ['Image coverage', `${Math.round(imaged / Math.max(1,cards.length)*100)}%`, `${imaged.toLocaleString()} / ${cards.length.toLocaleString()}`],
     ['Price coverage', `${Math.round(priced.length / Math.max(1,cards.length)*100)}%`, `€ ${pricedEUR.length.toLocaleString()} · $ ${pricedUSD.length.toLocaleString()}`],
     ['Dated prices', marketFresh.toLocaleString(), 'marketAsOf supplied'],
+    ['Pressure coverage', cards.filter(c=>c.demandPressure!=null).length.toLocaleString(), 'sales + fresh asks'],
     ['Announced', announced.toLocaleString(), 'kept separate from released']
   ].map(([a,b,c]) => `<div class="health-card"><span>${a}</span><b>${b}</b><small>${c}</small></div>`).join('');
 }
@@ -198,7 +203,7 @@ function applyFilters() {
   const sort = $('#sort').value;
   if (sort === 'name') a.sort((x,y) => (x.name||'').localeCompare(y.name||''));
   else {
-    const key = {market:'market',gap:'gap',investment:'investment',momentum:'momentum'}[sort.split('-')[0]];
+    const key = {market:'market',gap:'gap',investment:'investment',momentum:'momentum',heat:'marketHeatPercentile'}[sort.split('-')[0]];
     a.sort((x,y) => (Number(y[key]) || -Infinity) - (Number(x[key]) || -Infinity));
   }
 
@@ -352,7 +357,7 @@ function renderViewer() {
     ['Observed sold market (USD)',c.marketKind==='thin' ? '~'+money(c.market) : money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
     ['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
     ['Model fair (primary)',fairLabel(c)],['Fair-value gap',pct(c.gap)],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
-    ['Momentum',`${c.momentum}/100`],['Investment quality',`${c.investment}/100`],
+    ['Momentum',`${c.momentum}/100`],['Demand pressure',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · ${c.marketHeatLabel||''} P${c.marketHeatPercentile??'—'}`:'N/A'],['Investment quality',`${c.investment}/100`],
     ['Character premium',c.characterPremiumIndex!=null ? `${c.characterPremiumIndex} index · ${c.characterPremiumObservations||0} obs · ${c.characterPremiumConfidence||'Low'}` : 'Not enough peer pricing'],
     ['Confidence',c.confidence || 'Low'],
     ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending'],['Price qualifier',c.marketQualifier || (c.marketKind==='bare' ? 'Completed-sale estimate' : '—')]
