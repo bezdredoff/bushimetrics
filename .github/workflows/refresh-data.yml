@@ -91,8 +91,11 @@ jobs:
           TCGAPI_DAILY_REQUEST_BUDGET: '80'
         run: python scripts/enrich_market_tcgapi.py
 
-      - name: Build browser catalog
+      - name: Build analytical catalog
         run: python scripts/build_catalog.py
+
+      - name: Build per-set Pages browser catalog
+        run: python scripts/build_web_catalog.py
 
       - name: Validate catalog scale and coverage
         run: |
@@ -105,6 +108,15 @@ jobs:
           assert sum(x['game']=='palworld' and x.get('availability')=='released' for x in d['cards']) == 276, c
           assert c['imaged'] >= c['released'] * .90, c
           assert c['sets'] >= 100, c
+          web=json.load(open('data/web/meta.json',encoding='utf-8'))
+          print('Web payload',web)
+          assert web['searchENCards'] >= 30000, web
+          assert web['searchJPCards'] >= 50000, web
+          assert web['bootstrapBytes'] < 2_000_000, web
+          assert web['searchENBytes'] < 12_000_000, web
+          assert web['searchJPBytes'] < 16_000_000, web
+          assert web['setFileMaxBytes'] < 6_000_000, web
+          assert web['setFilesEN'] >= 100 and web['setFilesJP'] >= 100, web
           jp=json.load(open('data/catalog-weiss-jp-meta.json',encoding='utf-8'))
           print('JP',jp['counts'])
           assert jp['counts']['total'] >= 50000, jp['counts']
