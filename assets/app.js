@@ -11,7 +11,7 @@ const state = {
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
   compare: safeJson(localStorage.getItem('bm-compare') || '[]', []).slice(0, 4),
   portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {}),
-  detailCache: new Map()
+  detailCache: new Map(), fullCatalogLoaded: false, catalogGeneratedAt: null
 };
 
 const currencyMoney = (v,currency='USD') => v == null || v === '' ? '—' : new Intl.NumberFormat(currency==='EUR'?'de-DE':'en-US', {
@@ -66,31 +66,60 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [catalog, history, sources, jpMeta] = await Promise.all([
-    fetch('data/web/catalog-en.json', {cache:'no-cache'}).then(r => {
-      if (!r.ok) throw new Error('web/catalog-en.json ' + r.status);
+  const [bootstrap, history, sources, jpMeta] = await Promise.all([
+    fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
+      if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
     }),
     fetch('data/history.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
   ]);
-  state.cards = (catalog.cards || []).map(expandBrowserCard);
+
+  state.cards = (bootstrap.cards || []).map(expandBrowserCard);
   state.jpMeta = jpMeta || {};
-  state.sets = [...(catalog.sets || []), ...((jpMeta && jpMeta.sets) || [])];
+  state.sets = [...(bootstrap.sets || []), ...((jpMeta && jpMeta.sets) || [])];
   state.history = history;
   state.sources = sources;
+  state.catalogGeneratedAt = bootstrap.generatedAt || null;
   rebuildCardIndexes();
 
-  const counts = catalog.counts || {};
+  const counts = bootstrap.counts || {};
   const jpCounts = (jpMeta && jpMeta.counts) || {};
-  const totalReleased = Number(counts.released || state.cards.length) + Number(jpCounts.released || 0);
+  const totalReleased = Number(counts.released || 0) + Number(jpCounts.released || 0);
   $('#globalStatus').textContent = `${totalReleased.toLocaleString()} released`;
-  updateCatalogStatus(catalog.generatedAt);
+  updateCatalogStatus(bootstrap.generatedAt);
 
   initFilters();
   renderAll();
   restoreDeepLink();
+
+  // Full EN catalog loads after first paint. Bootstrap cards remain usable if
+  // the larger index is slow or temporarily unavailable.
+  loadFullBrowserCatalog();
+}
+
+async function loadFullBrowserCatalog() {
+  try {
+    $('#catalogStatus').textContent += ' · loading full EN catalog…';
+    const r=await fetch('data/web/catalog-en.json',{cache:'no-cache'});
+    if(!r.ok) throw new Error('web/catalog-en.json '+r.status);
+    const full=await r.json();
+    const jp=state.jpLoaded ? state.cards.filter(c=>(c.language||'EN')==='JP') : [];
+    state.cards=[...(full.cards||[]).map(expandBrowserCard),...jp];
+    state.fullCatalogLoaded=true;
+    state.catalogGeneratedAt=full.generatedAt||state.catalogGeneratedAt;
+    state.sets=[...(full.sets||[]),...((state.jpMeta&&state.jpMeta.sets)||[])];
+    rebuildCardIndexes();
+    initFilters();
+    renderAll();
+    updateCatalogStatus(state.catalogGeneratedAt);
+    toast(`Full catalog loaded: ${state.cards.length.toLocaleString()} cards in browser.`);
+  } catch(e) {
+    console.error(e);
+    $('#catalogStatus').textContent += ' · full catalog unavailable; showing bootstrap cards';
+    toast('Full catalog is temporarily unavailable; bootstrap cards remain usable.');
+  }
 }
 
 function rebuildCardIndexes() {
@@ -110,8 +139,9 @@ function updateCatalogStatus(generatedAt=null) {
   const jpAvailable=Number(state.jpMeta?.counts?.total||0);
   const loaded=state.cards.length;
   const jpText=jpAvailable ? (state.jpLoaded ? ' · JP loaded' : ` · +${jpAvailable.toLocaleString()} JP on demand`) : '';
+  const stage=state.fullCatalogLoaded ? '' : ' · bootstrap visible';
   $('#catalogStatus').textContent =
-    `${loaded.toLocaleString()} loaded printings${jpText} · ${state.sets.length.toLocaleString()} set/language groups` +
+    `${loaded.toLocaleString()} loaded printings${stage}${jpText} · ${state.sets.length.toLocaleString()} set/language groups` +
     (generatedAt ? ` · updated ${new Date(generatedAt).toLocaleString()}` : '');
 }
 
