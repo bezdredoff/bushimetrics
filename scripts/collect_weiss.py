@@ -20,7 +20,7 @@ def normalize_card(set_meta, card, source_path):
     code=(card.get('num') or '').strip()
     if not code: return None
     return {
-        'game':'weiss',
+        'game':'weiss','language':'EN',
         'name':(card.get('name') or code).strip(),
         'set':set_meta.get('name') or set_meta.get('id') or source_path.stem,
         'setId':set_meta.get('id') or source_path.stem,
