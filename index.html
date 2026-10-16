@@ -24,6 +24,7 @@
 <nav class="tabs" id="tabs">
   <button data-tab="market" class="active">Market</button>
   <button data-tab="cards">Cards</button>
+  <button data-tab="coverage">Coverage</button>
   <button data-tab="sets">Sets</button>
   <button data-tab="portfolio">Portfolio <span id="portfolioCount">0</span></button>
   <button data-tab="compare">Compare <span id="compareCount">0</span></button>
@@ -94,6 +95,15 @@
     </div>
   </div>
 
+  <div class="quick-presets" id="quickPresets">
+    <button class="preset active" data-preset="en-weiss">EN Weiss</button>
+    <button class="preset" data-preset="jp-weiss">JP Weiss</button>
+    <button class="preset" data-preset="palworld">Palworld</button>
+    <button class="preset" data-preset="premium">Premium</button>
+    <button class="preset" data-preset="priced">Priced</button>
+    <button class="preset" data-preset="all">Everything</button>
+  </div>
+
   <div class="filters filters-wide">
     <input id="search" placeholder="Search name, set, card number…">
     <select id="gameFilter"><option value="all">All games</option><option value="weiss">Weiss Schwarz</option><option value="palworld">Palworld OCG</option></select>
@@ -123,6 +133,13 @@
         <button id="prevPage">←</button>
         <span id="pageInfo"></span>
         <button id="nextPage">→</button>
+        <label class="pager-control">Per page
+          <select id="pageSizeSelect"><option>60</option><option>120</option><option>240</option></select>
+        </label>
+        <label class="pager-control">Go to
+          <input id="pageJump" type="number" min="1" step="1" value="1">
+        </label>
+        <button id="exportFilteredBtn" class="ghost">Export CSV</button>
       </div>
     </div>
     <aside class="side-stack">
@@ -140,6 +157,33 @@
         </div>
       </div>
     </aside>
+  </div>
+</section>
+
+
+<section id="coverage" class="view">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Catalog Coverage</p>
+      <h1>See exactly what is in BushiMetrics.</h1>
+      <p>No shortlist ambiguity: released/announced counts, language layers, sets, preview coverage and observed-market coverage are shown independently.</p>
+    </div>
+    <button id="loadJPCoverageBtn" class="ghost">Load full JP catalog</button>
+  </div>
+  <div id="coverageMetrics" class="metric-grid"></div>
+  <div class="dashboard-two">
+    <div class="panel">
+      <div class="panel-head"><div><h2>Catalog layers</h2><p>Separate databases that make up the browser catalog.</p></div></div>
+      <div id="coverageLayers"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div><h2>Coverage quality</h2><p>Artwork and price evidence are not conflated with identity coverage.</p></div></div>
+      <div id="coverageQuality" class="health-grid"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><div><h2>Largest sets</h2><p>Useful sanity check that the catalog is not a small curated sample.</p></div></div>
+    <div id="coverageSets"></div>
   </div>
 </section>
 

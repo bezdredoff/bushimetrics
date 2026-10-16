@@ -169,6 +169,7 @@ function goto(tab) {
   if (tab === 'portfolio') renderPortfolio();
   if (tab === 'compare') renderCompare();
   if (tab === 'sets') renderSets();
+  if (tab === 'coverage') renderCoverage();
 }
 $$('#tabs button').forEach(b => b.onclick = () => goto(b.dataset.tab));
 $$('[data-go]').forEach(b => b.onclick = () => goto(b.dataset.go));
@@ -317,7 +318,7 @@ $('#gameFilter').addEventListener('change', async () => {
   updateSetOptions(); state.page = 1; applyFilters();
 });
 $('#resetFiltersBtn').onclick = () => {
-  $('#search').value=''; $('#gameFilter').value='all'; $('#languageFilter').value='EN'; updateSetOptions(); $('#setFilter').value='all';
+  $('#search').value=''; $('#gameFilter').value='all'; $('#languageFilter').value='EN'; updateSetOptions(); $('#setFilter').value='all'; $('#quickPresets .preset').forEach(b=>b.classList.remove('active'));
   $('#rarityFilter').value='all'; $('#availabilityFilter').value='released'; $('#signalFilter').value='all';
   $('#sort').value='investment-desc'; $('#premiumOnly').checked=false; $('#pricedOnly').checked=false;
   state.page=1; applyFilters();
@@ -359,7 +360,7 @@ function renderCards() {
   $('#cardTable').classList.toggle('hidden', isGrid);
   $$('#cardGrid [data-id], #cardTable [data-id]').forEach(el => el.onclick = () => openViewer(el.dataset.id));
 
-  $('#pageInfo').textContent = `${state.page} / ${pages} · ${state.filtered.length.toLocaleString()} cards`;
+  $('#pageInfo').textContent = `${state.page} / ${pages} · ${state.filtered.length.toLocaleString()} cards`; $('#pageJump').max=String(pages); $('#pageJump').value=String(state.page);
   renderWatch();
 }
 
@@ -701,6 +702,83 @@ $('#importLocalFile').onchange = async e => {
   e.target.value='';
 };
 
+
+function setExplorerPreset(name) {
+  $('#quickPresets .preset').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
+  $('#search').value=''; $('#setFilter').value='all'; $('#rarityFilter').value='all'; $('#availabilityFilter').value='released'; $('#signalFilter').value='all';
+  $('#premiumOnly').checked=false; $('#pricedOnly').checked=false;
+  if (name === 'en-weiss') { $('#gameFilter').value='weiss'; $('#languageFilter').value='EN'; }
+  if (name === 'jp-weiss') { $('#gameFilter').value='weiss'; $('#languageFilter').value='JP'; }
+  if (name === 'palworld') { $('#gameFilter').value='palworld'; $('#languageFilter').value='EN'; }
+  if (name === 'premium') { $('#gameFilter').value='all'; $('#languageFilter').value='EN'; $('#premiumOnly').checked=true; }
+  if (name === 'priced') { $('#gameFilter').value='all'; $('#languageFilter').value='EN'; $('#pricedOnly').checked=true; $('#sort').value='market-desc'; }
+  if (name === 'all') { $('#gameFilter').value='all'; $('#languageFilter').value='all'; }
+}
+$('#quickPresets .preset').forEach(btn => btn.onclick = async () => {
+  const name=btn.dataset.preset;
+  if (name === 'jp-weiss' || name === 'all') await ensureJPCatalog();
+  setExplorerPreset(name); updateSetOptions(); state.page=1; applyFilters(); goto('cards');
+});
+
+$('#pageSizeSelect').value=String(state.pageSize);
+$('#pageSizeSelect').addEventListener('change',e=>{state.pageSize=Number(e.target.value)||60;state.page=1;renderCards();});
+$('#pageJump').addEventListener('change',e=>{
+  const pages=Math.max(1,Math.ceil(state.filtered.length/state.pageSize));
+  state.page=Math.max(1,Math.min(pages,Number(e.target.value)||1)); renderCards();
+});
+
+function csvCell(v){const x=String(v??'');return /[",\n]/.test(x)?'"'+x.replaceAll('"','""')+'"':x;}
+function exportFilteredCsv(){
+  const rows=[['game','language','set','name','code','rarity','availability','marketEUR','marketUSD','fairEUR','fairUSD','gapPct','investment','momentum','image']];
+  for(const c of state.filtered) rows.push([c.game,c.language||'EN',c.set,c.name,c.code,c.rarity,c.availability,c.marketEUR,c.market,c.fairEUR,c.fair,c.gap,c.investment,c.momentum,c.image]);
+  const blob=new Blob([rows.map(r=>r.map(csvCell).join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bushimetrics-filtered-cards.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+$('#exportFilteredBtn').onclick=exportFilteredCsv;
+
+function renderCoverage(){
+  const en=state.cards.filter(c=>c.game==='weiss'&&(c.language||'EN')==='EN'&&c.availability==='released');
+  const jpLoaded=state.cards.filter(c=>c.game==='weiss'&&(c.language||'EN')==='JP'&&c.availability==='released');
+  const jpCount=Number(state.jpMeta?.counts?.released||jpLoaded.length||0);
+  const pal=state.cards.filter(c=>c.game==='palworld'&&c.availability==='released');
+  const announced=state.cards.filter(c=>c.game==='palworld'&&c.availability!=='released');
+  const releasedTotal=en.length+jpCount+pal.length;
+  const enSets=new Set(en.map(c=>c.set).filter(Boolean)).size;
+  const jpSets=Number(state.jpMeta?.counts?.sets||new Set(jpLoaded.map(c=>c.set).filter(Boolean)).size||0);
+  const palSets=new Set(pal.map(c=>c.set).filter(Boolean)).size;
+  const enPrice=en.filter(c=>observed(c)).length, palPrice=pal.filter(c=>observed(c)).length, enImg=en.filter(c=>c.image).length, palImg=pal.filter(c=>c.image).length;
+  $('#coverageMetrics').innerHTML=[
+    ['Released printings',releasedTotal.toLocaleString(),'EN Weiss + JP Weiss + Palworld'],
+    ['English Weiss',en.length.toLocaleString(),enSets.toLocaleString()+' sets'],
+    ['Japanese Weiss',jpCount.toLocaleString(),jpSets.toLocaleString()+' sets · '+(state.jpLoaded?'loaded':'lazy')],
+    ['Palworld',pal.length.toLocaleString(),announced.length.toLocaleString()+' announced separate']
+  ].map(([l,v,d])=>`<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="delta">${d}</div></div>`).join('');
+
+  const layers=[
+    ['Weiss Schwarz · EN',en.length,enSets,enImg,enPrice,'Loaded immediately'],
+    ['Weiss Schwarz · JP',jpCount,jpSets,Number(state.jpMeta?.counts?.imaged||0),0,state.jpLoaded?'Loaded in browser':'Loaded on demand'],
+    ['Palworld OCG · EN',pal.length,palSets,palImg,palPrice,'Loaded immediately'],
+    ['Palworld announced',announced.length,new Set(announced.map(c=>c.set).filter(Boolean)).size,announced.filter(c=>c.image).length,0,'Excluded from released inventory']
+  ];
+  $('#coverageLayers').innerHTML=`<div class="table-scroll"><table><thead><tr><th>Layer</th><th>Printings</th><th>Sets</th><th>Images</th><th>Priced</th><th>Status</th></tr></thead><tbody>${layers.map(x=>`<tr><td><b>${x[0]}</b></td><td>${Number(x[1]).toLocaleString()}</td><td>${Number(x[2]).toLocaleString()}</td><td>${Number(x[3]||0).toLocaleString()}</td><td>${Number(x[4]||0).toLocaleString()}</td><td><span class="badge">${x[5]}</span></td></tr>`).join('')}</tbody></table></div>`;
+
+  const totalImmediate=en.length+pal.length;
+  const immediateImages=enImg+palImg;
+  const immediatePriced=enPrice+palPrice;
+  $('#coverageQuality').innerHTML=[
+    ['Immediate image coverage',Math.round(immediateImages/Math.max(1,totalImmediate)*100)+'%',immediateImages.toLocaleString()+' / '+totalImmediate.toLocaleString()],
+    ['Immediate price coverage',Math.round(immediatePriced/Math.max(1,totalImmediate)*100)+'%',immediatePriced.toLocaleString()+' observed'],
+    ['Premium EN+Pal',state.cards.filter(c=>(c.language||'EN')==='EN'&&(c.isPremium||premium.has(c.rarity))&&c.availability==='released').length.toLocaleString(),'distinct premium printings'],
+    ['Total set groups',(enSets+jpSets+palSets).toLocaleString(),'language-specific set groups']
+  ].map(([a,b,c])=>`<div class="health-card"><span>${a}</span><b>${b}</b><small>${c}</small></div>`).join('');
+
+  const top=[...state.sets].sort((a,b)=>(Number(b.total)||0)-(Number(a.total)||0)).slice(0,20);
+  $('#coverageSets').innerHTML=`<div class="table-scroll"><table><thead><tr><th>Set</th><th>Game</th><th>Lang</th><th>Total</th><th>Premium</th><th>Images</th><th>Priced</th></tr></thead><tbody>${top.map(x=>`<tr><td><b>${esc(x.name)}</b></td><td>${esc(gameLabel(x.game))}</td><td>${esc(x.language||'EN')}</td><td>${Number(x.total||0).toLocaleString()}</td><td>${Number(x.premium||0).toLocaleString()}</td><td>${x.imageCoverage??0}%</td><td>${x.priceCoverage??0}%</td></tr>`).join('')}</tbody></table></div>`;
+  $('#loadJPCoverageBtn').textContent=state.jpLoaded?'JP catalog loaded':'Load full JP catalog';
+  $('#loadJPCoverageBtn').disabled=state.jpLoaded;
+}
+$('#loadJPCoverageBtn').onclick=async()=>{await ensureJPCatalog();renderCoverage();renderSets();};
+
 function renderBacktest() {
   const sets=state.history.sets||[];
   $('#backtestContent').innerHTML = `<div class="backtest-grid">${sets.map(s=>`<div class="source-card">
@@ -732,7 +810,7 @@ function restoreDeepLink() {
 }
 
 function renderAll() {
-  renderMarket(); applyFilters(); renderSets(); renderWatch(); renderPortfolio(); renderCompare(); renderBacktest(); renderSources(); updatePortfolioCount(); persistCompare();
+  renderMarket(); applyFilters(); renderCoverage(); renderSets(); renderWatch(); renderPortfolio(); renderCompare(); renderBacktest(); renderSources(); updatePortfolioCount(); persistCompare();
 }
 
 load().catch(e => {

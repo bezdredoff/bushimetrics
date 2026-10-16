@@ -28,3 +28,9 @@
 .signal-risk{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
 
 .hero-controls{display:flex;flex-direction:column;gap:8px;align-items:flex-end}.compact-select{background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:9px 12px}.compact-select:disabled{opacity:.45}@media(max-width:600px){.hero-controls{align-items:stretch;width:100%}}
+
+.quick-presets{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}.quick-presets .preset{border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:8px 12px;border-radius:999px;cursor:pointer}.quick-presets .preset:hover,.quick-presets .preset.active{color:var(--text);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 9%,var(--panel))}
+.pager{flex-wrap:wrap}.pager-control{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px}.pager-control select,.pager-control input{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:7px 8px}.pager-control input{width:72px}
+#coverage .dashboard-two{margin-top:0}#coverage .health-grid{grid-template-columns:repeat(2,1fr)}
+#loadJPCoverageBtn:disabled{opacity:.45;cursor:default}
+@media(max-width:760px){.quick-presets{overflow:auto;flex-wrap:nowrap;padding-bottom:3px}.quick-presets .preset{white-space:nowrap}.pager{justify-content:flex-start}#coverage .health-grid{grid-template-columns:1fr}}
