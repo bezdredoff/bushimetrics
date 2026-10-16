@@ -1,0 +1,56 @@
+name: Refresh market data
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'data/manual_overrides.json'
+      - 'requirements.txt'
+      - '.github/workflows/refresh-data.yml'
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: refresh-market-data
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Collect Weiss Schwarz full catalog
+        run: python scripts/collect_weiss.py
+      - name: Collect Palworld official full catalog
+        run: python scripts/collect_palworld.py
+      - name: Enrich premium Weiss images
+        run: python scripts/enrich_weiss_images.py --limit 800
+        continue-on-error: true
+      - name: Build catalog
+        run: python scripts/build_catalog.py
+      - name: Store immutable daily snapshot
+        shell: bash
+        run: |
+          mkdir -p data/snapshots
+          cp data/catalog.json "data/snapshots/catalog-$(date -u +%F).json"
+      - name: Validate snapshot history
+        run: python scripts/backtest.py
+      - name: Commit refreshed data
+        shell: bash
+        run: |
+          if git diff --quiet -- data; then
+            echo "No data changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -m "data: refresh card catalog $(date -u +%F)"
+          git push
