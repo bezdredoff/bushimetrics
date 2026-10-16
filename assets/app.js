@@ -22,7 +22,7 @@ const observed = c => c.marketEUR != null ? {value:Number(c.marketEUR),currency:
   (c.market != null ? {value:Number(c.market),currency:'USD',source:c.priceSource||'market'} : null);
 const modelFair = c => c.marketEUR != null && c.fairEUR != null ? {value:Number(c.fairEUR),currency:'EUR'} :
   (c.market != null && c.fair != null ? {value:Number(c.fair),currency:'USD'} : null);
-const observedLabel = c => { const p=observed(c); return p ? currencyMoney(p.value,p.currency) : '—'; };
+const observedLabel = c => { const p=observed(c); if(!p) return '—'; const label=currencyMoney(p.value,p.currency); return c.marketKind==='thin' ? '~'+label : label; };
 const fairLabel = c => { const p=modelFair(c); return p ? currencyMoney(p.value,p.currency) : '—'; };
 const pct = v => v == null || Number.isNaN(Number(v)) ? '—' : `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(1)}%`;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
@@ -325,11 +325,12 @@ function renderViewer() {
   $('#viewerStats').innerHTML = [
     ['Cardmarket trend (EUR)',euro(c.marketEUR)],['Cardmarket low (EUR)',euro(c.marketEURLow)],
     ['Cardmarket 7d avg',euro(c.marketEURAvg7)],['Cardmarket 30d avg',euro(c.marketEURAvg30)],
-    ['TCGPlayer market (USD)',money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
+    ['Observed sold market (USD)',c.marketKind==='thin' ? '~'+money(c.market) : money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
+    ['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
     ['Model fair (primary)',fairLabel(c)],['Fair-value gap',pct(c.gap)],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
     ['Momentum',`${c.momentum}/100`],['Investment quality',`${c.investment}/100`],
     ['Confidence',c.confidence || 'Low'],
-    ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending']
+    ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending'],['Price qualifier',c.marketQualifier || (c.marketKind==='bare' ? 'Completed-sale estimate' : '—')]
   ].map(([a,b]) => `<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
 
   const factors = c.modelFactors || {};
@@ -353,6 +354,8 @@ function renderViewer() {
   if (src) $('#sourceBtn').href = src;
   $('#imageBtn').style.display = c.image ? 'inline-flex' : 'none';
   if (c.image) $('#imageBtn').href = c.image;
+  $('#marketSourceBtn').style.display = c.marketSourceUrl ? 'inline-flex' : 'none';
+  if (c.marketSourceUrl) $('#marketSourceBtn').href = c.marketSourceUrl;
 
   $('#watchBtn').textContent = state.watch.has(c.id) ? 'Watching' : 'Watch';
   $('#compareBtn').textContent = state.compare.includes(c.id) ? 'In compare' : 'Compare';

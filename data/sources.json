@@ -25,6 +25,12 @@
       "description": "Official source used to close the gap between the GitHub baseline and newly released ESS/promotional printings, and to keep announced future promos separate from released cards."
     },
     {
+      "name": "Palworld Prices",
+      "role": "Palworld completed-sale market data",
+      "url": "https://palworldprices.com/docs/api/",
+      "description": "Free key-less JSON API over completed sales. BushiMetrics preserves confidence tiers, thin-sample qualifiers, sample size and evidence-page links; asking prices remain separate context."
+    },
+    {
       "name": "TCG API / TCGPlayer",
       "role": "Optional observed market enrichment",
       "url": "https://tcgapi.dev/games/weiss-schwarz/",

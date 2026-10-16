@@ -66,6 +66,9 @@ jobs:
       - name: Enrich public Cardmarket EUR prices
         run: python scripts/enrich_market_cardmarket.py
 
+      - name: Enrich Palworld completed-sale prices
+        run: python scripts/enrich_market_palworldprices.py
+
       - name: Incrementally enrich TCGPlayer USD prices
         env:
           TCGAPI_KEY: ${{ secrets.TCGAPI_KEY }}
