@@ -110,9 +110,14 @@ jobs:
           assert c['sets'] >= 100, c
           web=json.load(open('data/web/meta.json',encoding='utf-8'))
           print('Web payload',web)
-          assert web['compactCards'] >= 30000, web
-          assert web['compactBytes'] < 20_000_000, web
-          assert web['detailShardMaxBytes'] < 8_000_000, web
+          assert web['searchENCards'] >= 30000, web
+          assert web['searchJPCards'] >= 50000, web
+          assert web['bootstrapBytes'] < 2_000_000, web
+          assert web['searchENBytes'] < 12_000_000, web
+          assert web['searchJPBytes'] < 16_000_000, web
+          assert web['setFileMaxBytes'] < 6_000_000, web
+          assert web['setFilesEN'] >= 100, web
+          assert web['setFilesJP'] >= 100, web
           jp=json.load(open('data/catalog-weiss-jp-meta.json',encoding='utf-8'))
           print('JP',jp['counts'])
           assert jp['counts']['total'] >= 50000, jp['counts']
