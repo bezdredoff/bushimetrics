@@ -43,10 +43,10 @@
       "description": "Daily Weiss market prices and 24h/7d/30d changes. Requires TCGAPI_KEY; missing price data never blocks the catalog and is never replaced with a retailer ask."
     },
     {
-      "name": "Manual validated snapshots",
-      "role": "Thin-market fallback",
+      "name": "Manual research price indications",
+      "role": "Excluded from observed market unless independently linked and dated",
       "url": "https://github.com/bezdredoff/bushimetrics/blob/main/data/market_overrides.json",
-      "description": "Versioned observations for selected cards when automated coverage is missing. Every override includes an as-of context and remains distinct from model fair value."
+      "description": "The existing manual USD quote table includes entries without individual external sale/page URLs and card-level dates. Such records are research indications only: they must not override a priced provider record or train Peer Fair Value. A global file asOf date is not an individual transaction date."
     }
   ],
   "methodology": {

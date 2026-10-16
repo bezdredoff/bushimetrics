@@ -4,6 +4,7 @@ import hashlib,json,math,re
 from collections import defaultdict
 from datetime import datetime,timezone
 from pathlib import Path
+from market_provenance import choose_usd_market, describe_usd_evidence, audit_manual_prices
 
 ROOT=Path(__file__).resolve().parents[1]
 DATA=ROOT/'data'; RAW=DATA/'raw'; MARKET=DATA/'market'
@@ -198,17 +199,14 @@ def prior_for(c,set_priors,game_priors):
     found=next((v for k,v in set_priors.items() if k.lower() in key),None)
     return found or game_priors.get(c.get('game'),{})
 
-def apply_market(c,tcgapi,palworldprices,manual_market,seed_market):
+def apply_market(c,price_sources,palworldprices,manual_market,seed_market):
     code=str(c.get('code') or '')
-    # Priority: explicit validated override > API cache > legacy seed.
-    src=None
-    if code in seed_market: src=seed_market[code]
-    pwp=palworldprices.get(code)
-    if pwp: src={**(src or {}),**pwp}
-    api=tcgapi.get(code)
-    if api and api.get('market') is not None: src={**(src or {}),**api}
-    if code in manual_market: src={**(src or {}),**manual_market[code]}
-    if not src:return c
+    source, indication = choose_usd_market(
+        code, price_sources, palworldprices, manual_market, seed_market
+    )
+    c.update(indication)
+    if source is None:
+        return c
     mapping={
       'market':'market','low':'marketLow','median':'marketMedian',
       'change24h':'change24h','change7d':'change7d','change30d':'change30d',
@@ -222,7 +220,9 @@ def apply_market(c,tcgapi,palworldprices,manual_market,seed_market):
       'palworldPricesCardId':'palworldPricesCardId'
     }
     for a,b in mapping.items():
-        if src.get(a) is not None:c[b]=src[a]
+        if source.get(a) is not None:
+            c[b] = source[a]
+    c.update(describe_usd_evidence(source))
     return c
 
 def scarcity_for(c,evidence,rr):
@@ -290,12 +290,13 @@ def main():
     pa=read(RAW/'palworld.json',{'cards':[]})
     manual=read(DATA/'manual_overrides.json',{})
     printing=read(DATA/'printing_overrides.json',{'cards':{}}).get('cards',{})
-    market_overrides=read(DATA/'market_overrides.json',{'cards':{}}).get('cards',{})
+    market_file=read(DATA/'market_overrides.json',{'cards':{}})
+    market_overrides=market_file.get('cards',{})
     tcgcsv=read(MARKET/'tcgcsv.json',{'cards':{}}).get('cards',{})
     tcgapi=read(MARKET/'tcgapi.json',{'cards':{}}).get('cards',{})
     # Public TCGCSV is the baseline USD layer; optional TCG API overrides it
     # when a fresher authenticated row exists for the same collector number.
-    usd_market={**tcgcsv,**tcgapi}
+    usd_market={**tcgcsv,**{code:row for code,row in tcgapi.items() if row.get('market') is not None}}
     palworldprices_file=read(MARKET/'palworldprices.json',{'cards':{}})
     palworldprices=palworldprices_file.get('cards',{})
     cardmarket_file=read(MARKET/'cardmarket.json',{'cards':{}})
@@ -396,6 +397,10 @@ def main():
     }
     DATA.mkdir(exist_ok=True)
     (DATA/'catalog.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+    source_audit=audit_manual_prices(market_overrides)
+    source_audit['generatedAt']=payload['generatedAt']
+    (DATA/'market-source-audit.json').write_text(json.dumps(source_audit,indent=2),encoding='utf-8')
+    print('market source audit',source_audit)
     print(counts)
 
 if __name__=='__main__':main()

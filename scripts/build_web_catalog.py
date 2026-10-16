@@ -25,6 +25,8 @@ SEARCH_FIELDS={
     'investment':'iq','momentum':'mo','isPremium':'p','rarityRank':'rr',
     'marketHeatPercentile':'hp','characterPremiumIndex':'cp',
     'characterPremiumObservations':'co','marketKind':'mk','marketConfidence':'mc',
+    'marketEvidenceStatus':'es','marketObservationAgeDays':'ea',
+    'marketStale':'st','unverifiedMarketIndicationUSD':'ui',
     'confidence':'cf','fairValueConfidence':'fc','change7d':'d7','change30d':'d30',
     'demandPressure':'dp','cardType':'ct','color':'cl'
 }

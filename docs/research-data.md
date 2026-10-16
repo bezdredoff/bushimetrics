@@ -20,3 +20,13 @@ Source research: https://ws-tcg.com/cardlist/search/ (JP card identities, not so
 Remaining: independently verified listing/sold inventory and history; carton breaks; verified edition identifiers; grading cohorts; franchise activity/retention; cross-rarity Pal/human and signature premiums; trained weights and prospective backtesting; browser E2E acceptance tests. New raw evidence must be reviewed before inclusion in the production catalog.
 
 The published `data/research_status.json` is initially empty and explicitly reports no evaluated printing-level research observations. The card viewer renders per-metric unavailable reasons; the separate catalog price layer is unaffected. After curating and reviewing observations, run `python scripts/evaluate_market_evidence.py` and commit the validated status report. The report is not automatically promoted from unsourced market records.
+
+## Manual price quarantine and independent age checks
+
+The current manually entered USD quote file contains **8 price indications with no per-card independent evidence URL** (as of the 2026-10-16 audit). Their values remain visible only as separately marked *unverified research indications*; they are not included as observed market prices or fitted peer-price samples. The legacy seed prices follow the same rule. A dated URL-backed override can be included as a **source-linked observation** but is not automatically a confirmed completed sale.
+
+When a vetted override replaces an automated provider, the original provider's sales counts, listing inventory and source link are **not inherited**. Source metadata must always travel atomically with its price.
+
+USD observation freshness is computed from `marketAsOf` (currently **older than 14 days** or undated is labeled stale) even if a provider flag says `stale=false`. Freshness and completed-sale sample confidence are separate dimensions. The market source audit appears in `data/market-source-audit.json` and in the Sources tab after the next catalog refresh.
+
+External verified sources may still be unavailable; adding a guessed price or linking only to BushiMetrics' own JSON does not constitute independently verified evidence.

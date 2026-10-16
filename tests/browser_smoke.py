@@ -64,6 +64,8 @@ def main():
             assert page.locator("#compareGrid").inner_text().strip()
             page.locator('[data-tab="sources"]').click()
             assert "Research model availability" in page.locator("#sourcesContent").inner_text()
+            assert "Market source audit" in page.locator("#sourcesContent").inner_text()
+            assert "Missing independent source or card-level date" in page.locator("#sourcesContent").inner_text()
             # The full Japanese index must load on demand, rather than being claimed by metadata alone.
             page.locator('[data-tab="cards"]').click()
             page.locator('[data-preset="jp-weiss"]').click()
