@@ -44,7 +44,7 @@
     }
   ],
   "methodology": {
-    "title": "Investment Quality v0.5",
+    "title": "Investment Quality + Peer Fair Value v0.7",
     "description": "Transparent heuristic model with a data-driven peer-relative Character Premium layer; walk-forward calibration remains pending until enough immutable daily snapshots accumulate.",
     "factors": [
       {
@@ -93,11 +93,12 @@
         "description": "First edition / distinguishable reprint structure, only when verified."
       }
     ],
-    "fairValue": "Fair Value is only calculated when an observed market price exists. It is a relative model estimate, not an appraisal or guaranteed future price.",
+    "fairValue": "Peer Fair Value is a leave-one-out cross-sectional prediction: median observed price of other printings with the same set/rarity/currency × collector-subject premium estimated from other printings of that subject. The target card's own observed price is excluded. If peer support is insufficient, Fair Value is N/A rather than imputed.",
     "backtest": "Daily compact market snapshots are stored without future data. 30/90/180-day MAE and directional accuracy will only be shown after each horizon has genuinely elapsed.",
-    "characterPremium": "Index 100 means the card trades in line with same-set/same-rarity peers. >100 means a premium; <100 means a discount. Ratios are winsorized before aggregation and confidence depends on the number of priced parallel printings.",
+    "characterPremium": "Subject Premium controls for rarity before measuring demand. Palworld uses the Pal/subject before the subtitle; Weiss Character cards use a best-effort subject parser (for example, the name after a title/comma). Index 100 means in-line with same-set/same-rarity peers. This descriptive index may include the card's own market observation; Fair Value uses a separate leave-one-out subject ratio.",
     "demandPressure": "Current absorption proxy = completed sales / (completed sales + fresh asks) where both inputs exist. Market Heat is a cross-sectional percentile among cards with pressure data, not a historical HYPE score.",
-    "hype": "True HYPE requires comparing a card's current demand pressure with its own historical baseline. Daily snapshots now retain demandPressure so 30/60-day HYPE can be activated only after sufficient history exists."
+    "hype": "True HYPE requires comparing a card's current demand pressure with its own historical baseline. Daily snapshots now retain demandPressure so 30/60-day HYPE can be activated only after sufficient history exists.",
+    "fairValueConfidence": "High requires at least 8 other rarity peers and 3 other subject observations; Medium requires at least 4 peers and 2 subject observations; otherwise Low/None. The Undervalued screener only accepts High/Medium Fair Value."
   },
   "model": "Catalog identity, image source, observed market, store asks and model outputs are separate fields. Missing market data remains missing."
 }
