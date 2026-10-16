@@ -45,6 +45,10 @@ def main():
             page.locator("#viewer.open").wait_for(timeout=10000)
             assert page.locator("#viewerName").inner_text().strip()
             assert page.locator("#viewerBadges").inner_text().strip()
+            stats=page.locator("#viewerStats").inner_text()
+            assert "Carton Equivalent Cost" in stats
+            assert "Historical HYPE" in stats
+            assert "No verified observation" in stats
             page.locator("#watchBtn").click()
             assert page.locator("#watchBtn").inner_text()=="Watching"
             page.locator("#compareBtn").click()

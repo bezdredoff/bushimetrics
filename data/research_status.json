@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-16T00:00:00Z",
+  "records": [],
+  "summary": {
+    "records": 0,
+    "availableByMetric": {
+      "cec": 0,
+      "demandPressure": 0,
+      "historicalHype": 0,
+      "ripEV": 0,
+      "gradingEV": 0,
+      "franchiseHealth": 0
+    }
+  },
+  "notice": "No curated verified research observations yet; unavailable never means zero. Existing catalog market prices are separate."
+}
