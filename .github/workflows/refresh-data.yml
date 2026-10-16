@@ -79,6 +79,9 @@ jobs:
       - name: Enrich public Cardmarket EUR prices
         run: python scripts/enrich_market_cardmarket.py
 
+      - name: Enrich public TCGCSV / TCGplayer USD prices
+        run: python scripts/enrich_market_tcgcsv.py
+
       - name: Enrich Palworld completed-sale prices
         run: python scripts/enrich_market_palworldprices.py
 
