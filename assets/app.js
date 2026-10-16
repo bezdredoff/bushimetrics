@@ -294,7 +294,7 @@ function renderMarket() {
   const announced = state.cards.filter(c => c.game === state.game && (c.language||'EN') === state.marketLanguage && c.availability !== 'released').length;
   const marketFresh = priced.filter(c => c.marketAsOf || c.cardmarketAsOf).length;
   $('#dataHealth').innerHTML = [
-    ['Image coverage', `${Math.round(imaged / Math.max(1,cards.length)*100)}%`, `${imaged.toLocaleString()} / ${cards.length.toLocaleString()}`],
+    ['Artwork URL coverage (not verified)', `${Math.round(imaged / Math.max(1,cards.length)*100)}%`, `${imaged.toLocaleString()} URLs / ${cards.length.toLocaleString()} cards`],
     ['Price coverage', `${Math.round(priced.length / Math.max(1,cards.length)*100)}%`, `€ ${pricedEUR.length.toLocaleString()} · $ ${pricedUSD.length.toLocaleString()}`],
     ['Dated prices', marketFresh.toLocaleString(), 'marketAsOf supplied'],
     ['Pressure coverage', cards.filter(c=>c.demandPressure!=null).length.toLocaleString(), 'sales + fresh asks'],
@@ -495,7 +495,7 @@ function renderSets() {
     <div class="set-stats">
       <div><b>${s.premium}</b><span>premium</span></div>
       <div><b>${s.priceCoverage}%</b><span>priced</span></div>
-      <div><b>${s.imageCoverage}%</b><span>images</span></div>
+      <div><b>${s.imageCoverage}%</b><span>image URLs*</span></div>
       <div><b>${s.avgInvestment ?? '—'}</b><span>avg IQ</span></div>
     </div>
     <div class="progress"><i style="width:${Math.min(100,s.priceCoverage)}%"></i></div>
@@ -1006,13 +1006,13 @@ function renderCoverage(){
     ['Palworld OCG · EN',pal.length,palSets,palImg,palPrice,'Loaded immediately'],
     ['Palworld announced',announced.length,new Set(announced.map(c=>c.set).filter(Boolean)).size,announced.filter(c=>c.image).length,0,'Excluded from released inventory']
   ];
-  $('#coverageLayers').innerHTML=`<div class="table-scroll"><table><thead><tr><th>Layer</th><th>Printings</th><th>Sets</th><th>Images</th><th>Priced</th><th>Status</th></tr></thead><tbody>${layers.map(x=>`<tr><td><b>${x[0]}</b></td><td>${Number(x[1]).toLocaleString()}</td><td>${Number(x[2]).toLocaleString()}</td><td>${Number(x[3]||0).toLocaleString()}</td><td>${Number(x[4]||0).toLocaleString()}</td><td><span class="badge">${x[5]}</span></td></tr>`).join('')}</tbody></table></div>`;
+  $('#coverageLayers').innerHTML=`<div class="table-scroll"><table><thead><tr><th>Layer</th><th>Printings</th><th>Sets</th><th>Artwork URLs</th><th>Priced</th><th>Status</th></tr></thead><tbody>${layers.map(x=>`<tr><td><b>${x[0]}</b></td><td>${Number(x[1]).toLocaleString()}</td><td>${Number(x[2]).toLocaleString()}</td><td>${Number(x[3]||0).toLocaleString()}</td><td>${Number(x[4]||0).toLocaleString()}</td><td><span class="badge">${x[5]}</span></td></tr>`).join('')}</tbody></table></div>`;
 
   const totalImmediate=en.length+pal.length;
   const immediateImages=enImg+palImg;
   const immediatePriced=enPrice+palPrice;
   $('#coverageQuality').innerHTML=[
-    ['Immediate image coverage',Math.round(immediateImages/Math.max(1,totalImmediate)*100)+'%',immediateImages.toLocaleString()+' / '+totalImmediate.toLocaleString()],
+    ['Immediate artwork URL coverage',Math.round(immediateImages/Math.max(1,totalImmediate)*100)+'%',immediateImages.toLocaleString()+' URLs; reachability not checked'],
     ['Immediate price coverage',Math.round(immediatePriced/Math.max(1,totalImmediate)*100)+'%',immediatePriced.toLocaleString()+' observed'],
     ['Premium EN+Pal',state.cards.filter(c=>(c.language||'EN')==='EN'&&(c.isPremium||premium.has(c.rarity))&&c.availability==='released').length.toLocaleString(),'distinct premium printings'],
     ['Total set groups',(enSets+jpSets+palSets).toLocaleString(),'language-specific set groups']
@@ -1056,6 +1056,7 @@ function renderSources() {
       <div class="stat"><span>Investment model</span><b>Heuristic — not calibrated to validated long-term returns</b></div>
     </div>
   </div>
+  <div class="panel"><h3>Artwork data limitations</h3><p>Coverage means a catalog record contains an artwork URL — not that the remote image exists or loads successfully. Broken sources may fall back to alternative paths or an unavailable placeholder. Japanese image links are not verified in bulk.</p></div>
   <div class="panel"><h3>Model boundaries</h3><p>Observed market prices, retailer asks, catalog identity and model outputs remain separate. A missing price stays missing. Fair Value and Investment Quality are research estimates, not guaranteed returns.</p></div>`;
 }
 
