@@ -1,0 +1,31 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m py_compile scripts/*.py
+      - run: node --check assets/app.js
+      - run: python scripts/build_catalog.py
+      - name: Validate catalog JSON
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('data/catalog.json',encoding='utf-8'))
+          assert d.get('cards'), 'catalog is empty'
+          for c in d['cards']:
+              assert c.get('id') and c.get('name') and c.get('game')
+          print('cards',len(d['cards']))
+          PY
