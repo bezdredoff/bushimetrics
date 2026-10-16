@@ -39,6 +39,13 @@ jobs:
           sparse-checkout-cone-mode: false
           filter: blob:none
 
+      - name: Checkout Japanese Weiss catalog source
+        uses: actions/checkout@v4
+        with:
+          repository: Akenaide/wsoffdata
+          ref: master
+          path: external/wsoffdata
+
       - name: Checkout Palworld catalog source
         uses: actions/checkout@v4
         with:
@@ -62,6 +69,12 @@ jobs:
 
       - name: Collect complete current Palworld catalog
         run: python scripts/collect_palworld.py
+
+      - name: Collect Japanese Weiss Schwarz printing catalog
+        run: python scripts/collect_weiss_jp.py
+
+      - name: Build lazy Japanese Weiss catalog
+        run: python scripts/build_weiss_jp_catalog.py
 
       - name: Enrich public Cardmarket EUR prices
         run: python scripts/enrich_market_cardmarket.py
@@ -89,6 +102,10 @@ jobs:
           assert sum(x['game']=='palworld' and x.get('availability')=='released' for x in d['cards']) == 276, c
           assert c['imaged'] >= c['released'] * .90, c
           assert c['sets'] >= 100, c
+          jp=json.load(open('data/catalog-weiss-jp-meta.json',encoding='utf-8'))
+          print('JP',jp['counts'])
+          assert jp['counts']['total'] >= 50000, jp['counts']
+          assert jp['counts']['imaged'] >= jp['counts']['released'] * .90, jp['counts']
           PY
 
       - name: Store compact market snapshot
