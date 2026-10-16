@@ -108,8 +108,15 @@ jobs:
           jp=json.load(open('data/catalog-weiss-jp-meta.json',encoding='utf-8'))
           audit=json.load(open('data/jp-identity-audit.json',encoding='utf-8'))
           assert audit['uniquePrintingsByCode'] == jp['counts']['total'], audit
+          assert audit['verifiedVariantRows'] == 2, audit
+          assert audit['unresolvedConflictingCodeGroups'] == 0, audit
+          jp_cards=json.load(open('data/catalog-weiss-jp.json',encoding='utf-8'))['cards']
+          for verified_code in ('GZL/SE33-12','GZL/SE33-23'):
+              rarities={x['r'] for x in jp_cards if x.get('c')==verified_code}
+              assert rarities == {'RR','SEC'}, (verified_code,rarities)
+
           assert audit['parsedFiles'] + audit['invalidFiles'] == audit['sourceFiles'], audit
-          assert (audit['uniquePrintingsByCode'] + audit['duplicateCodeFiles']
+          assert (audit['uniquePrintingsByCode'] + audit['discardedDuplicateFiles']
                   + audit['missingCardCodeFiles']) == audit['parsedFiles'], audit
           print('JP upstream identity audit', {k:audit[k] for k in (
               'sourceFiles','duplicateCodeFiles','conflictingCodeGroups','invalidFiles'
