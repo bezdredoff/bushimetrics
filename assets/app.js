@@ -228,9 +228,9 @@ $$('#tabs button').forEach(b => b.onclick = () => goto(b.dataset.tab));
 $$('[data-go]').forEach(b => b.onclick = () => goto(b.dataset.go));
 $('#themeBtn').onclick = () => document.body.classList.toggle('light');
 
-$$('#gameSeg button').forEach(b => b.onclick = async () => {
+$('#gameSeg button').forEach(b => b.onclick = async () => {
   state.game = b.dataset.game;
-  $$('#gameSeg button').forEach(x => x.classList.toggle('active', x === b));
+  $('#gameSeg button').forEach(x => x.classList.toggle('active', x === b));
   const lang=$('#marketLanguage');
   if(state.game==='palworld'){ state.marketLanguage='EN'; lang.value='EN'; lang.disabled=true; }
   else { lang.disabled=false; state.marketLanguage=lang.value; if(state.marketLanguage==='JP') await ensureJPCatalog(); }
@@ -386,7 +386,7 @@ $('#gameFilter').addEventListener('change', async () => {
   updateSetOptions(); state.page = 1; applyFilters();
 });
 $('#resetFiltersBtn').onclick = () => {
-  $$('#search').value=''; $('#gameFilter').value='all'; $('#languageFilter').value='EN'; updateSetOptions(); $('#setFilter').value='all'; $('#quickPresets .preset').forEach(b=>b.classList.remove('active'));
+  $('#search').value=''; $('#gameFilter').value='all'; $('#languageFilter').value='EN'; updateSetOptions(); $('#setFilter').value='all'; $('#quickPresets .preset').forEach(b=>b.classList.remove('active'));
   $('#rarityFilter').value='all'; $('#availabilityFilter').value='released'; $('#signalFilter').value='all';
   $('#sort').value='investment-desc'; $('#premiumOnly').checked=false; $('#pricedOnly').checked=false;
   state.page=1; applyFilters();
@@ -597,7 +597,7 @@ function renderViewer() {
     ${x.image?`<img src="${esc(x.image)}" loading="lazy" alt="">`:''}
     <span><b>${esc(x.rarity||'—')}</b><small>${esc(x.code||'')}</small><em>${observedLabel(x)}</em></span>
   </button>`).join('');
-  $$('#printingFamily [data-family-id]').forEach(btn=>btn.onclick=()=>{
+  $('#printingFamily [data-family-id]').forEach(btn=>btn.onclick=()=>{
     const target=state.byId.get(btn.dataset.familyId); if(!target)return;
     const idx=state.viewerList.findIndex(x=>x.id===target.id);
     if(idx>=0) state.viewerIndex=idx;
@@ -917,7 +917,7 @@ $('#importLocalFile').onchange = async e => {
 
 
 function setExplorerPreset(name) {
-  $$('#quickPresets .preset').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
+  $('#quickPresets .preset').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
   $('#search').value=''; $('#setFilter').value='all'; $('#rarityFilter').value='all'; $('#availabilityFilter').value='released'; $('#signalFilter').value='all';
   $('#premiumOnly').checked=false; $('#pricedOnly').checked=false;
   if (name === 'en-weiss') { $('#gameFilter').value='weiss'; $('#languageFilter').value='EN'; }
@@ -927,7 +927,7 @@ function setExplorerPreset(name) {
   if (name === 'priced') { $('#gameFilter').value='all'; $('#languageFilter').value='EN'; $('#pricedOnly').checked=true; $('#sort').value='market-desc'; }
   if (name === 'all') { $('#gameFilter').value='all'; $('#languageFilter').value='all'; }
 }
-$$('#quickPresets .preset').forEach(btn => btn.onclick = async () => {
+$('#quickPresets .preset').forEach(btn => btn.onclick = async () => {
   const name=btn.dataset.preset;
   if (name === 'jp-weiss' || name === 'all') await ensureJPCatalog();
   setExplorerPreset(name); updateSetOptions(); state.page=1; applyFilters(); goto('cards');
