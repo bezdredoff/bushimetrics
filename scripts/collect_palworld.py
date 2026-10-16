@@ -21,7 +21,7 @@ UA='BushiMetrics/0.4 (+https://github.com/bezdredoff/bushimetrics)'
 
 def from_upstream(raw):
     return {
-        'game':'palworld',
+        'game':'palworld','language':'EN',
         'name':raw.get('name') or raw.get('id'),
         'set':raw.get('set') or 'Palworld',
         'code':raw.get('id'),
@@ -57,7 +57,7 @@ def main():
     by_code={c['code']:c for c in (from_upstream(x) for x in upstream) if c.get('code')}
     o=json.loads(OVERRIDES.read_text(encoding='utf-8'))
     for c in o.get('releasedCards',[]):
-        by_code[c['code']]={**by_code.get(c['code'],{}),**c,'game':'palworld','availability':'released'}
+        by_code[c['code']]={**by_code.get(c['code'],{}),**c,'game':'palworld','language':c.get('language') or 'EN','availability':'released'}
     expected=int(o.get('expectedReleasedCount',0))
     cards=sorted(by_code.values(),key=lambda c:c['code'])
     if expected and len(cards)!=expected:
