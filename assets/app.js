@@ -547,10 +547,16 @@ function renderBacktest() {
 
 function renderSources() {
   const a=state.sources.sources||[];
+  const m=state.sources.methodology||{};
   $('#sourcesContent').innerHTML = `<div class="source-grid">${a.map(s=>`<div class="source-card">
     <p class="eyebrow">${esc(s.role||'source')}</p><h3>${esc(s.name)}</h3><p>${esc(s.description||'')}</p>
     ${s.url?`<a class="ghost" target="_blank" rel="noreferrer" href="${esc(s.url)}">Open source</a>`:''}
   </div>`).join('')}</div>
+  <div class="panel methodology-panel">
+    <p class="eyebrow">Methodology</p><h2>${esc(m.title||'Investment Quality')}</h2><p>${esc(m.description||'')}</p>
+    <div class="method-grid">${(m.factors||[]).map(f=>`<div class="method-card"><div><b>${esc(f.name)}</b><strong>${Number(f.weight)||0}%</strong></div><p>${esc(f.description||'')}</p></div>`).join('')}</div>
+    <div class="method-notes"><p><b>Fair Value:</b> ${esc(m.fairValue||'')}</p><p><b>Backtest:</b> ${esc(m.backtest||'')}</p></div>
+  </div>
   <div class="panel"><h3>Model boundaries</h3><p>Observed market prices, retailer asks, catalog identity and model outputs remain separate. A missing price stays missing. Fair Value and Investment Quality are research estimates, not guaranteed returns.</p></div>`;
 }
 
