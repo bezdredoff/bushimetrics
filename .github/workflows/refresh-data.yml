@@ -131,6 +131,9 @@ jobs:
       - name: Store compact market snapshot
         run: python scripts/snapshot_metrics.py
 
+      - name: Build lazy card price-history shards
+        run: python scripts/build_history_shards.py
+
       - name: Validate walk-forward history
         run: python scripts/backtest.py
 
