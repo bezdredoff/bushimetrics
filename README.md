@@ -5,9 +5,9 @@ A data-driven collectible card research dashboard for **Weiss Schwarz** and **Pa
 ## What it does
 
 - Full catalog ingestion instead of a hand-maintained shortlist.
-- Weiss market layer from TCGRate / TCGplayer-style market data.
-- Palworld identity, rarity, rules metadata and images from the official card list.
-- Optional TCG Republic image/store-ask enrichment for premium Weiss printings.
+- Full English Weiss printing catalog (base + SR/SP/SSP/SEC+/promos) from Trading Card Dex set pages, with preview images derived from card detail slugs.
+- Full current Palworld printing catalog from Trading Card Dex, cross-checkable against the official Palworld card list.
+- Market enrichment is a separate layer; missing market prices remain missing rather than being inferred from retailer asks.
 - Clear separation between **observed market**, **store ask**, and **model fair value**.
 - Searchable/paginated Card Explorer designed for 30k+ printings.
 - Full-screen preview with wheel/button zoom, keyboard navigation and thumbnail strip.
@@ -18,7 +18,7 @@ A data-driven collectible card research dashboard for **Weiss Schwarz** and **Pa
 
 ## Current source scale
 
-TCGRate currently reports roughly 31k Weiss Schwarz printings across 177 sets; the official Palworld card list is imported in full on each refresh. New releases are discovered automatically.
+The collectors discover current set pages automatically and ingest every printing shown on those set pages. This includes parallel collector rarities rather than only unique gameplay cards. New sets flow in without editing the frontend.
 
 ## Run locally
 
@@ -34,7 +34,6 @@ Open `http://localhost:8080`.
 python -m pip install -r requirements.txt
 python scripts/collect_weiss.py
 python scripts/collect_palworld.py
-python scripts/enrich_weiss_images.py --limit 800
 python scripts/build_catalog.py
 ```
 
@@ -45,7 +44,6 @@ The collectors use public pages at a deliberately low request rate. They do not 
 - `data/catalog.json` — browser-ready merged catalog.
 - `data/raw/weiss.json` — full Weiss observed market catalog.
 - `data/raw/palworld.json` — full official Palworld catalog.
-- `data/raw/weiss-images.json` — optional premium image/store-ask enrichment.
 - `data/manual_overrides.json` — explicit versioned priors; subjectivity is visible.
 - `data/history.json` — validated historical set-level checks.
 - `data/snapshots/` — immutable dated catalog snapshots used by walk-forward evaluation.
