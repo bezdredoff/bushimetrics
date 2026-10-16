@@ -51,8 +51,24 @@ def apply_market(c,tcgapi,manual_market,seed_market):
         if src.get(a) is not None:c[b]=src[a]
     return c
 
-def score(c,set_priors,game_priors):
+def scarcity_for(c,evidence,rr):
+    for e in evidence:
+        if e.get('game')!=c.get('game'):continue
+        if str(e.get('rarity') or '').upper()!=str(c.get('rarity') or '').upper():continue
+        target=str(e.get('set') or '').lower()
+        cardset=str(c.get('set') or '').lower()
+        code=str(c.get('code') or '').lower()
+        if target and target not in cardset and not code.startswith(target.lower()):continue
+        packs=float(e.get('packsPerHit') or 0)
+        if packs>0:
+            empirical=clamp(30+30*math.log10(packs))
+            blended=round(rr*.35+empirical*.65)
+            return blended,{k:e.get(k) for k in ('packsPerHit','samplePacks','confidence','evidenceType','source','asOf')}
+    return rr,None
+
+def score(c,set_priors,game_priors,scarcity_evidence):
     rr=RARITY.get(str(c.get('rarity') or '').upper(),30)
+    scarcity_score,scarcity_note=scarcity_for(c,scarcity_evidence,rr)
     market=float(c.get('market') or 0)
     d7=c.get('change7d');d30=c.get('change30d')
     momentum=clamp(50+(float(d7 or 0)*1.6)+(float(d30 or 0)*.45))
@@ -62,7 +78,7 @@ def score(c,set_priors,game_priors):
     liquidity=clamp(35+math.log10(max(market,1))*10 if market else 25)
     edition_bonus=float(c.get('editionScore') or 50)
     investment=clamp(round(
-        rr*.24 + ip*.20 + reprint*.13 + historical*.11 + treatment*.10 +
+        scarcity_score*.24 + ip*.20 + reprint*.13 + historical*.11 + treatment*.10 +
         liquidity*.07 + momentum*.10 + edition_bonus*.05
     ))
     fair=market*(1+(investment-58)/300+(momentum-50)/650) if market else None
@@ -71,11 +87,12 @@ def score(c,set_priors,game_priors):
     if not confidence:
         confidence='High' if market and c.get('change30d') is not None and rr>=70 else ('Medium' if market else 'Low')
     c.update({
-        'rarityRank':rr,'isPremium':str(c.get('rarity') or '').upper() in PREMIUM,
+        'rarityRank':rr,'scarcityScore':scarcity_score,'scarcityEvidence':scarcity_note,
+        'isPremium':str(c.get('rarity') or '').upper() in PREMIUM,
         'momentum':round(momentum),'investment':round(investment),
         'fair':round(fair,2) if fair else None,'confidence':confidence,
         'modelFactors':{
-            'scarcity':round(rr),'ipStrength':round(ip),'reprintDurability':round(reprint),
+            'scarcity':round(scarcity_score),'ipStrength':round(ip),'reprintDurability':round(reprint),
             'historicalSignificance':round(historical),'treatment':round(treatment),
             'liquidity':round(liquidity),'editionDurability':round(edition_bonus)
         },
@@ -92,6 +109,7 @@ def main():
     market_overrides=read(DATA/'market_overrides.json',{'cards':{}}).get('cards',{})
     tcgapi=read(MARKET/'tcgapi.json',{'cards':{}}).get('cards',{})
     set_priors=manual.get('setPriors',{}); game_priors=manual.get('gamePriors',{})
+    scarcity_evidence=read(DATA/'scarcity.json',{'evidence':[]}).get('evidence',[])
 
     seeds=seed.get('cards',[])
     seed_market={str(x.get('code') or ''):{k:v for k,v in x.items() if k in (
@@ -123,7 +141,7 @@ def main():
         c['id']=stable(c)
         if c['id'] in seen:continue
         seen.add(c['id'])
-        out.append(score(c,set_priors,game_priors))
+        out.append(score(c,set_priors,game_priors,scarcity_evidence))
 
     out.sort(key=lambda c:(c['game'],c.get('availability')!='released',c.get('set') or '',c.get('code') or ''))
 
