@@ -1,1 +1,41 @@
-{"sources":[{"name":"TCGRate / TCGplayer","role":"Weiss observed market","url":"https://tcgrate.com/weiss-schwarz/","description":"Near-mint raw market prices, set indices and daily history. Primary Weiss market layer."},{"name":"Weiss Schwarz official card list","role":"Identity / rules","url":"https://en.ws-tcg.com/cardlist/","description":"Official card identity, rules text and product metadata; used for validation/enrichment."},{"name":"TCG Republic","role":"Images / store ask","url":"https://tcgrepublic.com/","description":"Optional image and store-ask enrichment. Store asks are never treated as market prices."},{"name":"Palworld Official Card Game","role":"Palworld master catalog","url":"https://en.palworld-official-cardgame.com/cardlist/searchresults","description":"Official card identities, rarities, details and images for the complete Palworld catalog."}],"model":"Fair value, momentum and investment quality are research outputs. Observed data and model outputs remain separate."}
+{
+  "sources": [
+    {
+      "name": "Trading Card Dex",
+      "role": "Full printing catalog + previews",
+      "url": "https://weissschwarz.tradingcarddex.com/sets",
+      "description": "Set pages enumerate English Weiss base cards and parallel printings (SR/SP/SSP/SEC+, promos, etc.). Detail slugs provide card preview images."
+    },
+    {
+      "name": "Weiss Schwarz official / ENG DB mirror",
+      "role": "Rules and identity validation",
+      "url": "https://github.com/CCondeluci/WeissSchwarz-ENG-DB",
+      "description": "Community-maintained mirror of official English Bushiroad card metadata and official image URLs for base printings."
+    },
+    {
+      "name": "TCG API / TCGPlayer",
+      "role": "Optional market enrichment",
+      "url": "https://tcgapi.dev/games/weiss-schwarz/",
+      "description": "Daily Weiss TCGPlayer market prices and changes. Enrichment requires an API key and is kept separate from catalog identity."
+    },
+    {
+      "name": "TCGRate / TCGPlayer",
+      "role": "Historical validation / manual snapshots",
+      "url": "https://tcgrate.com/weiss-schwarz/",
+      "description": "Useful browser-facing Weiss market/history reference; GitHub Actions access is blocked, so it is not a required automation dependency."
+    },
+    {
+      "name": "TCG Republic",
+      "role": "Store ask / secondary image reference",
+      "url": "https://tcgrepublic.com/",
+      "description": "Optional store-ask and image reference. Store asks are never treated as market prices."
+    },
+    {
+      "name": "Palworld Official Card Game",
+      "role": "Official Palworld validation",
+      "url": "https://en.palworld-official-cardgame.com/cardlist/searchresults",
+      "description": "Official Palworld card list used to validate identity, rarity and release information."
+    }
+  ],
+  "model": "Observed market, store ask, catalog identity and model outputs are distinct fields. A missing market price remains missing rather than being imputed from a store ask."
+}
