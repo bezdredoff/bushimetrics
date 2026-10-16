@@ -360,15 +360,20 @@ $('#nextPage').onclick = () => { if (state.page < Math.ceil(state.filtered.lengt
 function renderSets() {
   const q = $('#setSearch').value.trim().toLowerCase();
   const game = $('#setGameFilter').value;
-  let a = state.sets.filter(s => (game === 'all' || s.game === game) && (!q || s.name.toLowerCase().includes(q)));
+  const language = $('#setLanguageFilter').value;
+  let a = state.sets.filter(s =>
+    (game === 'all' || s.game === game) &&
+    (language === 'all' || (s.language||'EN') === language) &&
+    (!q || s.name.toLowerCase().includes(q))
+  );
   const sort = $('#setSort').value;
   if (sort === 'name') a.sort((x,y) => x.name.localeCompare(y.name));
   else {
     const key = {premium:'premium',total:'total',investment:'avgInvestment',coverage:'priceCoverage'}[sort.split('-')[0]];
     a.sort((x,y) => (Number(y[key])||0)-(Number(x[key])||0));
   }
-  $('#setGrid').innerHTML = a.map(s => `<article class="set-card" data-set="${esc(s.name)}" data-game="${esc(s.game)}">
-    <div class="set-card-top"><span class="eyebrow">${esc(gameLabel(s.game))}</span><span class="badge">${s.released} released${s.announced ? ` + ${s.announced} announced` : ''}</span></div>
+  $('#setGrid').innerHTML = a.map(s => `<article class="set-card" data-set="${esc(s.name)}" data-game="${esc(s.game)}" data-language="${esc(s.language||'EN')}">
+    <div class="set-card-top"><span class="eyebrow">${esc(gameLabel(s.game))} · ${esc(s.language||'EN')}</span><span class="badge">${s.released} released${s.announced ? ` + ${s.announced} announced` : ''}</span></div>
     <h3>${esc(s.name)}</h3>
     <div class="set-stats">
       <div><b>${s.premium}</b><span>premium</span></div>
@@ -379,15 +384,18 @@ function renderSets() {
     <div class="progress"><i style="width:${Math.min(100,s.priceCoverage)}%"></i></div>
   </article>`).join('') || '<div class="empty-state">No sets match.</div>';
 
-  $$('#setGrid [data-set]').forEach(el => el.onclick = () => {
+  $$('#setGrid [data-set]').forEach(el => el.onclick = async () => {
+    const lang=el.dataset.language||'EN';
+    if(lang==='JP') await ensureJPCatalog();
     $('#gameFilter').value = el.dataset.game;
+    $('#languageFilter').value = lang;
     updateSetOptions();
     $('#setFilter').value = el.dataset.set;
     $('#availabilityFilter').value = 'released';
     state.page = 1; applyFilters(); goto('cards');
   });
 }
-['setSearch','setGameFilter','setSort'].forEach(id =>
+['setSearch','setGameFilter','setLanguageFilter','setSort'].forEach(id =>
   $('#'+id).addEventListener(id === 'setSearch' ? 'input' : 'change', renderSets)
 );
 
