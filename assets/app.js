@@ -217,20 +217,20 @@ function updateSetOptions() {
 
 function goto(tab) {
   state.tab = tab;
-  $$('.view').forEach(v => v.classList.toggle('active', v.id === tab));
-  $$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$$('.view').forEach(v => v.classList.toggle('active', v.id === tab));
+  $$$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   if (tab === 'portfolio') renderPortfolio();
   if (tab === 'compare') renderCompare();
   if (tab === 'sets') renderSets();
   if (tab === 'coverage') renderCoverage();
 }
-$$('#tabs button').forEach(b => b.onclick = () => goto(b.dataset.tab));
-$$('[data-go]').forEach(b => b.onclick = () => goto(b.dataset.go));
+$$$('#tabs button').forEach(b => b.onclick = () => goto(b.dataset.tab));
+$$$('[data-go]').forEach(b => b.onclick = () => goto(b.dataset.go));
 $('#themeBtn').onclick = () => document.body.classList.toggle('light');
 
-$('#gameSeg button').forEach(b => b.onclick = async () => {
+$$('#gameSeg button').forEach(b => b.onclick = async () => {
   state.game = b.dataset.game;
-  $('#gameSeg button').forEach(x => x.classList.toggle('active', x === b));
+  $$('#gameSeg button').forEach(x => x.classList.toggle('active', x === b));
   const lang=$('#marketLanguage');
   if(state.game==='palworld'){ state.marketLanguage='EN'; lang.value='EN'; lang.disabled=true; }
   else { lang.disabled=false; state.marketLanguage=lang.value; if(state.marketLanguage==='JP') await ensureJPCatalog(); }
@@ -386,7 +386,7 @@ $('#gameFilter').addEventListener('change', async () => {
   updateSetOptions(); state.page = 1; applyFilters();
 });
 $('#resetFiltersBtn').onclick = () => {
-  $('#search').value=''; $('#gameFilter').value='all'; $('#languageFilter').value='EN'; updateSetOptions(); $('#setFilter').value='all'; $('#quickPresets .preset').forEach(b=>b.classList.remove('active'));
+  $('#search').value=''; $('#gameFilter').value='all'; $('#languageFilter').value='EN'; updateSetOptions(); $('#setFilter').value='all'; $$('#quickPresets .preset').forEach(b=>b.classList.remove('active'));
   $('#rarityFilter').value='all'; $('#availabilityFilter').value='released'; $('#signalFilter').value='all';
   $('#sort').value='investment-desc'; $('#premiumOnly').checked=false; $('#pricedOnly').checked=false;
   state.page=1; applyFilters();
@@ -426,7 +426,7 @@ function renderCards() {
   const isGrid = state.cardView === 'grid';
   $('#cardGrid').classList.toggle('hidden', !isGrid);
   $('#cardTable').classList.toggle('hidden', isGrid);
-  $$('#cardGrid [data-id], #cardTable [data-id]').forEach(el => el.onclick = () => openViewer(el.dataset.id));
+  $$$('#cardGrid [data-id], #cardTable [data-id]').forEach(el => el.onclick = () => openViewer(el.dataset.id));
 
   $('#pageInfo').textContent = `${state.page} / ${pages} · ${state.filtered.length.toLocaleString()} cards`; $('#pageJump').max=String(pages); $('#pageJump').value=String(state.page);
   renderWatch();
@@ -475,7 +475,7 @@ function renderSets() {
     <div class="progress"><i style="width:${Math.min(100,s.priceCoverage)}%"></i></div>
   </article>`).join('') || '<div class="empty-state">No sets match.</div>';
 
-  $$('#setGrid [data-set]').forEach(el => el.onclick = async () => {
+  $$$('#setGrid [data-set]').forEach(el => el.onclick = async () => {
     const lang=el.dataset.language||'EN';
     if(lang==='JP') await ensureJPCatalog();
     $('#gameFilter').value = el.dataset.game;
@@ -597,7 +597,7 @@ function renderViewer() {
     ${x.image?`<img src="${esc(x.image)}" loading="lazy" alt="">`:''}
     <span><b>${esc(x.rarity||'—')}</b><small>${esc(x.code||'')}</small><em>${observedLabel(x)}</em></span>
   </button>`).join('');
-  $('#printingFamily [data-family-id]').forEach(btn=>btn.onclick=()=>{
+  $$('#printingFamily [data-family-id]').forEach(btn=>btn.onclick=()=>{
     const target=state.byId.get(btn.dataset.familyId); if(!target)return;
     const idx=state.viewerList.findIndex(x=>x.id===target.id);
     if(idx>=0) state.viewerIndex=idx;
@@ -649,7 +649,7 @@ function renderViewer() {
   $('#thumbStrip').innerHTML = state.viewerList.slice(lo,hi).map((x,i) =>
     x.image ? `<img src="${esc(x.image)}" data-i="${lo+i}" class="${lo+i===state.viewerIndex?'active':''}" title="${esc(x.name)}">` : ''
   ).join('');
-  $$('#thumbStrip img').forEach(i => i.onclick = () => { state.viewerIndex = Number(i.dataset.i); renderViewer(); updateViewerHash(); });
+  $$$('#thumbStrip img').forEach(i => i.onclick = () => { state.viewerIndex = Number(i.dataset.i); renderViewer(); updateViewerHash(); });
 }
 
 
@@ -733,7 +733,7 @@ function closeViewer() {
   document.body.style.overflow = '';
   if (location.hash.startsWith('#card=')) history.replaceState(null,'',location.pathname + location.search);
 }
-$$('[data-close]').forEach(x => x.onclick = closeViewer);
+$$$('[data-close]').forEach(x => x.onclick = closeViewer);
 
 function navViewer(delta) {
   if (!state.viewerList.length) return;
@@ -813,7 +813,7 @@ function renderWatch() {
     ${c.image ? `<img src="${esc(c.image)}" loading="lazy">` : ''}
     <div><b>${esc(c.name)}</b><br><small>${observedLabel(c)} · ${esc(c.rarity||'')}</small></div>
   </div>`).join('') : '<p class="muted">No cards watched yet.</p>';
-  $$('#watchList [data-id]').forEach(x => x.onclick = () => openViewer(x.dataset.id));
+  $$$('#watchList [data-id]').forEach(x => x.onclick = () => openViewer(x.dataset.id));
 }
 
 function updatePortfolioCount() {
@@ -856,8 +856,8 @@ function renderPortfolio() {
     </tr>`;
   }).join('')}</tbody></table></div>` : '<div class="empty-state">Add a quantity and cost basis from any card preview to start a portfolio.</div>';
 
-  $$('#portfolioTable [data-id]').forEach(x => x.onclick = e => { if (!e.target.closest('button')) openViewer(x.dataset.id); });
-  $$('.remove-position').forEach(b => b.onclick = () => {
+  $$$('#portfolioTable [data-id]').forEach(x => x.onclick = e => { if (!e.target.closest('button')) openViewer(x.dataset.id); });
+  $$$('.remove-position').forEach(b => b.onclick = () => {
     delete state.portfolio[b.dataset.remove];
     localStorage.setItem('bm-portfolio',JSON.stringify(state.portfolio));
     renderPortfolio(); updatePortfolioCount();
@@ -878,8 +878,8 @@ function renderCompare() {
     <div class="button-row"><button class="ghost compare-open" data-id="${esc(c.id)}">Preview</button><button class="ghost removeCompare" data-id="${esc(c.id)}">Remove</button></div>
   </article>`).join('') : '<div class="panel"><p>Add up to four cards from Card Explorer or the full-screen preview.</p></div>';
 
-  $$('.compare-open').forEach(b => b.onclick = () => openViewer(b.dataset.id));
-  $$('.removeCompare').forEach(b => b.onclick = () => {
+  $$$('.compare-open').forEach(b => b.onclick = () => openViewer(b.dataset.id));
+  $$$('.removeCompare').forEach(b => b.onclick = () => {
     state.compare = state.compare.filter(x => x !== b.dataset.id); persistCompare(); renderCompare();
   });
 }
@@ -917,7 +917,7 @@ $('#importLocalFile').onchange = async e => {
 
 
 function setExplorerPreset(name) {
-  $('#quickPresets .preset').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
+  $$('#quickPresets .preset').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
   $('#search').value=''; $('#setFilter').value='all'; $('#rarityFilter').value='all'; $('#availabilityFilter').value='released'; $('#signalFilter').value='all';
   $('#premiumOnly').checked=false; $('#pricedOnly').checked=false;
   if (name === 'en-weiss') { $('#gameFilter').value='weiss'; $('#languageFilter').value='EN'; }
@@ -927,7 +927,7 @@ function setExplorerPreset(name) {
   if (name === 'priced') { $('#gameFilter').value='all'; $('#languageFilter').value='EN'; $('#pricedOnly').checked=true; $('#sort').value='market-desc'; }
   if (name === 'all') { $('#gameFilter').value='all'; $('#languageFilter').value='all'; }
 }
-$('#quickPresets .preset').forEach(btn => btn.onclick = async () => {
+$$('#quickPresets .preset').forEach(btn => btn.onclick = async () => {
   const name=btn.dataset.preset;
   if (name === 'jp-weiss' || name === 'all') await ensureJPCatalog();
   setExplorerPreset(name); updateSetOptions(); state.page=1; applyFilters(); goto('cards');
