@@ -6,6 +6,8 @@ on:
       - 'scripts/**'
       - 'data/manual_overrides.json'
       - 'data/printing_overrides.json'
+      - 'data/verified-jp-variants.json'
+      - 'data/scarcity.json'
       - 'data/market_overrides.json'
       - 'data/palworld-current-overrides.json'
       - 'requirements.txt'
@@ -26,6 +28,7 @@ jobs:
       - name: Checkout BushiMetrics
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Checkout Weiss catalog source
@@ -174,4 +177,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data
           git commit -m "data: refresh card catalog $(date -u +%F)"
-          git push
+          # Never force-push stale generated data over newer model or catalog changes.
+          if ! git push origin HEAD:main; then
+            echo "::error::main advanced during refresh; next run must regenerate from latest main"
+            exit 1
+          fi
