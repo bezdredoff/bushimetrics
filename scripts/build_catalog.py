@@ -70,6 +70,7 @@ def score(c,set_priors,game_priors,scarcity_evidence):
     rr=RARITY.get(str(c.get('rarity') or '').upper(),30)
     scarcity_score,scarcity_note=scarcity_for(c,scarcity_evidence,rr)
     market=float(c.get('market') or 0)
+    market_eur=float(c.get('marketEUR') or 0)
     d7=c.get('change7d');d30=c.get('change30d')
     momentum=clamp(50+(float(d7 or 0)*1.6)+(float(d30 or 0)*.45))
     p=prior_for(c,set_priors,game_priors)
@@ -81,8 +82,11 @@ def score(c,set_priors,game_priors,scarcity_evidence):
         scarcity_score*.24 + ip*.20 + reprint*.13 + historical*.11 + treatment*.10 +
         liquidity*.07 + momentum*.10 + edition_bonus*.05
     ))
-    fair=market*(1+(investment-58)/300+(momentum-50)/650) if market else None
-    if c.get('availability')!='released': fair=None
+    fair_multiplier=1+(investment-58)/300+(momentum-50)/650
+    fair=market*fair_multiplier if market else None
+    fair_eur=market_eur*fair_multiplier if market_eur else None
+    if c.get('availability')!='released':
+        fair=None; fair_eur=None
     confidence=c.get('marketConfidence')
     if not confidence:
         confidence='High' if market and c.get('change30d') is not None and rr>=70 else ('Medium' if market else 'Low')
@@ -90,7 +94,8 @@ def score(c,set_priors,game_priors,scarcity_evidence):
         'rarityRank':rr,'scarcityScore':scarcity_score,'scarcityEvidence':scarcity_note,
         'isPremium':str(c.get('rarity') or '').upper() in PREMIUM,
         'momentum':round(momentum),'investment':round(investment),
-        'fair':round(fair,2) if fair else None,'confidence':confidence,
+        'fair':round(fair,2) if fair else None,
+        'fairEUR':round(fair_eur,2) if fair_eur else None,'confidence':confidence,
         'modelFactors':{
             'scarcity':round(scarcity_score),'ipStrength':round(ip),'reprintDurability':round(reprint),
             'historicalSignificance':round(historical),'treatment':round(treatment),
@@ -145,7 +150,8 @@ def main():
             for k,v in cm.items():
                 if v is not None:c[k]=v
             c['cardmarketAsOf']=cardmarket_asof
-        c['priceSource']=c.get('priceSource') or ('Cardmarket EUR' if c.get('marketEUR') is not None else 'Market enrichment pending')
+            c['priceSourceEUR']='Cardmarket public daily price guide'
+        c['priceSource']=c.get('priceSource') or 'Market enrichment pending'
         c['id']=stable(c)
         if c['id'] in seen:continue
         seen.add(c['id'])
