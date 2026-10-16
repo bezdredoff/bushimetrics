@@ -265,7 +265,8 @@ function renderMarket() {
   const pricedEUR = cards.filter(c => c.marketEUR != null);
   const pricedUSD = cards.filter(c => c.market != null);
   const premiumCards = cards.filter(c => c.isPremium || premium.has(c.rarity));
-  const imaged = cards.filter(c => c.image).length;
+  const layerSets=state.sets.filter(x=>x.game===state.game && (x.language||'EN')===state.marketLanguage);
+  const imaged = layerSets.reduce((a,x)=>a+Number(x.imaged||0),0) || cards.filter(c => c.image).length;
   const with30 = priced.filter(c => c.change30d != null);
   const avg30 = with30.length ? with30.reduce((a,c) => a + Number(c.change30d), 0) / with30.length : null;
 
@@ -869,7 +870,12 @@ function renderCoverage(){
   const enSets=new Set(en.map(c=>c.set).filter(Boolean)).size;
   const jpSets=Number(state.jpMeta?.counts?.sets||new Set(jpLoaded.map(c=>c.set).filter(Boolean)).size||0);
   const palSets=new Set(pal.map(c=>c.set).filter(Boolean)).size;
-  const enPrice=en.filter(c=>observed(c)).length, palPrice=pal.filter(c=>observed(c)).length, enImg=en.filter(c=>c.image).length, palImg=pal.filter(c=>c.image).length;
+  const enPrice=en.filter(c=>observed(c)).length, palPrice=pal.filter(c=>observed(c)).length;
+  const enLayer=state.sets.filter(x=>x.game==='weiss'&&(x.language||'EN')==='EN');
+  const jpLayer=state.sets.filter(x=>x.game==='weiss'&&(x.language||'EN')==='JP');
+  const palLayer=state.sets.filter(x=>x.game==='palworld'&&(x.language||'EN')==='EN');
+  const enImg=enLayer.reduce((a,x)=>a+Number(x.imaged||0),0);
+  const palImg=palLayer.reduce((a,x)=>a+Number(x.imaged||0),0);
   $('#coverageMetrics').innerHTML=[
     ['Released printings',releasedTotal.toLocaleString(),'EN Weiss + JP Weiss + Palworld'],
     ['English Weiss',en.length.toLocaleString(),enSets.toLocaleString()+' sets'],
@@ -879,7 +885,7 @@ function renderCoverage(){
 
   const layers=[
     ['Weiss Schwarz · EN',en.length,enSets,enImg,enPrice,'Loaded immediately'],
-    ['Weiss Schwarz · JP',jpCount,jpSets,Number(state.jpMeta?.counts?.imaged||0),0,state.jpLoaded?'Loaded in browser':'Loaded on demand'],
+    ['Weiss Schwarz · JP',jpCount,jpSets,jpLayer.reduce((a,x)=>a+Number(x.imaged||0),0),0,state.jpLoaded?'Search index loaded':'Search index on demand'],
     ['Palworld OCG · EN',pal.length,palSets,palImg,palPrice,'Loaded immediately'],
     ['Palworld announced',announced.length,new Set(announced.map(c=>c.set).filter(Boolean)).size,announced.filter(c=>c.image).length,0,'Excluded from released inventory']
   ];
