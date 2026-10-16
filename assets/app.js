@@ -181,12 +181,23 @@ function renderMarket() {
   ].map(([a,b,c]) => `<div class="health-card"><span>${a}</span><b>${b}</b><small>${c}</small></div>`).join('');
 }
 
+function matchesSignal(c, signal) {
+  if (signal === 'all') return true;
+  if (signal === 'undervalued') return c.gap != null && c.gap >= 15 && c.investment >= 65 && !['Low','NONE','None'].includes(c.confidence);
+  if (signal === 'conviction') return c.investment >= 80 && (c.isPremium || premium.has(c.rarity));
+  if (signal === 'hot') return Number(c.marketHeatPercentile) >= 80;
+  if (signal === 'character') return Number(c.characterPremiumIndex) >= 150 && Number(c.characterPremiumObservations) >= 2;
+  if (signal === 'thin') return c.marketKind === 'thin' || String(c.marketConfidence||'').toUpperCase() === 'LOW';
+  return true;
+}
+
 function applyFilters() {
   const q = $('#search').value.trim().toLowerCase();
   const gf = $('#gameFilter').value;
   const sf = $('#setFilter').value;
   const rf = $('#rarityFilter').value;
   const af = $('#availabilityFilter').value;
+  const signal = $('#signalFilter').value;
   const prem = $('#premiumOnly').checked;
   const priced = $('#pricedOnly').checked;
 
@@ -195,6 +206,7 @@ function applyFilters() {
     (sf === 'all' || c.set === sf) &&
     (rf === 'all' || c.rarity === rf) &&
     (af === 'all' || c.availability === af) &&
+    matchesSignal(c, signal) &&
     (!prem || c.isPremium || premium.has(c.rarity)) &&
     (!priced || !!observed(c)) &&
     (!q || [c.name,c.set,c.code,c.rarity,c.cardType,c.color].join(' ').toLowerCase().includes(q))
@@ -213,12 +225,18 @@ function applyFilters() {
   renderCards();
 }
 
-['search','setFilter','rarityFilter','availabilityFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
+['search','setFilter','rarityFilter','availabilityFilter','signalFilter','sort','premiumOnly','pricedOnly'].forEach(id =>
   $('#'+id).addEventListener(id === 'search' ? 'input' : 'change', () => { state.page = 1; applyFilters(); })
 );
 $('#gameFilter').addEventListener('change', () => {
   updateSetOptions(); state.page = 1; applyFilters();
 });
+$('#resetFiltersBtn').onclick = () => {
+  $('#search').value=''; $('#gameFilter').value='all'; updateSetOptions(); $('#setFilter').value='all';
+  $('#rarityFilter').value='all'; $('#availabilityFilter').value='released'; $('#signalFilter').value='all';
+  $('#sort').value='investment-desc'; $('#premiumOnly').checked=false; $('#pricedOnly').checked=false;
+  state.page=1; applyFilters();
+};
 
 function cardImage(c, cls='') {
   return c.image
