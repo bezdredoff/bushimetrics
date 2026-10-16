@@ -8,24 +8,58 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout BushiMetrics
+        uses: actions/checkout@v4
+
+      - name: Checkout Weiss catalog source
+        uses: actions/checkout@v4
+        with:
+          repository: GachaWiki/gacha-wiki
+          path: external/gacha-wiki
+          sparse-checkout: |
+            src/data/ws-cards
+            LICENSE
+          sparse-checkout-cone-mode: false
+          filter: blob:none
+
+      - name: Checkout Palworld catalog source
+        uses: actions/checkout@v4
+        with:
+          repository: dragogodev/cgs
+          ref: master
+          path: external/cgs
+          sparse-checkout: |
+            Palworld/AllCards.json
+          sparse-checkout-cone-mode: false
+          filter: blob:none
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - run: pip install -r requirements.txt
       - run: python -m py_compile scripts/*.py
       - run: node --check assets/app.js
+      - run: python scripts/collect_weiss.py
+      - run: python scripts/collect_palworld.py
       - run: python scripts/build_catalog.py
-      - name: Validate catalog JSON
+
+      - name: Validate complete generated catalog
         run: |
           python - <<'PY'
           import json
           d=json.load(open('data/catalog.json',encoding='utf-8'))
-          assert d.get('cards'), 'catalog is empty'
-          for c in d['cards']:
-              assert c.get('id') and c.get('name') and c.get('game')
-          print('cards',len(d['cards']))
+          c=d['counts']
+          print(c)
+          assert c['weiss'] >= 20000, c
+          assert sum(x['game']=='palworld' and x.get('availability')=='released' for x in d['cards']) == 276, c
+          assert c['imaged'] >= c['released'] * .90, c
+          assert d.get('sets'), 'set summary missing'
+          ids=[x['id'] for x in d['cards']]
+          assert len(ids)==len(set(ids)), 'duplicate generated ids'
           PY
