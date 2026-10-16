@@ -74,6 +74,11 @@ def score(c,set_priors,game_priors):
         'rarityRank':rr,'isPremium':str(c.get('rarity') or '').upper() in PREMIUM,
         'momentum':round(momentum),'investment':round(investment),
         'fair':round(fair,2) if fair else None,'confidence':confidence,
+        'modelFactors':{
+            'scarcity':round(rr),'ipStrength':round(ip),'reprintDurability':round(reprint),
+            'historicalSignificance':round(historical),'treatment':round(treatment),
+            'liquidity':round(liquidity),'editionDurability':round(edition_bonus)
+        },
         'modelStatus':'heuristic-v0.4'
     })
     return c
