@@ -22,6 +22,67 @@ def read(path,default):
 
 def clamp(x,a=0,b=100):return max(a,min(b,x))
 
+def median(values):
+    a=sorted(float(x) for x in values if x is not None and float(x)>0)
+    if not a:return None
+    n=len(a);m=n//2
+    return a[m] if n%2 else (a[m-1]+a[m])/2
+
+def observed_basis(c):
+    # Never compare USD and EUR inside the same peer group.
+    if c.get('marketEUR') is not None and float(c.get('marketEUR') or 0)>0:
+        return float(c['marketEUR']),'EUR'
+    if c.get('market') is not None and float(c.get('market') or 0)>0:
+        return float(c['market']),'USD'
+    return None,None
+
+def attach_character_premium(cards):
+    """Estimate collector/character premium relative to same-set, same-rarity peers.
+
+    For each priced printing, compute price / median price of its rarity in that set
+    and currency. Then aggregate those ratios across printings sharing the exact
+    card/character name. This controls for rarity before estimating desirability.
+    """
+    peers=defaultdict(list)
+    for c in cards:
+        if c.get('availability')!='released':continue
+        value,currency=observed_basis(c)
+        rarity=str(c.get('rarity') or '').upper()
+        if value and rarity:
+            peers[(c.get('game'),c.get('set') or '',rarity,currency)].append(value)
+    peer_medians={k:median(v) for k,v in peers.items() if len(v)>=3}
+
+    families=defaultdict(list)
+    for c in cards:
+        value,currency=observed_basis(c)
+        rarity=str(c.get('rarity') or '').upper()
+        pmed=peer_medians.get((c.get('game'),c.get('set') or '',rarity,currency))
+        if value and pmed:
+            ratio=value/pmed
+            # Winsorize thin-market extremes before family aggregation.
+            ratio=max(.20,min(5.0,ratio))
+            families[(c.get('game'),c.get('set') or '',str(c.get('name') or '').strip().lower())].append(ratio)
+
+    for c in cards:
+        key=(c.get('game'),c.get('set') or '',str(c.get('name') or '').strip().lower())
+        ratios=families.get(key,[])
+        ratio=median(ratios)
+        n=len(ratios)
+        if ratio is None:
+            c['characterPremiumIndex']=None
+            c['characterPremiumScore']=50
+            c['characterPremiumObservations']=0
+            c['characterPremiumConfidence']='None'
+            continue
+        idx=round(ratio*100)
+        # 1.0 peer-relative = neutral score 50; 2x = 85; 0.5x = 15.
+        score=clamp(50+35*math.log(ratio,2))
+        c['characterPremiumIndex']=idx
+        c['characterPremiumScore']=round(score)
+        c['characterPremiumObservations']=n
+        c['characterPremiumConfidence']='High' if n>=4 else ('Medium' if n>=2 else 'Low')
+    return cards
+
 def stable(c):
     raw='|'.join(str(c.get(k) or '') for k in ('game','code','rarity','edition','treatment','availability'))
     return hashlib.sha1(raw.encode()).hexdigest()[:16]
@@ -82,7 +143,7 @@ def score(c,set_priors,game_priors,scarcity_evidence):
     d7=c.get('change7d');d30=c.get('change30d')
     momentum=clamp(50+(float(d7 or 0)*1.6)+(float(d30 or 0)*.45))
     p=prior_for(c,set_priors,game_priors)
-    ip=float(p.get('ip',55));reprint=float(p.get('reprint',55));historical=float(p.get('historical',50))
+    ip=float(p.get('ip',55));character=float(c.get('characterPremiumScore') or 50);reprint=float(p.get('reprint',55));historical=float(p.get('historical',50))
     treatment=float(c.get('treatmentScore') or (82 if rr>=86 else 55 if rr>=62 else 30))
     sold_n=float(c.get('salesInBasis') or 0)
     ask_n=float(c.get('marketAskCount') or 0)
@@ -92,7 +153,7 @@ def score(c,set_priors,game_priors,scarcity_evidence):
         liquidity=clamp(35+math.log10(max(market,1))*10 if market else 25)
     edition_bonus=float(c.get('editionScore') or 50)
     investment=clamp(round(
-        scarcity_score*.24 + ip*.20 + reprint*.13 + historical*.11 + treatment*.10 +
+        scarcity_score*.24 + ip*.10 + character*.10 + reprint*.13 + historical*.11 + treatment*.10 +
         liquidity*.07 + momentum*.10 + edition_bonus*.05
     ))
     fair_multiplier=1+(investment-58)/300+(momentum-50)/650
@@ -110,7 +171,7 @@ def score(c,set_priors,game_priors,scarcity_evidence):
         'fair':round(fair,2) if fair else None,
         'fairEUR':round(fair_eur,2) if fair_eur else None,'confidence':confidence,
         'modelFactors':{
-            'scarcity':round(scarcity_score),'ipStrength':round(ip),'reprintDurability':round(reprint),
+            'scarcity':round(scarcity_score),'ipStrength':round(ip),'characterPremium':round(character),'reprintDurability':round(reprint),
             'historicalSignificance':round(historical),'treatment':round(treatment),
             'liquidity':round(liquidity),'editionDurability':round(edition_bonus)
         },
@@ -170,7 +231,10 @@ def main():
         c['id']=stable(c)
         if c['id'] in seen:continue
         seen.add(c['id'])
-        out.append(score(c,set_priors,game_priors,scarcity_evidence))
+        out.append(c)
+
+    attach_character_premium(out)
+    out=[score(c,set_priors,game_priors,scarcity_evidence) for c in out]
 
     out.sort(key=lambda c:(c['game'],c.get('availability')!='released',c.get('set') or '',c.get('code') or ''))
 
@@ -212,7 +276,7 @@ def main():
     }
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),
-        'modelVersion':'0.4-heuristic',
+        'modelVersion':'0.5-character-premium',
         'counts':counts,
         'sets':set_rows,
         'cards':out

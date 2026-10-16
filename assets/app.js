@@ -353,13 +353,14 @@ function renderViewer() {
     ['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
     ['Model fair (primary)',fairLabel(c)],['Fair-value gap',pct(c.gap)],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
     ['Momentum',`${c.momentum}/100`],['Investment quality',`${c.investment}/100`],
+    ['Character premium',c.characterPremiumIndex!=null ? `${c.characterPremiumIndex} index · ${c.characterPremiumObservations||0} obs · ${c.characterPremiumConfidence||'Low'}` : 'Not enough peer pricing'],
     ['Confidence',c.confidence || 'Low'],
     ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending'],['Price qualifier',c.marketQualifier || (c.marketKind==='bare' ? 'Completed-sale estimate' : '—')]
   ].map(([a,b]) => `<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
 
   const factors = c.modelFactors || {};
   const labels = {
-    scarcity:'Structural scarcity',ipStrength:'IP / character prior',reprintDurability:'Reprint durability',
+    scarcity:'Structural scarcity',ipStrength:'IP strength',characterPremium:'Character premium',reprintDurability:'Reprint durability',
     historicalSignificance:'Historical significance',treatment:'Treatment premium',
     liquidity:'Liquidity',editionDurability:'Edition durability'
   };

@@ -67,4 +67,7 @@ jobs:
           priced=[x for x in pal if x.get('market') is not None]
           print('Palworld priced',len(priced),'of',len(pal))
           assert len(priced) >= 150, f'Palworld sold-price coverage too low: {len(priced)}'
+          char=[x for x in d['cards'] if x.get('characterPremiumIndex') is not None]
+          print('Character premium observations on',len(char),'printings')
+          assert len(char) >= 1000, f'character premium coverage too low: {len(char)}'
           PY
