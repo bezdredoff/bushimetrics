@@ -69,6 +69,17 @@ jobs:
           c=d['counts']
           print(c)
           assert c['weiss'] >= 20000, c
+          en_audit=json.load(open('data/en-identity-audit.json',encoding='utf-8'))
+          assert en_audit['uniquePrintingsByCode'] == c['weissEN'], en_audit
+          assert (en_audit['englishSetFiles'] + en_audit['nonEnglishSetFiles']
+                  + en_audit['invalidSetFiles']) == en_audit['sourceFiles'], en_audit
+          assert (en_audit['validCodeRows'] + en_audit['missingCodeRows']
+                  + en_audit['invalidCardRows']) == en_audit['cardRows'], en_audit
+          assert (en_audit['uniquePrintingsByCode'] + en_audit['duplicateCodeRows']
+                  == en_audit['validCodeRows']), en_audit
+          print('EN source identity audit', {k:en_audit[k] for k in (
+              'sourceFiles','cardRows','duplicateCodeRows','conflictingCodeGroups'
+          )})
           assert sum(x['game']=='palworld' and x.get('availability')=='released' for x in d['cards']) == 276, c
           assert c['imaged'] >= c['released'] * .90, c
           assert d.get('sets'), 'set summary missing'

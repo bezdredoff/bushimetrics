@@ -38,3 +38,11 @@ The JP importer preserves its existing first-encountered collector-code policy w
 A conflicting image or rarity does **not** prove a distinct physical print or a missing product entry. Inspect official Bushiroad print records and any official reprint announcements before splitting catalog identities. No estimate of missing cards should be derived solely by subtracting the current public site result count from our local indexed printings.
 
 The Coverage page exposes the generated audit when available. Before the next source refresh it reports the audit as pending rather than displaying invented counts.
+
+## English Weiss source integrity audit
+
+The English importer now writes `data/en-identity-audit.json` after reading the GachaWiki set source files. Every eligible English card row is accounted for as a unique code, duplicate code, missing code or invalid row. The report samples differing rarity, artwork, title, set and variant metadata under repeated collector codes.
+
+The current first-by-code policy (except preferring a later available image) is preserved until physical-printing differences are independently verified. Audit counts are available in Coverage after the scheduled data refresh, and their internal arithmetic is checked in CI.
+
+These checks establish source-import consistency, **not full official-market catalog completeness** or verified artwork reachability.
