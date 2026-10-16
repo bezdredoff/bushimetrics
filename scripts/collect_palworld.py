@@ -49,6 +49,7 @@ def load_upstream(local_path,url):
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--source-file',default=str(DEFAULT_LOCAL))
+    ap.add_argument('--source-file',default=str(ROOT/'external/cgs/Palworld/AllCards.json'))
     ap.add_argument('--upstream-url',default=BASE_URL)
     args=ap.parse_args()
     upstream,source=load_upstream(args.source_file,args.upstream_url)
