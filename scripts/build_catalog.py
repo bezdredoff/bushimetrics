@@ -291,7 +291,11 @@ def main():
     manual=read(DATA/'manual_overrides.json',{})
     printing=read(DATA/'printing_overrides.json',{'cards':{}}).get('cards',{})
     market_overrides=read(DATA/'market_overrides.json',{'cards':{}}).get('cards',{})
+    tcgcsv=read(MARKET/'tcgcsv.json',{'cards':{}}).get('cards',{})
     tcgapi=read(MARKET/'tcgapi.json',{'cards':{}}).get('cards',{})
+    # Public TCGCSV is the baseline USD layer; optional TCG API overrides it
+    # when a fresher authenticated row exists for the same collector number.
+    usd_market={**tcgcsv,**tcgapi}
     palworldprices_file=read(MARKET/'palworldprices.json',{'cards':{}})
     palworldprices=palworldprices_file.get('cards',{})
     cardmarket_file=read(MARKET/'cardmarket.json',{'cards':{}})
@@ -326,7 +330,7 @@ def main():
             for k,v in ov.items():
                 if v is not None:c[k]=v
 
-        apply_market(c,tcgapi,palworldprices,market_overrides,seed_market)
+        apply_market(c,usd_market,palworldprices,market_overrides,seed_market)
         cm=cardmarket.get(code)
         if cm:
             for k,v in cm.items():
