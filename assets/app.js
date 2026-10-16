@@ -392,6 +392,25 @@ $('#resetFiltersBtn').onclick = () => {
   state.page=1; applyFilters();
 };
 
+// Official Japanese artwork links may reject browser hotlinking. Try a public
+// image-resizing relay once, then replace broken images with an explicit fallback.
+// The relay receives the public artwork URL; no user data is sent.
+document.addEventListener('error', event => {
+  const img = event.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  const url = img.currentSrc || img.src;
+  if (img.dataset.artFallback !== 'tried' && /^https?:\\/\\/(?:www\\.)?ws-tcg\\.com\\//i.test(url)) {
+    img.dataset.artFallback = 'tried';
+    img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
+    return;
+  }
+  const replacement = document.createElement('div');
+  replacement.className = 'placeholder';
+  replacement.textContent = 'Artwork unavailable';
+  replacement.title = 'The image host rejected this image or it is no longer available';
+  img.replaceWith(replacement);
+}, true);
+
 function cardImage(c, cls='') {
   return c.image
     ? `<img class="${cls}" src="${esc(c.image)}" loading="lazy" alt="${esc(c.name)}">`
