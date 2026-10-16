@@ -106,6 +106,10 @@ jobs:
           print('JP',jp['counts'])
           assert jp['counts']['total'] >= 50000, jp['counts']
           assert jp['counts']['imaged'] >= jp['counts']['released'] * .90, jp['counts']
+          import os
+          jp_bytes=os.path.getsize('data/catalog-weiss-jp.json')
+          print('JP payload bytes',jp_bytes)
+          assert jp_bytes < 50_000_000, jp_bytes
           PY
 
       - name: Store compact market snapshot
