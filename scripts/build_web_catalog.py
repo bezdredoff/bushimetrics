@@ -49,7 +49,7 @@ def compact(row,extra=False,set_key=None):
 def jp_search(row,set_key):
     out={'i':row.get('id'),'g':'weiss','l':'JP','a':'released','k':set_key,
          'n':row.get('n'),'s':row.get('s'),'c':row.get('c'),'r':row.get('r'),
-         'iq':row.get('iq'),'rr':row.get('rr'),'ct':row.get('t'),'cl':row.get('co')}
+         'iq':row.get('iq'),'rr':row.get('rr')}
     if row.get('p'):out['p']=1
     return {k:v for k,v in out.items() if v is not None and v!=''}
 
