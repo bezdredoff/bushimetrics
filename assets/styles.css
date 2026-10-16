@@ -26,3 +26,5 @@
 .signal-hot{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,var(--line))}
 .signal-char{color:#c9a7ff;border-color:color-mix(in srgb,#c9a7ff 45%,var(--line))}
 .signal-risk{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+
+.hero-controls{display:flex;flex-direction:column;gap:8px;align-items:flex-end}.compact-select{background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:9px 12px}.compact-select:disabled{opacity:.45}@media(max-width:600px){.hero-controls{align-items:stretch;width:100%}}
