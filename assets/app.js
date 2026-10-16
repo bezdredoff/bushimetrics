@@ -191,6 +191,16 @@ function matchesSignal(c, signal) {
   return true;
 }
 
+function signalBadges(c) {
+  const out=[];
+  if (matchesSignal(c,'undervalued')) out.push('<span class="signal signal-value">VALUE</span>');
+  if (matchesSignal(c,'conviction')) out.push('<span class="signal signal-iq">HIGH IQ</span>');
+  if (matchesSignal(c,'hot')) out.push('<span class="signal signal-hot">HOT</span>');
+  if (matchesSignal(c,'character')) out.push('<span class="signal signal-char">CHAR+</span>');
+  if (matchesSignal(c,'thin')) out.push('<span class="signal signal-risk">THIN</span>');
+  return out.join('');
+}
+
 function applyFilters() {
   const q = $('#search').value.trim().toLowerCase();
   const gf = $('#gameFilter').value;
@@ -257,15 +267,16 @@ function renderCards() {
       <div class="card-meta">${esc(c.set || '')} · ${esc(c.code || '')}</div>
       <div class="card-row"><span class="badge">${esc(c.rarity || '—')}</span><span class="price">${observedLabel(c)}</span></div>
       <div class="card-row"><span class="${c.gap == null ? '' : c.gap >= 0 ? 'pos':'neg'}">gap ${pct(c.gap)}</span><span>IQ ${c.investment}</span></div>
+      <div class="signal-row">${signalBadges(c)}</div>
       ${c.availability !== 'released' ? '<div class="announced-ribbon">ANNOUNCED</div>' : ''}
     </div>
   </article>`).join('');
 
-  $('#cardTable').innerHTML = `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Set</th><th>No.</th><th>Rarity</th><th>Market</th><th>Gap</th><th>Momentum</th><th>IQ</th></tr></thead>
+  $('#cardTable').innerHTML = `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Set</th><th>No.</th><th>Rarity</th><th>Market</th><th>Gap</th><th>Signals</th><th>Momentum</th><th>IQ</th></tr></thead>
   <tbody>${rows.map(c => `<tr class="click-row" data-id="${esc(c.id)}">
     <td><div class="mini-card">${c.image ? `<img src="${esc(c.image)}" loading="lazy">` : ''}<b>${esc(c.name)}</b></div></td>
     <td>${esc(c.set || '')}</td><td><code>${esc(c.code || '')}</code></td><td><span class="badge">${esc(c.rarity || '—')}</span></td>
-    <td>${observedLabel(c)}</td><td>${pct(c.gap)}</td><td>${c.momentum}</td><td><b>${c.investment}</b></td>
+    <td>${observedLabel(c)}</td><td>${pct(c.gap)}</td><td><div class="signal-row">${signalBadges(c)}</div></td><td>${c.momentum}</td><td><b>${c.investment}</b></td>
   </tr>`).join('')}</tbody></table></div>`;
 
   const isGrid = state.cardView === 'grid';
