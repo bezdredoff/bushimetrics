@@ -613,7 +613,9 @@ function renderViewer() {
   $('#viewerBadges').innerHTML = [
     c.availability !== 'released' ? '<span class="badge badge-warn">Announced</span>' : '<span class="badge">Released</span>',
     c.isPremium ? '<span class="badge badge-accent">Premium</span>' : '',
-    !c.market ? '<span class="badge">Market pending</span>' : ''
+    !observed(c) ? '<span class="badge">Public market price unavailable</span>' : '',
+    observed(c) ? `<span class="badge">Price source: ${esc(observed(c).source)}</span>` : '',
+    !modelFair(c) ? '<span class="badge">Model fair value unavailable</span>' : ''
   ].join('');
 
   const familyKey=[c.game,c.language||'EN',c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
