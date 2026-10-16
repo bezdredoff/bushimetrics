@@ -1,0 +1,69 @@
+{
+  "source": "https://github.com/Akenaide/wsoffdata",
+  "sourceFiles": 63676,
+  "parsedFiles": 63676,
+  "invalidFiles": 0,
+  "missingCardCodeFiles": 1,
+  "uniquePrintingsByCode": 63673,
+  "duplicateCodeFiles": 2,
+  "duplicateCodeGroups": 2,
+  "conflictingCodeGroups": 2,
+  "conflictExamples": [
+    {
+      "code": "GZL/SE33-12",
+      "differingFields": [
+        "rarity",
+        "image"
+      ],
+      "kept": {
+        "name": "“猛き咆哮”ゴジラ・アース",
+        "set": "アニメーション映画『GODZILLA』",
+        "setId": "GZL/SE33",
+        "rarity": "RR",
+        "cardType": "Character",
+        "image": "https://ws-tcg.com/wordpress/wp-content/images/g/gzl_se33/gzl_se33_12.png",
+        "sourceFile": "GZL/SE33/GZL-SE33-12.json"
+      },
+      "discarded": {
+        "name": "“猛き咆哮”ゴジラ・アース",
+        "set": "アニメーション映画『GODZILLA』",
+        "setId": "GZL/SE33",
+        "rarity": "SEC",
+        "cardType": "Character",
+        "image": "https://ws-tcg.com/wordpress/wp-content/images/g/gzl_se33/gzl_se33_12sec.png",
+        "sourceFile": "GZL/SE33/GZL-SE33-12　.json"
+      }
+    },
+    {
+      "code": "GZL/SE33-23",
+      "differingFields": [
+        "rarity",
+        "image"
+      ],
+      "kept": {
+        "name": "“装甲兵器”ヴァルチャー",
+        "set": "アニメーション映画『GODZILLA』",
+        "setId": "GZL/SE33",
+        "rarity": "RR",
+        "cardType": "Character",
+        "image": "https://ws-tcg.com/wordpress/wp-content/images/g/gzl_se33/gzl_se33_23.png",
+        "sourceFile": "GZL/SE33/GZL-SE33-23.json"
+      },
+      "discarded": {
+        "name": "“装甲兵器”ヴァルチャー",
+        "set": "アニメーション映画『GODZILLA』",
+        "setId": "GZL/SE33",
+        "rarity": "SEC",
+        "cardType": "Character",
+        "image": "https://ws-tcg.com/wordpress/wp-content/images/g/gzl_se33/gzl_se33_23sec.png",
+        "sourceFile": "GZL/SE33/GZL-SE33-23　.json"
+      }
+    }
+  ],
+  "invalidExamples": [],
+  "notes": [
+    "A repeated collector code is not automatically a second verified physical printing.",
+    "Different rarity, name, set or artwork for the same code requires source-level and physical verification.",
+    "This audit compares the upstream GitHub data with itself; it does not certify completeness against the live Bushiroad website."
+  ]
+}
