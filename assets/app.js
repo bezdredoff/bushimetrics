@@ -11,7 +11,7 @@ const state = {
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
   compare: safeJson(localStorage.getItem('bm-compare') || '[]', []).slice(0, 4),
   portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {}),
-  detailCache: new Map(), fullCatalogLoaded: false, catalogGeneratedAt: null
+  setCache: new Map(), setManifest: new Map(), fullCatalogLoaded: false, catalogGeneratedAt: null
 };
 
 const currencyMoney = (v,currency='USD') => v == null || v === '' ? '—' : new Intl.NumberFormat(currency==='EUR'?'de-DE':'en-US', {
@@ -51,7 +51,7 @@ function enrichCard(c) {
 
 function expandBrowserCard(x) {
   return enrichCard({
-    id:x.i, game:x.g, language:x.l||'EN', availability:x.a||'released',
+    id:x.i, game:x.g, language:x.l||'EN', availability:x.a||'released', _setKey:x.k,
     name:x.n, set:x.s, code:x.c, rarity:x.r, image:x.im,
     marketEUR:x.me, market:x.mu, fairEUR:x.fe, fair:x.fu,
     investment:x.iq, momentum:x.mo, isPremium:!!x.p, rarityRank:x.rr,
@@ -78,7 +78,8 @@ async function load() {
 
   state.cards = (bootstrap.cards || []).map(expandBrowserCard);
   state.jpMeta = jpMeta || {};
-  state.sets = [...(bootstrap.sets || []), ...((jpMeta && jpMeta.sets) || [])];
+  state.sets = bootstrap.sets || [];
+  state.setManifest = new Map((bootstrap.sets||[]).map(x=>[x.key,x]));
   state.history = history;
   state.sources = sources;
   state.catalogGeneratedAt = bootstrap.generatedAt || null;
@@ -102,14 +103,14 @@ async function load() {
 async function loadFullBrowserCatalog() {
   try {
     $('#catalogStatus').textContent += ' · loading full EN catalog…';
-    const r=await fetch('data/web/catalog-en.json',{cache:'no-cache'});
-    if(!r.ok) throw new Error('web/catalog-en.json '+r.status);
+    const r=await fetch('data/web/search-en.json',{cache:'no-cache'});
+    if(!r.ok) throw new Error('web/search-en.json '+r.status);
     const full=await r.json();
     const jp=state.jpLoaded ? state.cards.filter(c=>(c.language||'EN')==='JP') : [];
     state.cards=[...(full.cards||[]).map(expandBrowserCard),...jp];
     state.fullCatalogLoaded=true;
     state.catalogGeneratedAt=full.generatedAt||state.catalogGeneratedAt;
-    state.sets=[...(full.sets||[]),...((state.jpMeta&&state.jpMeta.sets)||[])];
+    // Set metadata already comes from bootstrap manifest; only card index changes here.
     rebuildCardIndexes();
     initFilters();
     renderAll();
@@ -149,9 +150,9 @@ function expandJPCompact(x) {
   const rr=Number(x.rr||30);
   const treatment=rr>=86?82:(rr>=62?55:30);
   return enrichCard({
-    id:x.id,game:'weiss',language:'JP',availability:'released',
-    name:x.n,set:x.s,setId:x.si,code:x.c,rarity:x.r,cardType:x.t,color:x.co,image:x.im,
-    rarityRank:rr,isPremium:!!x.p,investment:Number(x.iq||0),momentum:50,confidence:'Low',
+    id:x.id||x.i,game:'weiss',language:'JP',availability:'released',_setKey:x.k,
+    name:x.n,set:x.s,setId:x.si,code:x.c,rarity:x.r,cardType:x.t||x.ct,color:x.co||x.cl,image:x.im,
+    rarityRank:Number(x.rr||rr),isPremium:!!x.p,investment:Number(x.iq||0),momentum:Number(x.mo||50),confidence:x.cf||'Low',
     identitySource:x.sf ? 'https://github.com/Akenaide/wsoffdata/blob/master/'+x.sf : null,
     catalogSource:'Akenaide/wsoffdata / official ws-tcg.com artwork',
     modelStatus:'jp-generic-v0.8',
@@ -167,8 +168,8 @@ async function ensureJPCatalog() {
   if (state.jpLoading) return state.jpLoading;
   state.jpLoading=(async()=>{
     toast('Loading Japanese Weiss catalog…');
-    const r=await fetch('data/catalog-weiss-jp.json',{cache:'no-cache'});
-    if(!r.ok) throw new Error('JP catalog '+r.status);
+    const r=await fetch('data/web/search-jp.json',{cache:'no-cache'});
+    if(!r.ok) throw new Error('JP search index '+r.status);
     const jp=await r.json();
     const incoming=(jp.cards||[]).map(expandJPCompact);
     state.cards.push(...incoming);
@@ -464,22 +465,54 @@ function renderSets() {
   $('#'+id).addEventListener(id === 'setSearch' ? 'input' : 'change', renderSets)
 );
 
+
+async function fetchSetPayload(setKey) {
+  if (!setKey) return null;
+  if (state.setCache.has(setKey)) return state.setCache.get(setKey);
+  const meta=state.setManifest.get(setKey);
+  if(!meta || !meta.path) return null;
+  const promise=fetch(meta.path,{cache:'no-cache'})
+    .then(r=>{if(!r.ok) throw new Error(meta.path+' '+r.status);return r.json();})
+    .catch(e=>{console.error('set load failed',setKey,e);return null;});
+  state.setCache.set(setKey,promise);
+  return promise;
+}
+
+function applySetPayload(payload) {
+  if(!payload || !Array.isArray(payload.cards)) return [];
+  const rows=payload.compactJP ? payload.cards.map(expandJPCompact) : payload.cards.map(c=>enrichCard({...c,_setKey:payload.key}));
+  const pos=new Map(state.cards.map((c,i)=>[c.id,i]));
+  for(const c of rows){
+    const i=pos.get(c.id);
+    if(i==null){ state.cards.push(c); pos.set(c.id,state.cards.length-1); }
+    else state.cards[i]=c;
+    state.byId.set(c.id,c);
+  }
+  return rows;
+}
+
+async function hydrateSetKeys(keys) {
+  const wanted=[...new Set(keys.filter(Boolean))].filter(k=>!state.setCache.get(k)?true:false);
+  if(!wanted.length) return false;
+  const payloads=await Promise.all(wanted.map(fetchSetPayload));
+  let changed=false;
+  for(const p of payloads){ if(p){applySetPayload(p);changed=true;} }
+  if(changed) rebuildCardIndexes();
+  return changed;
+}
+
 async function ensureCardDetail(id) {
   const current=state.byId.get(id);
-  if (!current || current._detailLoaded) return current;
-  const shard=String(id||'0')[0].toLowerCase();
-  if (!state.detailCache.has(shard)) {
-    state.detailCache.set(shard, fetch(`data/web/details/${shard}.json`,{cache:'no-cache'})
-      .then(r=>r.ok?r.json():({cards:{}})).catch(()=>({cards:{}})));
+  if (!current) return null;
+  if (current._detailLoaded) return current;
+  const payload=await fetchSetPayload(current._setKey);
+  if(payload){
+    const rows=applySetPayload(payload);
+    for(const row of rows) row._detailLoaded=true;
+    rebuildCardIndexes();
   }
-  const data=await state.detailCache.get(shard);
-  const full=(data.cards||{})[id];
-  if (!full) { current._detailLoaded=true; return current; }
-  const hydrated=enrichCard({...current,...full,_detailLoaded:true});
-  const idx=state.cards.findIndex(c=>c.id===id);
-  if (idx>=0) state.cards[idx]=hydrated;
-  state.byId.set(id,hydrated);
-  rebuildCardIndexes();
+  const hydrated=state.byId.get(id)||current;
+  hydrated._detailLoaded=true;
   return hydrated;
 }
 
