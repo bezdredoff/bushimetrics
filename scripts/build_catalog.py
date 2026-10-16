@@ -317,6 +317,7 @@ def main():
         if not code:continue
         game=c.get('game') or ('palworld' if code.upper().startswith(('EBP','ETD','ESS','EPR','ESOUL')) else 'weiss')
         c['game']=game
+        c['language']=c.get('language') or 'EN'
         c['availability']=c.get('availability') or 'released'
 
         # Versioned physical-printing metadata can override generic catalog data.
@@ -347,16 +348,16 @@ def main():
 
     groups=defaultdict(list)
     for c in out:
-        groups[(c['game'],c.get('set') or 'Unknown')].append(c)
+        groups[(c['game'],c.get('language') or 'EN',c.get('set') or 'Unknown')].append(c)
     set_rows=[]
-    for (game,name),cards in groups.items():
+    for (game,language,name),cards in groups.items():
         released=[c for c in cards if c.get('availability')=='released']
         priced=[c for c in released if c.get('market')]
         priced_eur=[c for c in released if c.get('marketEUR') is not None]
         priced_any=[c for c in released if c.get('market') or c.get('marketEUR') is not None]
         premiums=[c for c in released if c.get('isPremium')]
         set_rows.append({
-            'game':game,'name':name,'total':len(cards),'released':len(released),
+            'game':game,'language':language,'name':name,'total':len(cards),'released':len(released),
             'announced':len(cards)-len(released),'premium':len(premiums),'priced':len(priced),
             'pricedEUR':len(priced_eur),'pricedAny':len(priced_any),
             'imageCoverage':round(sum(bool(c.get('image')) for c in cards)/len(cards)*100,1),
@@ -373,6 +374,7 @@ def main():
         'released':sum(c.get('availability')=='released' for c in out),
         'announced':sum(c.get('availability')!='released' for c in out),
         'weiss':sum(c['game']=='weiss' for c in out),
+        'weissEN':sum(c['game']=='weiss' and c.get('language')=='EN' for c in out),
         'palworld':sum(c['game']=='palworld' for c in out),
         'priced':sum(bool(c.get('market')) for c in out),
         'pricedEUR':sum(c.get('marketEUR') is not None for c in out),
