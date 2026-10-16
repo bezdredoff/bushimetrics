@@ -5,7 +5,7 @@ function safeJson(raw, fallback) {
   try { return JSON.parse(raw); } catch { return fallback; }
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, marketAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
@@ -66,7 +66,7 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, sources, jpMeta, research] = await Promise.all([
+  const [bootstrap, history, sources, jpMeta, research, marketAudit] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
@@ -74,7 +74,8 @@ async function load() {
     fetch('data/history.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
-    fetch('data/research_status.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {records:[]}).catch(() => ({records:[]}))
+    fetch('data/research_status.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {records:[]}).catch(() => ({records:[]})),
+    fetch('data/market-source-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
   ]);
 
   state.cards = (bootstrap.cards || []).map(expandBrowserCard);
@@ -83,6 +84,7 @@ async function load() {
   state.setManifest = new Map((bootstrap.sets||[]).map(x=>[x.key,x]));
   state.history = history;
   state.sources = sources;
+  state.marketAudit = marketAudit || {};
   state.research = research || {records:[]};
   state.researchById = new Map((state.research.records||[]).map(x=>[x.id,x]));
   state.catalogGeneratedAt = bootstrap.generatedAt || null;
@@ -618,7 +620,9 @@ function renderViewer() {
     c.isPremium ? '<span class="badge badge-accent">Premium</span>' : '',
     !observed(c) ? '<span class="badge">Public market price unavailable</span>' : '',
     observed(c) ? `<span class="badge">Price source: ${esc(observed(c).source)}</span>` : '',
-    !modelFair(c) ? '<span class="badge">Model fair value unavailable</span>' : ''
+    !modelFair(c) ? '<span class="badge">Model fair value unavailable</span>' : '',
+    c.market != null && c.marketStale ? '<span class="badge badge-warn">USD price observation outdated or undated</span>' : '',
+    c.unverifiedMarketIndicationUSD != null ? '<span class="badge badge-warn">Unverified quote excluded from market data</span>' : ''
   ].join('');
 
   const familyKey=[c.game,c.language||'EN',c.set||'',String(c.name||'').trim().toLowerCase()].join('|');
@@ -651,8 +655,8 @@ function renderViewer() {
   $('#viewerStats').innerHTML = [
     ['Cardmarket trend (EUR)',euro(c.marketEUR)],['Cardmarket low (EUR)',euro(c.marketEURLow)],
     ['Cardmarket 7d avg',euro(c.marketEURAvg7)],['Cardmarket 30d avg',euro(c.marketEURAvg30)],
-    ['Observed sold market (USD)',c.marketKind==='thin' ? '~'+money(c.market) : money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
-    ['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
+    ['USD market price / estimate',c.marketKind==='thin' ? '~'+money(c.market) : money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
+    ['USD evidence class',esc(c.marketEvidenceStatus||'Not available in this catalog view')],['USD observation age',c.marketObservationAgeDays!=null ? `${c.marketObservationAgeDays} days${c.marketStale ? ' · stale':''}` : 'Date unknown'],['Unverified research quote (not market)',c.unverifiedMarketIndicationUSD!=null ? `${money(c.unverifiedMarketIndicationUSD)} · not used in calculations` : '—'],['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
     ['Peer fair value',fairLabel(c)],['Fair-value gap',pct(c.gap)],['Fair confidence',c.fairValueConfidence||'None'],['Fair method',c.fairValueMethod||'Insufficient peers'],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
     ['Price-change momentum (heuristic)', c.change7d!=null || c.change30d!=null ? `${c.momentum}/100` : 'Unavailable — no measured price change'],['Observed demand / inventory proxy',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · cross-sectional P${c.marketHeatPercentile??'—'} (not historical HYPE)`:'Unavailable — no verified sales and inventory observations'],['Investment quality',`${c.investment}/100`],
     ['Character premium',c.characterPremiumIndex!=null ? `${c.characterPremiumIndex} index · ${c.characterPremiumObservations||0} obs · ${c.characterPremiumConfidence||'Low'}` : 'Not enough peer pricing'],['Fair peers',c.fairValuePeerCount!=null ? `${c.fairValuePeerCount} rarity peers · ${c.fairValueSubjectObservations||0} subject obs` : '—'],
@@ -1069,6 +1073,13 @@ function renderSources() {
       <div class="stat"><span>Franchise Health Index</span><b>Awaiting validated retention and activity series</b></div>
       <div class="stat"><span>Signatures / reprint editions</span><b>Only verified physical variants may be distinguished</b></div>
       <div class="stat"><span>Investment model</span><b>Heuristic — not calibrated to validated long-term returns</b></div>
+    </div>
+  </div>
+  <div class="panel"><h3>Market source audit</h3><p>Unlinked manual and legacy seed prices are research indications, not verified market transactions or inputs to peer Fair Value.</p>
+    <div class="stat-list">
+      <div class="stat"><span>Manually entered prices reviewed</span><b>${Number(state.marketAudit.manualPriced||0).toLocaleString()}</b></div>
+      <div class="stat"><span>Missing independent source or card-level date</span><b>${Number(state.marketAudit.indicationOnly||0).toLocaleString()}</b></div>
+      <div class="stat"><span>Linked and dated records</span><b>${Number(state.marketAudit.linkedDated||0).toLocaleString()}</b></div>
     </div>
   </div>
   <div class="panel"><h3>Artwork data limitations</h3><p>Coverage means a catalog record contains an artwork URL — not that the remote image exists or loads successfully. Broken sources may fall back to alternative paths or an unavailable placeholder. Japanese image links are not verified in bulk.</p></div>
