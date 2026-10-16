@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import hashlib,json,math
+import hashlib,json,math,re
 from collections import defaultdict
 from datetime import datetime,timezone
 from pathlib import Path
@@ -36,36 +36,57 @@ def observed_basis(c):
         return float(c['market']),'USD'
     return None,None
 
-def attach_character_premium(cards):
-    """Estimate collector/character premium relative to same-set, same-rarity peers.
+def collector_subject(c):
+    """Best-effort collectible subject used only for market grouping."""
+    name=str(c.get('name') or '').strip()
+    if not name:return ''
+    if c.get('game')=='palworld':
+        for sep in (' – ',' - '):
+            if sep in name:
+                return name.split(sep,1)[0].strip()
+        return name
+    if str(c.get('cardType') or '').lower()=='character':
+        if ',' in name:
+            tail=name.rsplit(',',1)[1].strip()
+            if tail:return tail
+        m=re.match(r'^[“"][^”"]+[”"]\s*(.+)$',name)
+        if m and m.group(1).strip():return m.group(1).strip()
+    return name
 
-    For each priced printing, compute price / median price of its rarity in that set
-    and currency. Then aggregate those ratios across printings sharing the exact
-    card/character name. This controls for rarity before estimating desirability.
-    """
+def attach_character_premium(cards):
+    """Describe subject demand after controlling for set, rarity and currency."""
     peers=defaultdict(list)
     for c in cards:
+        c['collectorSubject']=collector_subject(c)
         if c.get('availability')!='released':continue
         value,currency=observed_basis(c)
         rarity=str(c.get('rarity') or '').upper()
         if value and rarity:
-            peers[(c.get('game'),c.get('set') or '',rarity,currency)].append(value)
-    peer_medians={k:median(v) for k,v in peers.items() if len(v)>=3}
+            peers[(c.get('game'),c.get('set') or '',rarity,currency)].append((c.get('id'),value))
 
-    families=defaultdict(list)
+    ratios_by_subject=defaultdict(list)
     for c in cards:
         value,currency=observed_basis(c)
         rarity=str(c.get('rarity') or '').upper()
-        pmed=peer_medians.get((c.get('game'),c.get('set') or '',rarity,currency))
-        if value and pmed:
-            ratio=value/pmed
-            # Winsorize thin-market extremes before family aggregation.
-            ratio=max(.20,min(5.0,ratio))
-            families[(c.get('game'),c.get('set') or '',str(c.get('name') or '').strip().lower())].append(ratio)
+        if not value or not rarity:continue
+        rows=peers.get((c.get('game'),c.get('set') or '',rarity,currency),[])
+        others=[v for cid,v in rows if cid!=c.get('id')]
+        pmed=median(others)
+        if pmed is None or len(others)<2:continue
+        ratio=max(.20,min(5.0,value/pmed))
+        c['_marketPeerRatio']=ratio
+        c['_marketPeerCurrency']=currency
+        c['_marketPeerMedian']=round(pmed,4)
+        c['_marketPeerCount']=len(others)
+        key=(c.get('game'),c.get('set') or '',c.get('collectorSubject') or '',currency)
+        ratios_by_subject[key].append((c.get('id'),ratio))
 
     for c in cards:
-        key=(c.get('game'),c.get('set') or '',str(c.get('name') or '').strip().lower())
-        ratios=families.get(key,[])
+        _,observed_currency=observed_basis(c)
+        currency=observed_currency or ('EUR' if c.get('game')=='weiss' else 'USD')
+        key=(c.get('game'),c.get('set') or '',c.get('collectorSubject') or '',currency)
+        rows=ratios_by_subject.get(key,[])
+        ratios=[ratio for _,ratio in rows]
         ratio=median(ratios)
         n=len(ratios)
         if ratio is None:
@@ -74,13 +95,61 @@ def attach_character_premium(cards):
             c['characterPremiumObservations']=0
             c['characterPremiumConfidence']='None'
             continue
-        idx=round(ratio*100)
-        # 1.0 peer-relative = neutral score 50; 2x = 85; 0.5x = 15.
-        score=clamp(50+35*math.log(ratio,2))
-        c['characterPremiumIndex']=idx
-        c['characterPremiumScore']=round(score)
+        c['characterPremiumIndex']=round(ratio*100)
+        c['characterPremiumScore']=round(clamp(50+35*math.log(ratio,2)))
         c['characterPremiumObservations']=n
         c['characterPremiumConfidence']='High' if n>=4 else ('Medium' if n>=2 else 'Low')
+    return cards
+
+def attach_peer_fair_value(cards):
+    """Predict price from peers without using the target card's own market price."""
+    peers=defaultdict(list)
+    subject_ratios=defaultdict(list)
+    for c in cards:
+        value,currency=observed_basis(c)
+        rarity=str(c.get('rarity') or '').upper()
+        if value and rarity:
+            peers[(c.get('game'),c.get('set') or '',rarity,currency)].append((c.get('id'),value))
+        if c.get('_marketPeerRatio') is not None and c.get('_marketPeerCurrency'):
+            key=(c.get('game'),c.get('set') or '',c.get('collectorSubject') or '',c['_marketPeerCurrency'])
+            subject_ratios[key].append((c.get('id'),float(c['_marketPeerRatio'])))
+
+    for c in cards:
+        if c.get('availability')!='released':
+            c['fairValueConfidence']='None';continue
+        current_value,current_currency=observed_basis(c)
+        candidate_currencies=[current_currency] if current_currency else (['EUR','USD'] if c.get('game')=='weiss' else ['USD','EUR'])
+        predicted=None
+        for currency in candidate_currencies:
+            if not currency:continue
+            rarity=str(c.get('rarity') or '').upper()
+            rows=peers.get((c.get('game'),c.get('set') or '',rarity,currency),[])
+            peer_values=[v for cid,v in rows if cid!=c.get('id')]
+            peer_med=median(peer_values)
+            if peer_med is None or len(peer_values)<3:continue
+            skey=(c.get('game'),c.get('set') or '',c.get('collectorSubject') or '',currency)
+            rrows=subject_ratios.get(skey,[])
+            family_ratios=[v for cid,v in rrows if cid!=c.get('id')]
+            subject_ratio=median(family_ratios)
+            if subject_ratio is None:continue
+            predicted=peer_med*subject_ratio
+            c['fairValueMethod']='leave-one-out rarity peer × subject premium'
+            c['fairValueCurrency']=currency
+            c['fairValuePeerMedian']=round(peer_med,2)
+            c['fairValuePeerCount']=len(peer_values)
+            c['fairValueSubjectRatio']=round(subject_ratio,3)
+            c['fairValueSubjectObservations']=len(family_ratios)
+            if len(peer_values)>=8 and len(family_ratios)>=3:
+                c['fairValueConfidence']='High'
+            elif len(peer_values)>=4 and len(family_ratios)>=2:
+                c['fairValueConfidence']='Medium'
+            else:
+                c['fairValueConfidence']='Low'
+            if currency=='EUR':c['peerFairEUR']=round(predicted,2)
+            else:c['peerFairUSD']=round(predicted,2)
+            break
+        if predicted is None:
+            c['fairValueConfidence']='None'
     return cards
 
 def attach_market_pressure(cards):
@@ -192,14 +261,14 @@ def score(c,set_priors,game_priors,scarcity_evidence):
         scarcity_score*.24 + ip*.10 + character*.10 + reprint*.13 + historical*.11 + treatment*.10 +
         liquidity*.07 + momentum*.10 + edition_bonus*.05
     ))
-    fair_multiplier=1+(investment-58)/300+(momentum-50)/650
-    fair=market*fair_multiplier if market else None
-    fair_eur=market_eur*fair_multiplier if market_eur else None
+    fair=c.get('peerFairUSD')
+    fair_eur=c.get('peerFairEUR')
     if c.get('availability')!='released':
         fair=None; fair_eur=None
     confidence=c.get('marketConfidence')
     if not confidence:
-        confidence='High' if market and c.get('change30d') is not None and rr>=70 else ('Medium' if market else 'Low')
+        observed=bool(market or market_eur)
+        confidence='High' if observed and c.get('change30d') is not None and rr>=70 else ('Medium' if observed else 'Low')
     c.update({
         'rarityRank':rr,'scarcityScore':scarcity_score,'scarcityEvidence':scarcity_note,
         'isPremium':str(c.get('rarity') or '').upper() in PREMIUM,
@@ -211,7 +280,7 @@ def score(c,set_priors,game_priors,scarcity_evidence):
             'historicalSignificance':round(historical),'treatment':round(treatment),
             'liquidity':round(liquidity),'editionDurability':round(edition_bonus)
         },
-        'modelStatus':'heuristic-v0.4'
+        'modelStatus':'peer-fair-v0.7'
     })
     return c
 
@@ -270,6 +339,7 @@ def main():
         out.append(c)
 
     attach_character_premium(out)
+    attach_peer_fair_value(out)
     attach_market_pressure(out)
     out=[score(c,set_priors,game_priors,scarcity_evidence) for c in out]
 
@@ -313,7 +383,7 @@ def main():
     }
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),
-        'modelVersion':'0.6-demand-pressure',
+        'modelVersion':'0.7-peer-fair-value',
         'counts':counts,
         'sets':set_rows,
         'cards':out
