@@ -279,6 +279,8 @@ function renderMarket() {
   $('#convictionTable').innerHTML = opportunityTable(conviction, true);
   bindRows('#convictionTable');
 
+  hydrateSetKeys([...opportunities,...conviction].map(c=>c._setKey)).then(changed=>{if(changed) renderMarket();});
+
   const pressure = cards.filter(c => c.demandPressure != null).sort((a,b)=>(b.marketHeatPercentile??-1)-(a.marketHeatPercentile??-1)).slice(0,15);
   $('#pressureTable').innerHTML = pressure.length ? `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Rarity</th><th>Sales</th><th>Fresh asks</th><th>Pressure</th><th>Heat</th></tr></thead><tbody>${pressure.map(c=>`<tr class="click-row" data-id="${esc(c.id)}"><td><div class="mini-card">${c.image?`<img src="${esc(c.image)}" loading="lazy">`:''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set||'')}</small></div></div></td><td><span class="badge">${esc(c.rarity||'—')}</span></td><td>${c.demandPressureSales??'—'}</td><td>${c.demandPressureAsks??'—'}</td><td><b>${c.demandPressure.toFixed(1)}%</b></td><td><span class="badge">${esc(c.marketHeatLabel||'—')} · P${c.marketHeatPercentile??'—'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No sales + asks pressure data for this game yet.</div>';
   bindRows('#pressureTable');
@@ -410,6 +412,11 @@ function renderCards() {
 
   $('#pageInfo').textContent = `${state.page} / ${pages} · ${state.filtered.length.toLocaleString()} cards`; $('#pageJump').max=String(pages); $('#pageJump').value=String(state.page);
   renderWatch();
+
+  const missing=rows.filter(c=>c._setKey && !c.image).map(c=>c._setKey);
+  if(missing.length){
+    hydrateSetKeys(missing).then(changed=>{if(changed) renderCards();});
+  }
 }
 
 $('#gridViewBtn').onclick = () => setCardView('grid');
