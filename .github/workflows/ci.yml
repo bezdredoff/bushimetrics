@@ -56,6 +56,7 @@ jobs:
       - run: python scripts/collect_palworld.py
       - run: python scripts/collect_weiss_jp.py
       - run: python scripts/build_weiss_jp_catalog.py
+      - run: python scripts/enrich_market_tcgcsv.py --max-groups 3
       - run: python scripts/enrich_market_palworldprices.py
       - run: python scripts/build_catalog.py
 
