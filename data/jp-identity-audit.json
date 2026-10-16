@@ -4,10 +4,15 @@
   "parsedFiles": 63676,
   "invalidFiles": 0,
   "missingCardCodeFiles": 1,
-  "uniquePrintingsByCode": 63673,
+  "uniqueCollectorCodes": 63673,
+  "uniquePrintingsByCode": 63675,
   "duplicateCodeFiles": 2,
+  "discardedDuplicateFiles": 0,
+  "verifiedVariantRows": 2,
   "duplicateCodeGroups": 2,
   "conflictingCodeGroups": 2,
+  "verifiedConflictCodeGroups": 2,
+  "unresolvedConflictingCodeGroups": 0,
   "conflictExamples": [
     {
       "code": "GZL/SE33-12",
@@ -15,7 +20,8 @@
         "rarity",
         "image"
       ],
-      "kept": {
+      "resolution": "verified separate printing",
+      "first": {
         "name": "“猛き咆哮”ゴジラ・アース",
         "set": "アニメーション映画『GODZILLA』",
         "setId": "GZL/SE33",
@@ -24,7 +30,7 @@
         "image": "https://ws-tcg.com/wordpress/wp-content/images/g/gzl_se33/gzl_se33_12.png",
         "sourceFile": "GZL/SE33/GZL-SE33-12.json"
       },
-      "discarded": {
+      "candidate": {
         "name": "“猛き咆哮”ゴジラ・アース",
         "set": "アニメーション映画『GODZILLA』",
         "setId": "GZL/SE33",
@@ -40,7 +46,8 @@
         "rarity",
         "image"
       ],
-      "kept": {
+      "resolution": "verified separate printing",
+      "first": {
         "name": "“装甲兵器”ヴァルチャー",
         "set": "アニメーション映画『GODZILLA』",
         "setId": "GZL/SE33",
@@ -49,7 +56,7 @@
         "image": "https://ws-tcg.com/wordpress/wp-content/images/g/gzl_se33/gzl_se33_23.png",
         "sourceFile": "GZL/SE33/GZL-SE33-23.json"
       },
-      "discarded": {
+      "candidate": {
         "name": "“装甲兵器”ヴァルチャー",
         "set": "アニメーション映画『GODZILLA』",
         "setId": "GZL/SE33",
@@ -62,8 +69,8 @@
   ],
   "invalidExamples": [],
   "notes": [
-    "A repeated collector code is not automatically a second verified physical printing.",
-    "Different rarity, name, set or artwork for the same code requires source-level and physical verification.",
-    "This audit compares the upstream GitHub data with itself; it does not certify completeness against the live Bushiroad website."
+    "Only explicitly source-verified rarities can share a collector code as distinct physical printings.",
+    "All other conflicts remain unresolved for manual review, not automatically split.",
+    "This source audit does not certify completeness against the live official Bushiroad catalog."
   ]
 }
