@@ -73,4 +73,7 @@ jobs:
           pressure=[x for x in pal if x.get('demandPressure') is not None]
           print('Demand pressure observations on',len(pressure),'Palworld printings')
           assert len(pressure) >= 100, f'demand pressure coverage too low: {len(pressure)}'
+          fair=[x for x in d['cards'] if x.get('fairValueConfidence') in ('High','Medium') and (x.get('fair') is not None or x.get('fairEUR') is not None)]
+          print('High/medium peer fair value on',len(fair),'printings')
+          assert len(fair) >= 250, f'peer fair-value coverage too low: {len(fair)}'
           PY
