@@ -54,6 +54,7 @@ def choose_price(rows):
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--max-groups',type=int,default=0,help='Smoke-test only the first N groups; 0 means all groups.')
+    ap.add_argument('--require-match',action='store_true',help='Fail if no collector-number price match is found.')
     args=ap.parse_args()
     if not WEISS.exists():
         print('Weiss identity catalog missing; TCGCSV skipped.')
@@ -143,6 +144,8 @@ def main():
         'failures':failures[:30],
         'cards':matched
     }
+    if args.require_match and not matched:
+        raise RuntimeError(f'TCGCSV smoke test found no collector-number matches across {len(groups)} groups: {stats}')
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
     print('TCGCSV matched',len(matched),'of',len(cards),'English Weiss printings;',payload['stats'])
