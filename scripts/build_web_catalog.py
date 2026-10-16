@@ -1,100 +1,149 @@
 #!/usr/bin/env python3
-"""Build compact browser payloads from the full analytical catalog.
+"""Build set-sharded browser payloads for GitHub Pages.
 
-The full data/catalog.json remains the research source of truth. GitHub Pages
-loads data/web/catalog-en.json instead, which keeps only fields required for
-search/filter/grid/market dashboards. Full card records are split across 16
-detail shards and loaded only when a preview is opened.
+Research data stays in data/catalog.json and data/catalog-weiss-jp.json.
+The browser gets:
+  data/web/bootstrap.json          tiny first paint with real cards
+  data/web/manifest.json           set metadata + set file paths
+  data/web/search-en.json          lightweight global EN search/sort index
+  data/web/search-jp.json          lightweight JP index, loaded only on demand
+  data/web/sets/<lang>/<set>.json  one payload per set
+
+This keeps the UI responsive and makes each set independently cacheable/debuggable.
 """
 from __future__ import annotations
-import json, shutil
+import hashlib,json,re,shutil
+from collections import defaultdict
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-DATA=ROOT/'data'
-OUT=DATA/'web'
-DETAIL=OUT/'details'
+DATA=ROOT/'data'; OUT=DATA/'web'; SETS=OUT/'sets'
 
-INDEX_FIELDS={
+SEARCH_FIELDS={
     'id':'i','game':'g','language':'l','availability':'a','name':'n','set':'s',
-    'code':'c','rarity':'r','image':'im','marketEUR':'me','market':'mu',
-    'fairEUR':'fe','fair':'fu','investment':'iq','momentum':'mo',
-    'isPremium':'p','rarityRank':'rr','marketHeatPercentile':'hp',
-    'marketHeatLabel':'hl','characterPremiumIndex':'cp',
-    'characterPremiumObservations':'co','marketKind':'mk',
-    'marketConfidence':'mc','confidence':'cf','fairValueConfidence':'fc',
-    'change7d':'d7','change30d':'d30','demandPressure':'dp',
-    'demandPressureSales':'ds','demandPressureAsks':'da',
-    'priceSource':'ps','priceSourceEUR':'pe','marketAsOf':'ma',
-    'cardmarketAsOf':'ca','cardType':'ct','color':'cl'
+    'code':'c','rarity':'r','marketEUR':'me','market':'mu','fairEUR':'fe','fair':'fu',
+    'investment':'iq','momentum':'mo','isPremium':'p','rarityRank':'rr',
+    'marketHeatPercentile':'hp','characterPremiumIndex':'cp',
+    'characterPremiumObservations':'co','marketKind':'mk','marketConfidence':'mc',
+    'confidence':'cf','fairValueConfidence':'fc','change7d':'d7','change30d':'d30',
+    'demandPressure':'dp','cardType':'ct','color':'cl'
 }
+BOOT_EXTRA={'image':'im','priceSource':'ps','priceSourceEUR':'pe','marketAsOf':'ma','cardmarketAsOf':'ca'}
 
-def compact_card(c):
-    out={}
-    for src,dst in INDEX_FIELDS.items():
-        v=c.get(src)
-        if v is not None and v != '':
-            out[dst]=v
+def slug(s):
+    base=re.sub(r'[^a-z0-9]+','-',str(s or 'set').lower()).strip('-')[:72] or 'set'
+    h=hashlib.sha1(str(s or '').encode()).hexdigest()[:8]
+    return f'{base}-{h}'
+
+def compact(row,extra=False,set_key=None):
+    out={'k':set_key} if set_key else {}
+    for src,dst in SEARCH_FIELDS.items():
+        v=row.get(src)
+        if v is not None and v!='':out[dst]=v
+    if extra:
+        for src,dst in BOOT_EXTRA.items():
+            v=row.get(src)
+            if v is not None and v!='':out[dst]=v
     return out
+
+def jp_search(row,set_key):
+    out={'i':row.get('id'),'g':'weiss','l':'JP','a':'released','k':set_key,
+         'n':row.get('n'),'s':row.get('s'),'c':row.get('c'),'r':row.get('r'),
+         'iq':row.get('iq'),'rr':row.get('rr'),'ct':row.get('t'),'cl':row.get('co')}
+    if row.get('p'):out['p']=1
+    return {k:v for k,v in out.items() if v is not None and v!=''}
+
+def write(path,obj):
+    path.parent.mkdir(parents=True,exist_ok=True)
+    path.write_text(json.dumps(obj,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
 
 def main():
     full=json.loads((DATA/'catalog.json').read_text(encoding='utf-8'))
     cards=full.get('cards') or []
-    # Initial browser payload intentionally excludes JP because that already has
-    # its own compact lazy catalog.
-    browser=[compact_card(c) for c in cards if (c.get('language') or 'EN')=='EN']
+    jp=json.loads((DATA/'catalog-weiss-jp.json').read_text(encoding='utf-8')) if (DATA/'catalog-weiss-jp.json').exists() else {'cards':[],'counts':{}}
+    jp_meta=json.loads((DATA/'catalog-weiss-jp-meta.json').read_text(encoding='utf-8')) if (DATA/'catalog-weiss-jp-meta.json').exists() else {'sets':[],'counts':{}}
 
-    if OUT.exists():
-        # Keep nothing stale: all browser payloads are deterministic build output.
-        shutil.rmtree(OUT)
-    DETAIL.mkdir(parents=True,exist_ok=True)
+    if OUT.exists():shutil.rmtree(OUT)
+    SETS.mkdir(parents=True,exist_ok=True)
 
-    common={
-        'generatedAt':full.get('generatedAt'),
-        'modelVersion':full.get('modelVersion'),
-        'counts':full.get('counts') or {},
-        'sets':full.get('sets') or []
-    }
-    payload={**common,'cards':browser}
-    (OUT/'catalog-en.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+    manifest=[]; en_index=[]; jp_index=[]; en_groups=defaultdict(list); jp_groups=defaultdict(list)
 
-    # Tiny first-paint payload: all current Palworld + highest-conviction EN Weiss.
-    # This is intentionally a visible subset only until catalog-en.json arrives.
-    en_weiss=[c for c in cards if c.get('game')=='weiss' and (c.get('language') or 'EN')=='EN' and c.get('availability')=='released']
+    for c in cards:
+        lang=c.get('language') or 'EN'
+        if lang!='EN':continue
+        name=c.get('set') or 'Unknown'
+        key=f"{c.get('game') or 'unknown'}-en-{slug(name)}"
+        en_groups[key].append(c)
+
+    for key,rows in en_groups.items():
+        game=rows[0].get('game') or 'weiss'; name=rows[0].get('set') or 'Unknown'
+        rel=f"sets/en/{key}.json"
+        write(OUT/rel,{'key':key,'game':game,'language':'EN','name':name,'cards':rows})
+        for c in rows:en_index.append(compact(c,set_key=key))
+        manifest.append({
+            'key':key,'game':game,'language':'EN','name':name,'path':f'data/web/{rel}',
+            'total':len(rows),'released':sum((x.get('availability') or 'released')=='released' for x in rows),
+            'announced':sum((x.get('availability') or 'released')!='released' for x in rows),
+            'premium':sum(bool(x.get('isPremium')) for x in rows),
+            'imaged':sum(bool(x.get('image')) for x in rows),
+            'priced':sum(x.get('market') is not None or x.get('marketEUR') is not None for x in rows)
+        })
+
+    for row in jp.get('cards') or []:
+        name=row.get('s') or row.get('si') or 'Unknown'
+        key=f"weiss-jp-{slug(name)}"
+        jp_groups[key].append(row)
+
+    for key,rows in jp_groups.items():
+        name=rows[0].get('s') or rows[0].get('si') or 'Unknown'
+        rel=f"sets/jp/{key}.json"
+        write(OUT/rel,{'key':key,'game':'weiss','language':'JP','name':name,'cards':rows,'compactJP':True})
+        for row in rows:jp_index.append(jp_search(row,key))
+        manifest.append({
+            'key':key,'game':'weiss','language':'JP','name':name,'path':f'data/web/{rel}',
+            'total':len(rows),'released':len(rows),'announced':0,
+            'premium':sum(bool(x.get('p')) for x in rows),'imaged':sum(bool(x.get('im')) for x in rows),'priced':0
+        })
+
+    en_index.sort(key=lambda x:(x.get('g',''),x.get('s',''),x.get('c',''),x.get('r','')))
+    jp_index.sort(key=lambda x:(x.get('s',''),x.get('c',''),x.get('r','')))
+    manifest.sort(key=lambda x:(x['game'],x['language'],x['name']))
+
+    common={'generatedAt':full.get('generatedAt'),'modelVersion':full.get('modelVersion'),
+            'counts':full.get('counts') or {},'jpCounts':jp.get('counts') or {}}
+    write(OUT/'manifest.json',{**common,'sets':manifest})
+    write(OUT/'search-en.json',{**common,'cards':en_index})
+    write(OUT/'search-jp.json',{'generatedAt':full.get('generatedAt'),'counts':jp.get('counts') or {},'cards':jp_index})
+
+    # Tiny first paint: all current Palworld + top EN Weiss conviction.
+    en_weiss=[c for c in cards if c.get('game')=='weiss' and (c.get('language') or 'EN')=='EN' and (c.get('availability') or 'released')=='released']
     en_weiss.sort(key=lambda c:(-int(c.get('investment') or 0),-int(c.get('rarityRank') or 0),str(c.get('name') or '')))
     pal=[c for c in cards if c.get('game')=='palworld' and (c.get('language') or 'EN')=='EN']
-    bootstrap_cards=[compact_card(c) for c in [*en_weiss[:240],*pal]]
-    (OUT/'bootstrap.json').write_text(json.dumps({**common,'bootstrap':True,'cards':bootstrap_cards},ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+    by_set={x['key']:x for x in manifest}
+    def key_for(c):
+        return f"{c.get('game') or 'unknown'}-en-{slug(c.get('set') or 'Unknown')}"
+    boot=[compact(c,extra=True,set_key=key_for(c)) for c in [*en_weiss[:240],*pal]]
+    write(OUT/'bootstrap.json',{**common,'bootstrap':True,'sets':manifest,'cards':boot})
 
-    shards={h:{} for h in '0123456789abcdef'}
-    for c in cards:
-        cid=str(c.get('id') or '')
-        if not cid: continue
-        h=cid[0].lower()
-        if h not in shards: h='0'
-        shards[h][cid]=c
-    for h,rows in shards.items():
-        (DETAIL/f'{h}.json').write_text(json.dumps({'cards':rows},ensure_ascii=False,separators=(',',':')),encoding='utf-8')
-
-    legacy=(DATA/'catalog.json').stat().st_size
-    compact=(OUT/'catalog-en.json').stat().st_size
-    shard_sizes={h:(DETAIL/f'{h}.json').stat().st_size for h in shards}
+    set_files=list((SETS/'en').glob('*.json'))+list((SETS/'jp').glob('*.json'))
+    sizes=[p.stat().st_size for p in set_files]
     meta={
-        'legacyBytes':legacy,'compactBytes':compact,
-        'compactCards':len(browser),'bootstrapCards':len(bootstrap_cards),'bootstrapBytes':(OUT/'bootstrap.json').stat().st_size,'detailCards':len(cards),
-        'detailShardMaxBytes':max(shard_sizes.values()) if shard_sizes else 0,
-        'detailShardBytes':shard_sizes
+        'legacyBytes':(DATA/'catalog.json').stat().st_size,
+        'bootstrapBytes':(OUT/'bootstrap.json').stat().st_size,
+        'searchENBytes':(OUT/'search-en.json').stat().st_size,
+        'searchJPBytes':(OUT/'search-jp.json').stat().st_size,
+        'searchENCards':len(en_index),'searchJPCards':len(jp_index),
+        'sets':len(manifest),'setFileMaxBytes':max(sizes,default=0),
+        'setFilesEN':len(en_groups),'setFilesJP':len(jp_groups)
     }
-    (OUT/'meta.json').write_text(json.dumps(meta,separators=(',',':')),encoding='utf-8')
-    print('browser payload',meta)
-    if compact >= legacy*.65:
-        raise RuntimeError(f'Browser payload compression insufficient: {compact} vs {legacy}')
-    if compact > 20_000_000:
-        raise RuntimeError(f'Browser payload still too large: {compact}')
-    if (OUT/'bootstrap.json').stat().st_size > 2_000_000:
-        raise RuntimeError('Bootstrap payload too large')
-    if max(shard_sizes.values(),default=0) > 8_000_000:
-        raise RuntimeError('Detail shard too large')
+    write(OUT/'meta.json',meta)
+    print('web catalog',meta)
 
-if __name__=='__main__':
-    main()
+    if meta['bootstrapBytes']>2_000_000:raise RuntimeError('Bootstrap payload too large')
+    if meta['searchENBytes']>12_000_000:raise RuntimeError('EN search index too large')
+    if meta['searchJPBytes']>16_000_000:raise RuntimeError('JP search index too large')
+    if meta['setFileMaxBytes']>6_000_000:raise RuntimeError('A set payload is too large')
+    if meta['searchENCards']<30000:raise RuntimeError('EN search index unexpectedly small')
+    if meta['searchJPCards']<50000:raise RuntimeError('JP search index unexpectedly small')
+
+if __name__=='__main__':main()
