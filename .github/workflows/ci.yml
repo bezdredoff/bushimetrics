@@ -95,6 +95,14 @@ jobs:
           assert web['setFilesEN'] >= 100, web
           assert web['setFilesJP'] >= 100, web
           jp=json.load(open('data/catalog-weiss-jp-meta.json',encoding='utf-8'))
+          audit=json.load(open('data/jp-identity-audit.json',encoding='utf-8'))
+          assert audit['uniquePrintingsByCode'] == jp['counts']['total'], audit
+          assert audit['parsedFiles'] + audit['invalidFiles'] == audit['sourceFiles'], audit
+          assert (audit['uniquePrintingsByCode'] + audit['duplicateCodeFiles']
+                  + audit['missingCardCodeFiles']) == audit['parsedFiles'], audit
+          print('JP upstream identity audit', {k:audit[k] for k in (
+              'sourceFiles','duplicateCodeFiles','conflictingCodeGroups','invalidFiles'
+          )})
           print('JP Weiss',jp['counts'])
           assert jp['counts']['total'] >= 50000, jp['counts']
           assert jp['counts']['imaged'] >= jp['counts']['released'] * .90, jp['counts']

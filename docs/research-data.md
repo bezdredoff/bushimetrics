@@ -30,3 +30,11 @@ When a vetted override replaces an automated provider, the original provider's s
 USD observation freshness is computed from `marketAsOf` (currently **older than 14 days** or undated is labeled stale) even if a provider flag says `stale=false`. Freshness and completed-sale sample confidence are separate dimensions. The market source audit appears in `data/market-source-audit.json` and in the Sources tab after the next catalog refresh.
 
 External verified sources may still be unavailable; adding a guessed price or linking only to BushiMetrics' own JSON does not constitute independently verified evidence.
+
+## Japanese upstream printing-identity audit
+
+The JP importer preserves its existing first-encountered collector-code policy while producing `data/jp-identity-audit.json` from the Akenaide source checkout on every data refresh. The report accounts for parsed, missing-code, malformed and duplicate source JSON files, and samples conflicting card metadata (rarity, name, set, artwork) under the same code. This explicitly exposes previously silent deduplication.
+
+A conflicting image or rarity does **not** prove a distinct physical print or a missing product entry. Inspect official Bushiroad print records and any official reprint announcements before splitting catalog identities. No estimate of missing cards should be derived solely by subtracting the current public site result count from our local indexed printings.
+
+The Coverage page exposes the generated audit when available. Before the next source refresh it reports the audit as pending rather than displaying invented counts.
