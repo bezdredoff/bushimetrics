@@ -32,11 +32,13 @@ def prior_for(c,set_priors,game_priors):
     found=next((v for k,v in set_priors.items() if k.lower() in key),None)
     return found or game_priors.get(c.get('game'),{})
 
-def apply_market(c,tcgapi,manual_market,seed_market):
+def apply_market(c,tcgapi,palworldprices,manual_market,seed_market):
     code=str(c.get('code') or '')
     # Priority: explicit validated override > API cache > legacy seed.
     src=None
     if code in seed_market: src=seed_market[code]
+    pwp=palworldprices.get(code)
+    if pwp: src={**(src or {}),**pwp}
     api=tcgapi.get(code)
     if api and api.get('market') is not None: src={**(src or {}),**api}
     if code in manual_market: src={**(src or {}),**manual_market[code]}
@@ -45,7 +47,13 @@ def apply_market(c,tcgapi,manual_market,seed_market):
       'market':'market','low':'marketLow','median':'marketMedian',
       'change24h':'change24h','change7d':'change7d','change30d':'change30d',
       'marketAsOf':'marketAsOf','salesVolume':'salesVolume','avgSalesPrice':'avgSalesPrice',
-      'priceSource':'priceSource','printing':'marketPrinting','confidence':'marketConfidence'
+      'priceSource':'priceSource','printing':'marketPrinting','confidence':'marketConfidence',
+      'marketKind':'marketKind','marketConfidence':'marketConfidence','marketQualifier':'marketQualifier',
+      'marketSourceUrl':'marketSourceUrl','marketBasisWindow':'marketBasisWindow','marketEstimator':'marketEstimator',
+      'marketMethod':'marketMethod','salesInBasis':'salesInBasis','salesInWindow':'salesInWindow',
+      'marketAskCount':'marketAskCount','marketAskLow':'marketAskLow','marketAskMedian':'marketAskMedian',
+      'marketAskSpreadPct':'marketAskSpreadPct','marketAskAsOf':'marketAskAsOf','marketStale':'marketStale',
+      'palworldPricesCardId':'palworldPricesCardId'
     }
     for a,b in mapping.items():
         if src.get(a) is not None:c[b]=src[a]
@@ -76,7 +84,12 @@ def score(c,set_priors,game_priors,scarcity_evidence):
     p=prior_for(c,set_priors,game_priors)
     ip=float(p.get('ip',55));reprint=float(p.get('reprint',55));historical=float(p.get('historical',50))
     treatment=float(c.get('treatmentScore') or (82 if rr>=86 else 55 if rr>=62 else 30))
-    liquidity=clamp(35+math.log10(max(market,1))*10 if market else 25)
+    sold_n=float(c.get('salesInBasis') or 0)
+    ask_n=float(c.get('marketAskCount') or 0)
+    if sold_n:
+        liquidity=clamp(28+18*math.log10(1+sold_n)+6*math.log10(1+ask_n))
+    else:
+        liquidity=clamp(35+math.log10(max(market,1))*10 if market else 25)
     edition_bonus=float(c.get('editionScore') or 50)
     investment=clamp(round(
         scarcity_score*.24 + ip*.20 + reprint*.13 + historical*.11 + treatment*.10 +
@@ -113,6 +126,8 @@ def main():
     printing=read(DATA/'printing_overrides.json',{'cards':{}}).get('cards',{})
     market_overrides=read(DATA/'market_overrides.json',{'cards':{}}).get('cards',{})
     tcgapi=read(MARKET/'tcgapi.json',{'cards':{}}).get('cards',{})
+    palworldprices_file=read(MARKET/'palworldprices.json',{'cards':{}})
+    palworldprices=palworldprices_file.get('cards',{})
     cardmarket_file=read(MARKET/'cardmarket.json',{'cards':{}})
     cardmarket=cardmarket_file.get('cards',{})
     cardmarket_asof=cardmarket_file.get('cardmarketCreatedAt') or cardmarket_file.get('generatedAt')
@@ -144,7 +159,7 @@ def main():
             for k,v in ov.items():
                 if v is not None:c[k]=v
 
-        apply_market(c,tcgapi,market_overrides,seed_market)
+        apply_market(c,tcgapi,palworldprices,market_overrides,seed_market)
         cm=cardmarket.get(code)
         if cm:
             for k,v in cm.items():
