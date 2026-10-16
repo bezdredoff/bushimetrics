@@ -5,7 +5,7 @@ function safeJson(raw, fallback) {
   try { return JSON.parse(raw); } catch { return fallback; }
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, jpMeta: {}, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
@@ -66,14 +66,15 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, sources, jpMeta] = await Promise.all([
+  const [bootstrap, history, sources, jpMeta, research] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
     }),
     fetch('data/history.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
-    fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
+    fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/research_status.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {records:[]}).catch(() => ({records:[]}))
   ]);
 
   state.cards = (bootstrap.cards || []).map(expandBrowserCard);
@@ -82,6 +83,8 @@ async function load() {
   state.setManifest = new Map((bootstrap.sets||[]).map(x=>[x.key,x]));
   state.history = history;
   state.sources = sources;
+  state.research = research || {records:[]};
+  state.researchById = new Map((state.research.records||[]).map(x=>[x.id,x]));
   state.catalogGeneratedAt = bootstrap.generatedAt || null;
   rebuildCardIndexes();
 
@@ -634,6 +637,17 @@ function renderViewer() {
   });
 
   renderCardHistory(c);
+  const evidence = state.researchById.get(c.id);
+  const metricNames = [['cec','Carton Equivalent Cost'],['demandPressure','Verified demand pressure'],
+    ['historicalHype','Historical HYPE'],['ripEV','Raw Rip EV'],
+    ['gradingEV','Grading EV'],['franchiseHealth','Franchise Health']];
+  const evidenceRows = metricNames.map(([key,label]) => {
+    const entry=evidence?.metrics?.[key];
+    const value=entry?.value;
+    const formatted=value==null ? 'Unavailable — '+(entry?.reason||'No verified observation for this printing')
+      : (entry.currency ? currencyMoney(value,entry.currency) : Number(value).toLocaleString());
+    return [esc(label),esc(formatted)];
+  });
   $('#viewerStats').innerHTML = [
     ['Cardmarket trend (EUR)',euro(c.marketEUR)],['Cardmarket low (EUR)',euro(c.marketEURLow)],
     ['Cardmarket 7d avg',euro(c.marketEURAvg7)],['Cardmarket 30d avg',euro(c.marketEURAvg30)],
@@ -643,7 +657,8 @@ function renderViewer() {
     ['Price-change momentum (heuristic)', c.change7d!=null || c.change30d!=null ? `${c.momentum}/100` : 'Unavailable — no measured price change'],['Observed demand / inventory proxy',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · cross-sectional P${c.marketHeatPercentile??'—'} (not historical HYPE)`:'Unavailable — no verified sales and inventory observations'],['Investment quality',`${c.investment}/100`],
     ['Character premium',c.characterPremiumIndex!=null ? `${c.characterPremiumIndex} index · ${c.characterPremiumObservations||0} obs · ${c.characterPremiumConfidence||'Low'}` : 'Not enough peer pricing'],['Fair peers',c.fairValuePeerCount!=null ? `${c.fairValuePeerCount} rarity peers · ${c.fairValueSubjectObservations||0} subject obs` : '—'],
     ['Confidence',c.confidence || 'Low'],
-    ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending'],['Price qualifier',c.marketQualifier || (c.marketKind==='bare' ? 'Completed-sale estimate' : '—')]
+    ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending'],['Price qualifier',c.marketQualifier || (c.marketKind==='bare' ? 'Completed-sale estimate' : '—')],
+    ...evidenceRows
   ].map(([a,b]) => `<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
 
   const factors = c.modelFactors || {};
