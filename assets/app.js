@@ -247,7 +247,7 @@ function opportunityTable(rows, compact=false) {
   return `<div class="table-scroll"><table><thead><tr>
     <th>Card</th><th>Rarity</th><th>Market</th>${compact ? '' : '<th>Model fair</th><th>Gap</th><th>30d</th>'}<th>IQ</th>
   </tr></thead><tbody>${rows.map(c => `<tr class="click-row" data-id="${esc(c.id)}">
-    <td><div class="mini-card">${c.image ? `<img src="${esc(c.image)}" loading="lazy">` : ''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set || '')}</small></div></div></td>
+    <td><div class="mini-card">${c.image ? `<img src="${esc(preferredArtwork(c.image))}" data-original-artwork="${esc(c.image)}" loading="lazy">` : ''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set || '')}</small></div></div></td>
     <td><span class="badge">${esc(c.rarity || '—')}</span></td>
     <td class="price">${observedLabel(c)}</td>
     ${compact ? '' : `<td>${fairLabel(c)}</td><td class="${(c.gap || 0) >= 0 ? 'pos':'neg'}">${pct(c.gap)}</td><td class="${(c.change30d || 0) >= 0 ? 'pos':'neg'}">${pct(c.change30d)}</td>`}
@@ -288,7 +288,7 @@ function renderMarket() {
   hydrateSetKeys([...opportunities,...conviction].map(c=>c._setKey)).then(changed=>{if(changed) renderMarket();});
 
   const pressure = cards.filter(c => c.demandPressure != null).sort((a,b)=>(b.marketHeatPercentile??-1)-(a.marketHeatPercentile??-1)).slice(0,15);
-  $('#pressureTable').innerHTML = pressure.length ? `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Rarity</th><th>Sales</th><th>Fresh asks</th><th>Pressure</th><th>Heat</th></tr></thead><tbody>${pressure.map(c=>`<tr class="click-row" data-id="${esc(c.id)}"><td><div class="mini-card">${c.image?`<img src="${esc(c.image)}" loading="lazy">`:''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set||'')}</small></div></div></td><td><span class="badge">${esc(c.rarity||'—')}</span></td><td>${c.demandPressureSales??'—'}</td><td>${c.demandPressureAsks??'—'}</td><td><b>${c.demandPressure.toFixed(1)}%</b></td><td><span class="badge">${esc(c.marketHeatLabel||'—')} · P${c.marketHeatPercentile??'—'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No sales + asks pressure data for this game yet.</div>';
+  $('#pressureTable').innerHTML = pressure.length ? `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Rarity</th><th>Sales</th><th>Fresh asks</th><th>Pressure</th><th>Heat</th></tr></thead><tbody>${pressure.map(c=>`<tr class="click-row" data-id="${esc(c.id)}"><td><div class="mini-card">${c.image?`<img src="${esc(preferredArtwork(c.image))}" data-original-artwork="${esc(c.image)}" loading="lazy">`:''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set||'')}</small></div></div></td><td><span class="badge">${esc(c.rarity||'—')}</span></td><td>${c.demandPressureSales??'—'}</td><td>${c.demandPressureAsks??'—'}</td><td><b>${c.demandPressure.toFixed(1)}%</b></td><td><span class="badge">${esc(c.marketHeatLabel||'—')} · P${c.marketHeatPercentile??'—'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No sales + asks pressure data for this game yet.</div>';
   bindRows('#pressureTable');
 
   const announced = state.cards.filter(c => c.game === state.game && (c.language||'EN') === state.marketLanguage && c.availability !== 'released').length;
@@ -392,21 +392,37 @@ $('#resetFiltersBtn').onclick = () => {
   state.page=1; applyFilters();
 };
 
-// Bushiroad's newer official artwork URLs include /images/cardlist/.
-// Retry that path for legacy JP links, then try the image relay once.
+// Cache the working official artwork URL across views and page reloads.
+const ART_CACHE_KEY = 'bm-artwork-urls-v1';
+const artworkCache = safeJson(localStorage.getItem(ART_CACHE_KEY) || '{}', {});
+const officialArtwork = url => {
+  try { return ['ws-tcg.com', 'www.ws-tcg.com'].includes(new URL(url).hostname); }
+  catch { return false; }
+};
+const preferredArtwork = url => {
+  if (!url || !officialArtwork(url)) return url;
+  if (artworkCache[url]) return artworkCache[url];
+  return url.replace('/wordpress/wp-content/images/', '/wordpress/wp-content/images/cardlist/');
+};
+function rememberArtwork(original, working) {
+  if (!original || !working || !officialArtwork(original)) return;
+  artworkCache[original] = working;
+  try {
+    const entries = Object.entries(artworkCache);
+    if (entries.length > 2000) for (const key of entries.slice(0, entries.length - 2000).map(([k]) => k)) delete artworkCache[key];
+    localStorage.setItem(ART_CACHE_KEY, JSON.stringify(artworkCache));
+  } catch { /* Storage may be unavailable or full. */ }
+}
+document.addEventListener('load', event => {
+  const img = event.target;
+  if (!(img instanceof HTMLImageElement) || !img.dataset.originalArtwork) return;
+  rememberArtwork(img.dataset.originalArtwork, img.currentSrc || img.src);
+}, true);
 document.addEventListener('error', event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement)) return;
   const url = img.currentSrc || img.src;
-  let parsed;
-  try { parsed = new URL(url); } catch { parsed = null; }
-  const official = parsed && ['ws-tcg.com', 'www.ws-tcg.com'].includes(parsed.hostname);
-  if (official && !img.dataset.artFallback && parsed.pathname.includes('/wordpress/wp-content/images/') && !parsed.pathname.includes('/wordpress/wp-content/images/cardlist/')) {
-    img.dataset.artFallback = 'cardlist';
-    img.src = url.replace('/wordpress/wp-content/images/', '/wordpress/wp-content/images/cardlist/');
-    return;
-  }
-  if (official && img.dataset.artFallback !== 'relay') {
+  if (officialArtwork(url) && img.dataset.artFallback !== 'relay') {
     img.dataset.artFallback = 'relay';
     img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
     return;
@@ -420,7 +436,7 @@ document.addEventListener('error', event => {
 
 function cardImage(c, cls='') {
   return c.image
-    ? `<img class="${cls}" src="${esc(c.image)}" loading="lazy" alt="${esc(c.name)}">`
+    ? `<img class="${cls}" src="${esc(preferredArtwork(c.image))}" data-original-artwork="${esc(c.image)}" loading="lazy" alt="${esc(c.name)}">`
     : `<div class="placeholder">${esc(c.rarity || 'Card')}<br><small>preview pending</small></div>`;
 }
 
@@ -444,7 +460,7 @@ function renderCards() {
 
   $('#cardTable').innerHTML = `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Set</th><th>No.</th><th>Rarity</th><th>Market</th><th>Gap</th><th>Signals</th><th>Momentum</th><th>IQ</th></tr></thead>
   <tbody>${rows.map(c => `<tr class="click-row" data-id="${esc(c.id)}">
-    <td><div class="mini-card">${c.image ? `<img src="${esc(c.image)}" loading="lazy">` : ''}<b>${esc(c.name)}</b></div></td>
+    <td><div class="mini-card">${c.image ? `<img src="${esc(preferredArtwork(c.image))}" data-original-artwork="${esc(c.image)}" loading="lazy">` : ''}<b>${esc(c.name)}</b></div></td>
     <td>${esc(c.set || '')}</td><td><code>${esc(c.code || '')}</code></td><td><span class="badge">${esc(c.rarity || '—')}</span></td>
     <td>${observedLabel(c)}</td><td>${pct(c.gap)}</td><td><div class="signal-row">${signalBadges(c)}</div></td><td>${c.momentum}</td><td><b>${c.investment}</b></td>
   </tr>`).join('')}</tbody></table></div>`;
@@ -620,7 +636,7 @@ function renderViewer() {
   const family=state.printingFamilies.get(familyKey)||[c];
   $('#printingFamilyCount').textContent=family.length + (family.length===1?' printing':' printings');
   $('#printingFamily').innerHTML=family.map(x => `<button class="printing-chip ${x.id===c.id?'active':''}" data-family-id="${esc(x.id)}" title="${esc(x.code||'')}">
-    ${x.image?`<img src="${esc(x.image)}" loading="lazy" alt="">`:''}
+    ${x.image?`<img src="${esc(preferredArtwork(x.image))}" data-original-artwork="${esc(x.image)}" loading="lazy" alt="">`:''}
     <span><b>${esc(x.rarity||'—')}</b><small>${esc(x.code||'')}</small><em>${observedLabel(x)}</em></span>
   </button>`).join('');
   $$('#printingFamily [data-family-id]').forEach(btn=>btn.onclick=()=>{
@@ -673,7 +689,7 @@ function renderViewer() {
 
   const lo = Math.max(0,state.viewerIndex-6), hi = Math.min(state.viewerList.length,state.viewerIndex+7);
   $('#thumbStrip').innerHTML = state.viewerList.slice(lo,hi).map((x,i) =>
-    x.image ? `<img src="${esc(x.image)}" data-i="${lo+i}" class="${lo+i===state.viewerIndex?'active':''}" title="${esc(x.name)}">` : ''
+    x.image ? `<img src="${esc(preferredArtwork(x.image))}" data-original-artwork="${esc(x.image)}" data-i="${lo+i}" class="${lo+i===state.viewerIndex?'active':''}" title="${esc(x.name)}">` : ''
   ).join('');
   $$('#thumbStrip img').forEach(i => i.onclick = () => { state.viewerIndex = Number(i.dataset.i); renderViewer(); updateViewerHash(); });
 }
@@ -836,7 +852,7 @@ $('#savePortfolioBtn').onclick = () => {
 function renderWatch() {
   const a = [...state.watch].map(id => state.byId.get(id)).filter(Boolean);
   $('#watchList').innerHTML = a.length ? a.map(c => `<div class="watch-item" data-id="${esc(c.id)}">
-    ${c.image ? `<img src="${esc(c.image)}" loading="lazy">` : ''}
+    ${c.image ? `<img src="${esc(preferredArtwork(c.image))}" data-original-artwork="${esc(c.image)}" loading="lazy">` : ''}
     <div><b>${esc(c.name)}</b><br><small>${observedLabel(c)} · ${esc(c.rarity||'')}</small></div>
   </div>`).join('') : '<p class="muted">No cards watched yet.</p>';
   $$('#watchList [data-id]').forEach(x => x.onclick = () => openViewer(x.dataset.id));
@@ -875,7 +891,7 @@ function renderPortfolio() {
     const m=Number(x.currency==='EUR'?x.card.marketEUR:x.card.market)||0,b=x.qty*x.cost,v=m?x.qty*m:0,p=m?v-b:null;
     const fmt=x.currency==='EUR'?euro:money;
     return `<tr>
-      <td class="click-row" data-id="${esc(x.card.id)}"><div class="mini-card">${x.card.image?`<img src="${esc(x.card.image)}" loading="lazy">`:''}<div><b>${esc(x.card.name)}</b><br><small>${esc(x.card.set||'')}</small></div></div></td>
+      <td class="click-row" data-id="${esc(x.card.id)}"><div class="mini-card">${x.card.image?`<img src="${esc(preferredArtwork(x.card.image))}" data-original-artwork="${esc(x.card.image)}" loading="lazy">`:''}<div><b>${esc(x.card.name)}</b><br><small>${esc(x.card.set||'')}</small></div></div></td>
       <td>${x.qty}</td><td>${fmt(x.cost)} <small>${x.currency}</small></td><td>${fmt(b)}</td><td>${fmt(m||null)}</td><td>${m?fmt(v):'—'}</td>
       <td class="${p==null?'':p>=0?'pos':'neg'}">${p==null?'—':fmt(p)}</td>
       <td><button class="ghost remove-position" data-remove="${esc(x.card.id)}">Remove</button></td>
@@ -894,7 +910,7 @@ function renderCompare() {
   const a = state.compare.map(id => state.byId.get(id)).filter(Boolean);
   $('#compareCount').textContent = a.length;
   $('#compareGrid').innerHTML = a.length ? a.map(c => `<article class="compare-card">
-    ${c.image ? `<img src="${esc(c.image)}" loading="lazy">` : ''}
+    ${c.image ? `<img src="${esc(preferredArtwork(c.image))}" data-original-artwork="${esc(c.image)}" loading="lazy">` : ''}
     <h2>${esc(c.name)}</h2>
     <p>${esc(c.set||'')} · ${esc(c.code||'')} · ${esc(c.rarity||'')}</p>
     <div class="stat-list">
