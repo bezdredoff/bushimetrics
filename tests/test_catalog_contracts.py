@@ -57,7 +57,7 @@ class CatalogContracts(unittest.TestCase):
         self.assertNotIn('preferredArtwork(c.image)', self.app)
 
     def test_app_bundle_and_required_panels_exist(self):
-        self.assertRegex(self.html, r'assets/app\\.js\\?v=')
+        self.assertIn('assets/app.js?v=', self.html)
         for name in ('renderMarket', 'renderCoverage', 'renderSets', 'renderPortfolio',
                      'renderCompare', 'renderBacktest', 'renderSources', 'renderCardHistory'):
             with self.subTest(name=name):
