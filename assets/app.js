@@ -119,22 +119,27 @@ async function ensureJPCatalog() {
 }
 
 function initFilters() {
+  initRarityOptions();
+  updateSetOptions();
+  $('#gridViewBtn').classList.toggle('active', state.cardView === 'grid');
+  $('#tableViewBtn').classList.toggle('active', state.cardView === 'table');
+}
+function initRarityOptions() {
+  const current=$('#rarityFilter').value;
   const rarities = [...new Set(state.cards.map(c => c.rarity).filter(Boolean))].sort((a,b) => a.localeCompare(b));
   $('#rarityFilter').innerHTML = '<option value="all">All rarities</option>' +
     rarities.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
-  updateSetOptions();
-
-  $('#gridViewBtn').classList.toggle('active', state.cardView === 'grid');
-  $('#tableViewBtn').classList.toggle('active', state.cardView === 'table');
+  if(rarities.includes(current)) $('#rarityFilter').value=current;
 }
 
 function updateSetOptions() {
   const game = $('#gameFilter').value;
+  const language = $('#languageFilter').value;
   const current = $('#setFilter').value;
-  const sets = [...new Set(state.cards
-    .filter(c => game === 'all' || c.game === game)
-    .map(c => c.set).filter(Boolean))]
-    .sort((a,b) => a.localeCompare(b));
+  const sourceSets = state.sets
+    .filter(s => (game === 'all' || s.game === game) && (language === 'all' || (s.language||'EN') === language))
+    .map(s=>s.name).filter(Boolean);
+  const sets = [...new Set(sourceSets)].sort((a,b) => a.localeCompare(b));
   $('#setFilter').innerHTML = '<option value="all">All sets</option>' +
     sets.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
   if (sets.includes(current)) $('#setFilter').value = current;
