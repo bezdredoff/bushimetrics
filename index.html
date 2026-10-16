@@ -65,6 +65,13 @@
 
   <div class="panel">
     <div class="panel-head">
+      <div><h2>Demand pressure</h2><p>Current completed-sales vs fresh-asks absorption proxy. Heat is cross-sectional; historical HYPE waits for its own time baseline.</p></div>
+    </div>
+    <div id="pressureTable"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
       <div><h2>Data health</h2><p>Catalog completeness and price coverage are intentionally reported separately.</p></div>
     </div>
     <div id="dataHealth" class="health-grid"></div>
@@ -90,7 +97,7 @@
     <select id="setFilter"><option value="all">All sets</option></select>
     <select id="rarityFilter"><option value="all">All rarities</option></select>
     <select id="availabilityFilter"><option value="released">Released</option><option value="all">Released + announced</option><option value="announced">Announced only</option></select>
-    <select id="sort"><option value="investment-desc">Investment score ↓</option><option value="market-desc">Market price ↓</option><option value="gap-desc">Fair-value gap ↓</option><option value="momentum-desc">Momentum ↓</option><option value="name">Name A–Z</option></select>
+    <select id="sort"><option value="investment-desc">Investment score ↓</option><option value="market-desc">Market price ↓</option><option value="gap-desc">Fair-value gap ↓</option><option value="momentum-desc">Momentum ↓</option><option value="heat-desc">Market heat ↓</option><option value="name">Name A–Z</option></select>
     <label class="check"><input id="premiumOnly" type="checkbox"> Premium only</label>
     <label class="check"><input id="pricedOnly" type="checkbox"> With market price</label>
   </div>
