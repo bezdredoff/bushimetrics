@@ -98,6 +98,23 @@ function updateCatalogStatus(generatedAt=null) {
     (generatedAt ? ` · updated ${new Date(generatedAt).toLocaleString()}` : '');
 }
 
+function expandJPCompact(x) {
+  const rr=Number(x.rr||30);
+  const treatment=rr>=86?82:(rr>=62?55:30);
+  return enrichCard({
+    id:x.id,game:'weiss',language:'JP',availability:'released',
+    name:x.n,set:x.s,setId:x.si,code:x.c,rarity:x.r,cardType:x.t,color:x.co,image:x.im,
+    rarityRank:rr,isPremium:!!x.p,investment:Number(x.iq||0),momentum:50,confidence:'Low',
+    identitySource:x.sf ? 'https://github.com/Akenaide/wsoffdata/blob/master/'+x.sf : null,
+    catalogSource:'Akenaide/wsoffdata / official ws-tcg.com artwork',
+    modelStatus:'jp-generic-v0.8',
+    modelFactors:{
+      scarcity:rr,ipStrength:55,characterPremium:50,reprintDurability:55,
+      historicalSignificance:50,treatment,liquidity:25,editionDurability:50
+    }
+  });
+}
+
 async function ensureJPCatalog() {
   if (state.jpLoaded) return true;
   if (state.jpLoading) return state.jpLoading;
@@ -106,7 +123,7 @@ async function ensureJPCatalog() {
     const r=await fetch('data/catalog-weiss-jp.json',{cache:'no-cache'});
     if(!r.ok) throw new Error('JP catalog '+r.status);
     const jp=await r.json();
-    const incoming=(jp.cards||[]).map(enrichCard);
+    const incoming=(jp.cards||[]).map(expandJPCompact);
     state.cards.push(...incoming);
     state.jpLoaded=true;
     rebuildCardIndexes();
