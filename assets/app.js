@@ -58,6 +58,8 @@ function expandBrowserCard(x) {
     marketHeatPercentile:x.hp, marketHeatLabel:x.hl,
     characterPremiumIndex:x.cp, characterPremiumObservations:x.co,
     marketKind:x.mk, marketConfidence:x.mc, confidence:x.cf,
+    marketEvidenceStatus:x.es, marketObservationAgeDays:x.ea,
+    marketStale:x.st, unverifiedMarketIndicationUSD:x.ui,
     fairValueConfidence:x.fc, change7d:x.d7, change30d:x.d30,
     demandPressure:x.dp, demandPressureSales:x.ds, demandPressureAsks:x.da,
     priceSource:x.ps, priceSourceEUR:x.pe, marketAsOf:x.ma, cardmarketAsOf:x.ca,
