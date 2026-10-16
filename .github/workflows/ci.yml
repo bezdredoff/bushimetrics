@@ -58,6 +58,7 @@ jobs:
       - run: python scripts/build_weiss_jp_catalog.py
       - run: python scripts/enrich_market_palworldprices.py
       - run: python scripts/build_catalog.py
+      - run: python scripts/build_history_shards.py
 
       - name: Validate complete generated catalog
         run: |
