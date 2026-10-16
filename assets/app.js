@@ -640,7 +640,7 @@ function renderViewer() {
     ['Observed sold market (USD)',c.marketKind==='thin' ? '~'+money(c.market) : money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
     ['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
     ['Peer fair value',fairLabel(c)],['Fair-value gap',pct(c.gap)],['Fair confidence',c.fairValueConfidence||'None'],['Fair method',c.fairValueMethod||'Insufficient peers'],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
-    ['Momentum',`${c.momentum}/100`],['Demand pressure',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · ${c.marketHeatLabel||''} P${c.marketHeatPercentile??'—'}`:'N/A'],['Investment quality',`${c.investment}/100`],
+    ['Price-change momentum (heuristic)', c.change7d!=null || c.change30d!=null ? `${c.momentum}/100` : 'Unavailable — no measured price change'],['Observed demand / inventory proxy',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · cross-sectional P${c.marketHeatPercentile??'—'} (not historical HYPE)`:'Unavailable — no verified sales and inventory observations'],['Investment quality',`${c.investment}/100`],
     ['Character premium',c.characterPremiumIndex!=null ? `${c.characterPremiumIndex} index · ${c.characterPremiumObservations||0} obs · ${c.characterPremiumConfidence||'Low'}` : 'Not enough peer pricing'],['Fair peers',c.fairValuePeerCount!=null ? `${c.fairValuePeerCount} rarity peers · ${c.fairValueSubjectObservations||0} subject obs` : '—'],
     ['Confidence',c.confidence || 'Low'],
     ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending'],['Price qualifier',c.marketQualifier || (c.marketKind==='bare' ? 'Completed-sale estimate' : '—')]
@@ -1045,6 +1045,16 @@ function renderSources() {
     <p class="eyebrow">Methodology</p><h2>${esc(m.title||'Investment Quality')}</h2><p>${esc(m.description||'')}</p>
     <div class="method-grid">${(m.factors||[]).map(f=>`<div class="method-card"><div><b>${esc(f.name)}</b><strong>${Number(f.weight)||0}%</strong></div><p>${esc(f.description||'')}</p></div>`).join('')}</div>
     <div class="method-notes"><p><b>Fair Value:</b> ${esc(m.fairValue||'')}</p><p><b>Backtest:</b> ${esc(m.backtest||'')}</p></div>
+  </div>
+  <div class="panel"><h3>Research model availability</h3><p>Metrics are displayed only with sufficient observed inputs. The codebase supports evidence-gated research calculations; having a formula is not the same as having market evidence.</p>
+    <div class="stat-list">
+      <div class="stat"><span>Carton Equivalent Cost (CEC)</span><b>Awaiting verified carton prices and card-specific case observations</b></div>
+      <div class="stat"><span>Historical HYPE</span><b>Awaiting comparable historical sales / listing observations</b></div>
+      <div class="stat"><span>Rip EV / graded EV</span><b>Awaiting complete pull distributions, sold prices and grade outcomes</b></div>
+      <div class="stat"><span>Franchise Health Index</span><b>Awaiting validated retention and activity series</b></div>
+      <div class="stat"><span>Signatures / reprint editions</span><b>Only verified physical variants may be distinguished</b></div>
+      <div class="stat"><span>Investment model</span><b>Heuristic — not calibrated to validated long-term returns</b></div>
+    </div>
   </div>
   <div class="panel"><h3>Model boundaries</h3><p>Observed market prices, retailer asks, catalog identity and model outputs remain separate. A missing price stays missing. Fair Value and Investment Quality are research estimates, not guaranteed returns.</p></div>`;
 }
