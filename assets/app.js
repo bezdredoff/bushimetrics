@@ -392,15 +392,22 @@ $('#resetFiltersBtn').onclick = () => {
   state.page=1; applyFilters();
 };
 
-// Official Japanese artwork links may reject browser hotlinking. Try a public
-// image-resizing relay once, then replace broken images with an explicit fallback.
-// The relay receives the public artwork URL; no user data is sent.
+// Bushiroad's newer official artwork URLs include /images/cardlist/.
+// Retry that path for legacy JP links, then try the image relay once.
 document.addEventListener('error', event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement)) return;
   const url = img.currentSrc || img.src;
-  if (img.dataset.artFallback !== 'tried' && (() => { try { return ['ws-tcg.com', 'www.ws-tcg.com'].includes(new URL(url).hostname); } catch { return false; } })()) {
-    img.dataset.artFallback = 'tried';
+  let parsed;
+  try { parsed = new URL(url); } catch { parsed = null; }
+  const official = parsed && ['ws-tcg.com', 'www.ws-tcg.com'].includes(parsed.hostname);
+  if (official && !img.dataset.artFallback && parsed.pathname.includes('/wordpress/wp-content/images/') && !parsed.pathname.includes('/wordpress/wp-content/images/cardlist/')) {
+    img.dataset.artFallback = 'cardlist';
+    img.src = url.replace('/wordpress/wp-content/images/', '/wordpress/wp-content/images/cardlist/');
+    return;
+  }
+  if (official && img.dataset.artFallback !== 'relay') {
+    img.dataset.artFallback = 'relay';
     img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
     return;
   }
