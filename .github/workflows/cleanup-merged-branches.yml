@@ -1,0 +1,68 @@
+name: One-time merged branch cleanup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cleanup-merged-branches.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete only unchanged heads of merged PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const protectedNames = new Set([
+              context.payload.repository?.default_branch || 'main',
+              'main', 'gh-pages', 'fix/pages-branch-deploy'
+            ]);
+            const branches = await github.paginate(github.rest.repos.listBranches, {
+              owner, repo, per_page: 100
+            });
+            let removed = 0, kept = 0;
+            for (const branch of branches) {
+              const name = branch.name;
+              if (protectedNames.has(name) || branch.protected) {
+                core.info('Protected/deployment branch kept: ' + name);
+                kept++;
+                continue;
+              }
+              const prs = await github.paginate(github.rest.pulls.list, {
+                owner, repo, state: 'closed', head: owner + ':' + name, per_page: 100
+              });
+              const mergedExactHead = prs.some(pr =>
+                pr.merged_at &&
+                pr.base.repo.full_name === owner + '/' + repo &&
+                pr.base.ref === 'main' &&
+                pr.head.repo?.full_name === owner + '/' + repo &&
+                pr.head.sha === branch.commit.sha
+              );
+              if (!mergedExactHead) {
+                core.info('Kept (no matching merged PR or new commits): ' + name);
+                kept++;
+                continue;
+              }
+              try {
+                await github.rest.git.deleteRef({
+                  owner, repo, ref: 'heads/' + name
+                });
+                core.info('Deleted merged branch: ' + name);
+                removed++;
+              } catch (error) {
+                core.warning('Could not remove ' + name + ': ' + error.message);
+                kept++;
+              }
+            }
+            await core.summary
+              .addHeading('Merged branch cleanup')
+              .addRaw('Deleted: ' + removed + ', kept: ' + kept)
+              .addRaw('Only unchanged branch heads of merged PRs into main were eligible.')
+              .write();
