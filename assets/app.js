@@ -13,9 +13,17 @@ const state = {
   portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {})
 };
 
-const money = v => v == null || v === '' ? '—' : new Intl.NumberFormat('en-US', {
-  style: 'currency', currency: 'USD', maximumFractionDigits: Number(v) >= 100 ? 0 : 2
+const currencyMoney = (v,currency='USD') => v == null || v === '' ? '—' : new Intl.NumberFormat(currency==='EUR'?'de-DE':'en-US', {
+  style:'currency', currency, maximumFractionDigits:Number(v)>=100?0:2
 }).format(v);
+const money = v => currencyMoney(v,'USD');
+const euro = v => currencyMoney(v,'EUR');
+const observed = c => c.marketEUR != null ? {value:Number(c.marketEUR),currency:'EUR',source:c.priceSourceEUR||'Cardmarket'} :
+  (c.market != null ? {value:Number(c.market),currency:'USD',source:c.priceSource||'market'} : null);
+const modelFair = c => c.marketEUR != null && c.fairEUR != null ? {value:Number(c.fairEUR),currency:'EUR'} :
+  (c.market != null && c.fair != null ? {value:Number(c.fair),currency:'USD'} : null);
+const observedLabel = c => { const p=observed(c); return p ? currencyMoney(p.value,p.currency) : '—'; };
+const fairLabel = c => { const p=modelFair(c); return p ? currencyMoney(p.value,p.currency) : '—'; };
 const pct = v => v == null || Number.isNaN(Number(v)) ? '—' : `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(1)}%`;
 const esc = s => String(s ?? '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const gameLabel = g => g === 'palworld' ? 'Palworld OCG' : 'Weiss Schwarz';
@@ -30,11 +38,11 @@ function toast(msg) {
 }
 
 function enrichCard(c) {
-  const market = Number(c.market) || 0;
-  const fair = Number(c.fair) || 0;
+  const primary = observed(c);
+  const fairPrimary = modelFair(c);
   return {
     ...c,
-    gap: market && fair ? (fair / market - 1) * 100 : null,
+    gap: primary && fairPrimary && primary.currency===fairPrimary.currency ? (fairPrimary.value / primary.value - 1) * 100 : null,
     investment: Number(c.investment ?? 0),
     momentum: Number(c.momentum ?? 50)
   };
@@ -114,8 +122,8 @@ function opportunityTable(rows, compact=false) {
   </tr></thead><tbody>${rows.map(c => `<tr class="click-row" data-id="${esc(c.id)}">
     <td><div class="mini-card">${c.image ? `<img src="${esc(c.image)}" loading="lazy">` : ''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set || '')}</small></div></div></td>
     <td><span class="badge">${esc(c.rarity || '—')}</span></td>
-    <td class="price">${money(c.market)}</td>
-    ${compact ? '' : `<td>${money(c.fair)}</td><td class="${(c.gap || 0) >= 0 ? 'pos':'neg'}">${pct(c.gap)}</td><td class="${(c.change30d || 0) >= 0 ? 'pos':'neg'}">${pct(c.change30d)}</td>`}
+    <td class="price">${observedLabel(c)}</td>
+    ${compact ? '' : `<td>${fairLabel(c)}</td><td class="${(c.gap || 0) >= 0 ? 'pos':'neg'}">${pct(c.gap)}</td><td class="${(c.change30d || 0) >= 0 ? 'pos':'neg'}">${pct(c.change30d)}</td>`}
     <td><b>${c.investment}</b></td>
   </tr>`).join('')}</tbody></table></div>`;
 }
@@ -126,7 +134,9 @@ function bindRows(root) {
 
 function renderMarket() {
   const cards = state.cards.filter(c => c.game === state.game && c.availability === 'released');
-  const priced = cards.filter(c => Number(c.market) > 0);
+  const priced = cards.filter(c => observed(c)); 
+  const pricedEUR = cards.filter(c => c.marketEUR != null);
+  const pricedUSD = cards.filter(c => c.market != null);
   const premiumCards = cards.filter(c => c.isPremium || premium.has(c.rarity));
   const imaged = cards.filter(c => c.image).length;
   const with30 = priced.filter(c => c.change30d != null);
@@ -135,7 +145,7 @@ function renderMarket() {
   $('#marketCards').innerHTML = [
     ['Catalog', cards.length.toLocaleString(), 'released printings'],
     ['Premium', premiumCards.length.toLocaleString(), 'SR / SP / SSP / SEC / etc.'],
-    ['Priced', priced.length.toLocaleString(), `${Math.round(priced.length / Math.max(1,cards.length) * 100)}% market coverage`],
+    ['Priced', priced.length.toLocaleString(), `${Math.round(priced.length / Math.max(1,cards.length) * 100)}% any-currency coverage · € ${pricedEUR.length.toLocaleString()} / $ ${pricedUSD.length.toLocaleString()}`],
     ['30d pulse', avg30 == null ? '—' : pct(avg30), with30.length ? `${with30.length} cards with 30d data` : 'price history pending']
   ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="delta">${d}</div></div>`).join('');
 
@@ -148,10 +158,10 @@ function renderMarket() {
   bindRows('#convictionTable');
 
   const announced = state.cards.filter(c => c.game === state.game && c.availability !== 'released').length;
-  const marketFresh = priced.filter(c => c.marketAsOf).length;
+  const marketFresh = priced.filter(c => c.marketAsOf || c.cardmarketAsOf).length;
   $('#dataHealth').innerHTML = [
     ['Image coverage', `${Math.round(imaged / Math.max(1,cards.length)*100)}%`, `${imaged.toLocaleString()} / ${cards.length.toLocaleString()}`],
-    ['Price coverage', `${Math.round(priced.length / Math.max(1,cards.length)*100)}%`, 'observed market only'],
+    ['Price coverage', `${Math.round(priced.length / Math.max(1,cards.length)*100)}%`, `€ ${pricedEUR.length.toLocaleString()} · $ ${pricedUSD.length.toLocaleString()}`],
     ['Dated prices', marketFresh.toLocaleString(), 'marketAsOf supplied'],
     ['Announced', announced.toLocaleString(), 'kept separate from released']
   ].map(([a,b,c]) => `<div class="health-card"><span>${a}</span><b>${b}</b><small>${c}</small></div>`).join('');
@@ -172,7 +182,7 @@ function applyFilters() {
     (rf === 'all' || c.rarity === rf) &&
     (af === 'all' || c.availability === af) &&
     (!prem || c.isPremium || premium.has(c.rarity)) &&
-    (!priced || Number(c.market) > 0) &&
+    (!priced || !!observed(c)) &&
     (!q || [c.name,c.set,c.code,c.rarity,c.cardType,c.color].join(' ').toLowerCase().includes(q))
   );
 
@@ -213,7 +223,7 @@ function renderCards() {
     <div class="card-body">
       <div class="card-title">${esc(c.name)}</div>
       <div class="card-meta">${esc(c.set || '')} · ${esc(c.code || '')}</div>
-      <div class="card-row"><span class="badge">${esc(c.rarity || '—')}</span><span class="price">${money(c.market)}</span></div>
+      <div class="card-row"><span class="badge">${esc(c.rarity || '—')}</span><span class="price">${observedLabel(c)}</span></div>
       <div class="card-row"><span class="${c.gap == null ? '' : c.gap >= 0 ? 'pos':'neg'}">gap ${pct(c.gap)}</span><span>IQ ${c.investment}</span></div>
       ${c.availability !== 'released' ? '<div class="announced-ribbon">ANNOUNCED</div>' : ''}
     </div>
@@ -223,7 +233,7 @@ function renderCards() {
   <tbody>${rows.map(c => `<tr class="click-row" data-id="${esc(c.id)}">
     <td><div class="mini-card">${c.image ? `<img src="${esc(c.image)}" loading="lazy">` : ''}<b>${esc(c.name)}</b></div></td>
     <td>${esc(c.set || '')}</td><td><code>${esc(c.code || '')}</code></td><td><span class="badge">${esc(c.rarity || '—')}</span></td>
-    <td>${money(c.market)}</td><td>${pct(c.gap)}</td><td>${c.momentum}</td><td><b>${c.investment}</b></td>
+    <td>${observedLabel(c)}</td><td>${pct(c.gap)}</td><td>${c.momentum}</td><td><b>${c.investment}</b></td>
   </tr>`).join('')}</tbody></table></div>`;
 
   const isGrid = state.cardView === 'grid';
@@ -313,10 +323,13 @@ function renderViewer() {
   ].join('');
 
   $('#viewerStats').innerHTML = [
-    ['Observed market',money(c.market)],['Market low',money(c.marketLow)],['Market median',money(c.marketMedian)],
-    ['Model fair',money(c.fair)],['Fair-value gap',pct(c.gap)],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
+    ['Cardmarket trend (EUR)',euro(c.marketEUR)],['Cardmarket low (EUR)',euro(c.marketEURLow)],
+    ['Cardmarket 7d avg',euro(c.marketEURAvg7)],['Cardmarket 30d avg',euro(c.marketEURAvg30)],
+    ['TCGPlayer market (USD)',money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
+    ['Model fair (primary)',fairLabel(c)],['Fair-value gap',pct(c.gap)],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
     ['Momentum',`${c.momentum}/100`],['Investment quality',`${c.investment}/100`],
-    ['Confidence',c.confidence || 'Low'],['Price source',c.priceSource || 'Pending']
+    ['Confidence',c.confidence || 'Low'],
+    ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending']
   ].map(([a,b]) => `<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
 
   const factors = c.modelFactors || {};
@@ -330,9 +343,10 @@ function renderViewer() {
     return `<div class="factor"><div><span>${label}</span><b>${v}</b></div><div class="factor-track"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></div></div>`;
   }).join('') + (c.scarcityEvidence ? `<div class="evidence-note"><b>Scarcity evidence:</b> ~1 in ${c.scarcityEvidence.packsPerHit} packs · n=${Number(c.scarcityEvidence.samplePacks||0).toLocaleString()} · ${esc(c.scarcityEvidence.confidence||'')} confidence ${c.scarcityEvidence.source ? `· <a href="${esc(c.scarcityEvidence.source)}" target="_blank" rel="noreferrer">source</a>` : ''}</div>` : '');
 
-  const p = state.portfolio[c.id] || {qty:0,cost:0};
+  const p = state.portfolio[c.id] || {qty:0,cost:0,currency:(c.marketEUR!=null?'EUR':'USD')};
   $('#portfolioQty').value = p.qty || 0;
   $('#portfolioCost').value = p.cost || 0;
+  $('#portfolioCurrency').value = p.currency || (c.marketEUR!=null?'EUR':'USD');
 
   const src = c.identitySource || c.source;
   $('#sourceBtn').style.display = src ? 'inline-flex' : 'none';
@@ -426,8 +440,9 @@ $('#savePortfolioBtn').onclick = () => {
   const c = state.viewerList[state.viewerIndex]; if (!c) return;
   const qty = Math.max(0,Math.floor(Number($('#portfolioQty').value)||0));
   const cost = Math.max(0,Number($('#portfolioCost').value)||0);
+  const currency = $('#portfolioCurrency').value === 'USD' ? 'USD' : 'EUR';
   if (!qty) delete state.portfolio[c.id];
-  else state.portfolio[c.id] = {qty,cost};
+  else state.portfolio[c.id] = {qty,cost,currency};
   localStorage.setItem('bm-portfolio',JSON.stringify(state.portfolio));
   renderPortfolio(); updatePortfolioCount();
   toast(qty ? 'Portfolio position saved.' : 'Removed from portfolio.');
@@ -437,7 +452,7 @@ function renderWatch() {
   const a = [...state.watch].map(id => state.byId.get(id)).filter(Boolean);
   $('#watchList').innerHTML = a.length ? a.map(c => `<div class="watch-item" data-id="${esc(c.id)}">
     ${c.image ? `<img src="${esc(c.image)}" loading="lazy">` : ''}
-    <div><b>${esc(c.name)}</b><br><small>${money(c.market)} · ${esc(c.rarity||'')}</small></div>
+    <div><b>${esc(c.name)}</b><br><small>${observedLabel(c)} · ${esc(c.rarity||'')}</small></div>
   </div>`).join('') : '<p class="muted">No cards watched yet.</p>';
   $$('#watchList [data-id]').forEach(x => x.onclick = () => openViewer(x.dataset.id));
 }
@@ -449,30 +464,35 @@ function updatePortfolioCount() {
 
 function renderPortfolio() {
   const positions = Object.entries(state.portfolio)
-    .map(([id,p]) => ({card:state.byId.get(id),qty:Number(p.qty)||0,cost:Number(p.cost)||0}))
+    .map(([id,p]) => ({card:state.byId.get(id),qty:Number(p.qty)||0,cost:Number(p.cost)||0,currency:p.currency==='USD'?'USD':'EUR'}))
     .filter(x => x.card && x.qty > 0);
   const qty = positions.reduce((a,x) => a+x.qty,0);
-  const basis = positions.reduce((a,x) => a+x.qty*x.cost,0);
-  const priced = positions.filter(x => Number(x.card.market)>0);
-  const value = priced.reduce((a,x) => a+x.qty*Number(x.card.market),0);
-  const pricedBasis = priced.reduce((a,x) => a+x.qty*x.cost,0);
-  const pnl = value - pricedBasis;
+  const totals = {};
+  for (const currency of ['EUR','USD']) {
+    const group=positions.filter(x=>x.currency===currency);
+    const basis=group.reduce((a,x)=>a+x.qty*x.cost,0);
+    const priced=group.filter(x=>currency==='EUR' ? x.card.marketEUR!=null : x.card.market!=null);
+    const value=priced.reduce((a,x)=>a+x.qty*Number(currency==='EUR'?x.card.marketEUR:x.card.market),0);
+    const pricedBasis=priced.reduce((a,x)=>a+x.qty*x.cost,0);
+    totals[currency]={basis,value,pnl:value-pricedBasis,priced:priced.length,count:group.length};
+  }
 
   $('#portfolioMetrics').innerHTML = [
     ['Cards owned',qty.toLocaleString(),`${positions.length} positions`],
-    ['Cost basis',money(basis),'your entered cost'],
-    ['Known market value',money(value),`${priced.length}/${positions.length} priced positions`],
-    ['Unrealized P/L',money(pnl),priced.length ? pct(pricedBasis ? pnl/pricedBasis*100 : null) : 'market data pending']
+    ['EUR portfolio',euro(totals.EUR.value),`basis ${euro(totals.EUR.basis)} · P/L ${euro(totals.EUR.pnl)} · ${totals.EUR.priced}/${totals.EUR.count} priced`],
+    ['USD portfolio',money(totals.USD.value),`basis ${money(totals.USD.basis)} · P/L ${money(totals.USD.pnl)} · ${totals.USD.priced}/${totals.USD.count} priced`],
+    ['Price coverage',positions.length ? `${Math.round((totals.EUR.priced+totals.USD.priced)/positions.length*100)}%` : '—','position-matched in chosen currency']
   ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="delta">${d}</div></div>`).join('');
 
   $('#portfolioTable').innerHTML = positions.length ? `<div class="table-scroll"><table><thead><tr>
     <th>Card</th><th>Qty</th><th>Avg cost</th><th>Basis</th><th>Market</th><th>Value</th><th>P/L</th><th></th>
   </tr></thead><tbody>${positions.map(x => {
-    const m=Number(x.card.market)||0,b=x.qty*x.cost,v=m?x.qty*m:0,p=m?v-b:null;
+    const m=Number(x.currency==='EUR'?x.card.marketEUR:x.card.market)||0,b=x.qty*x.cost,v=m?x.qty*m:0,p=m?v-b:null;
+    const fmt=x.currency==='EUR'?euro:money;
     return `<tr>
       <td class="click-row" data-id="${esc(x.card.id)}"><div class="mini-card">${x.card.image?`<img src="${esc(x.card.image)}" loading="lazy">`:''}<div><b>${esc(x.card.name)}</b><br><small>${esc(x.card.set||'')}</small></div></div></td>
-      <td>${x.qty}</td><td>${money(x.cost)}</td><td>${money(b)}</td><td>${money(m||null)}</td><td>${m?money(v):'—'}</td>
-      <td class="${p==null?'':p>=0?'pos':'neg'}">${p==null?'—':money(p)}</td>
+      <td>${x.qty}</td><td>${fmt(x.cost)} <small>${x.currency}</small></td><td>${fmt(b)}</td><td>${fmt(m||null)}</td><td>${m?fmt(v):'—'}</td>
+      <td class="${p==null?'':p>=0?'pos':'neg'}">${p==null?'—':fmt(p)}</td>
       <td><button class="ghost remove-position" data-remove="${esc(x.card.id)}">Remove</button></td>
     </tr>`;
   }).join('')}</tbody></table></div>` : '<div class="empty-state">Add a quantity and cost basis from any card preview to start a portfolio.</div>';
@@ -493,7 +513,7 @@ function renderCompare() {
     <h2>${esc(c.name)}</h2>
     <p>${esc(c.set||'')} · ${esc(c.code||'')} · ${esc(c.rarity||'')}</p>
     <div class="stat-list">
-      ${[['Market',money(c.market)],['Model fair',money(c.fair)],['Gap',pct(c.gap)],['30d',pct(c.change30d)],['Momentum',c.momentum],['Investment',c.investment],['Confidence',c.confidence||'Low']].map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b></div>`).join('')}
+      ${[['Primary market',observedLabel(c)],['Model fair',fairLabel(c)],['Gap',pct(c.gap)],['30d',pct(c.change30d)],['Momentum',c.momentum],['Investment',c.investment],['Confidence',c.confidence||'Low']].map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b></div>`).join('')}
     </div>
     <div class="factor-mini">${Object.entries(c.modelFactors||{}).map(([k,v])=>`<span title="${esc(k)}">${Math.round(v)}</span>`).join('')}</div>
     <div class="button-row"><button class="ghost compare-open" data-id="${esc(c.id)}">Preview</button><button class="ghost removeCompare" data-id="${esc(c.id)}">Remove</button></div>
