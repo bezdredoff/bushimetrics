@@ -47,6 +47,7 @@ jobs:
       - run: node --check assets/app.js
       - run: python scripts/collect_weiss.py
       - run: python scripts/collect_palworld.py
+      - run: python scripts/enrich_market_palworldprices.py
       - run: python scripts/build_catalog.py
 
       - name: Validate complete generated catalog
@@ -62,4 +63,8 @@ jobs:
           assert d.get('sets'), 'set summary missing'
           ids=[x['id'] for x in d['cards']]
           assert len(ids)==len(set(ids)), 'duplicate generated ids'
+          pal=[x for x in d['cards'] if x['game']=='palworld' and x.get('availability')=='released']
+          priced=[x for x in pal if x.get('market') is not None]
+          print('Palworld priced',len(priced),'of',len(pal))
+          assert len(priced) >= 150, f'Palworld sold-price coverage too low: {len(priced)}'
           PY
