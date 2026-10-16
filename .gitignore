@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .venv/
 .DS_Store
+
+# Generated transient JP source merge; browser catalog is committed instead
+data/raw/weiss-jp.json
