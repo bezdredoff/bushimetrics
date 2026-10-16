@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "byCode": {
+    "GZL/SE33-12": {
+      "rarities": [
+        "RR",
+        "SEC"
+      ],
+      "evidence": [
+        {
+          "type": "official-card-list",
+          "url": "https://ws-tcg.com/cardlist/?cardno=GZL%2FSE33-09&l="
+        },
+        {
+          "type": "distinct-retailer-listing",
+          "url": "https://dorasuta.jp/weiss-schwarz/product?pid=389859"
+        }
+      ],
+      "note": "Godzilla Earth RR and SEC hot-stamped physical printings have different rarity and artwork while sharing a base collector code."
+    },
+    "GZL/SE33-23": {
+      "rarities": [
+        "RR",
+        "SEC"
+      ],
+      "evidence": [
+        {
+          "type": "distinct-retailer-listing",
+          "url": "https://www.torecolo.jp/shop/g/gGZL-SE33-23SEC/"
+        },
+        {
+          "type": "retailer-cross-reference",
+          "url": "https://dorasuta.jp/weiss-schwarz/product?pid=389877"
+        }
+      ],
+      "note": "Vulture RR and SEC hot-stamped physical printings are separately listed and present as distinct upstream JSON files."
+    }
+  },
+  "notes": [
+    "Allow only these externally corroborated code/rarity combinations to be treated as distinct Japanese printings.",
+    "No market prices are inferred from retailer asking prices.",
+    "Other conflicting source records must be reviewed before splitting."
+  ]
+}
