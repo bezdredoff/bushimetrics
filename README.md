@@ -151,3 +151,29 @@ A collector number is not always enough to distinguish a physical investment obj
 ## Language architecture
 
 English Weiss + Palworld load initially. The Japanese Weiss catalog is generated separately and lazy-loaded by the browser only when JP/All is requested. This keeps initial Pages payload reasonable while retaining the full JP printing catalog.
+
+## Public-data availability audit (2026-10-16)
+
+**Do not treat a missing observation as zero, a retailer asking price as a completed sale, or an unverified image URL as a working image.** The model's Investment Quality score is a heuristic, not an observed price or validated investment return.
+
+| Dataset | Available now | Missing / limitation | Status |
+| --- | --- | --- | --- |
+| Weiss Schwarz EN identity | 30,983 printings in generated catalog | May lag new releases and unusual variants | Available, refresh-dependent |
+| Weiss Schwarz JP identity | 63,673 printings in generated catalog | Official Japanese site currently reports 66,067 search results; definitions and update timing may differ | Partial / reconcile |
+| Palworld | 276 released and 13 announced printings in generated catalog | Announced items must not be counted as released | Available as-of date |
+| EN + Palworld market observations | 10,194 of 31,272 printings with price in at least one currency | 21,078 without price observations | Partial |
+| JP market observations | 0 of 63,673 with verified market price in generated metadata | No public, reproducible price dataset integrated | **Not available in current dataset** |
+| Historical price series | Sharded snapshots when observations exist | Insufficient history for many printings | Partial / pending |
+| Images | URL metadata exists for most records | JP source URLs may be stale; successful image load not independently validated | Partial |
+| Predictive backtest | Walk-forward framework exists | Needs sufficient time-stamped independent observations | Pending, no fabricated accuracy |
+
+Public references: [official Japanese card list](https://ws-tcg.com/cardlist/search/), [official product list](https://ws-tcg.com/products/), [official PR cards](https://ws-tcg.com/cardlist/card_pr/). Third-party databases can help reconcile identities, but their prices/images are **not** ingested without verifiable provenance, reuse permission, and correct printing-level matching.
+
+### Acceptance checks still required
+
+- [ ] Automated browser smoke test on published GitHub Pages (initial load, JP catalog, images, card viewer, price history, watchlist, compare, portfolio, import/export).
+- [ ] Reconcile JP catalog against official printings, including rarity/parallel variants and release status.
+- [ ] Add per-card data freshness, provenance, and verified/unavailable flags for prices and artwork.
+- [ ] Validate each image URL rather than equating non-empty URL with an image.
+- [ ] Add public-market-source connectors only where access, licensing, and matching are verified.
+- [ ] Calibrate model and backtest only when sufficient historical observations exist.

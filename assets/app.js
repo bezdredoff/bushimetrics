@@ -273,7 +273,7 @@ function renderMarket() {
   $('#marketCards').innerHTML = [
     ['Catalog', cards.length.toLocaleString(), 'released printings'],
     ['Premium', premiumCards.length.toLocaleString(), 'SR / SP / SSP / SEC / etc.'],
-    ['Priced', priced.length.toLocaleString(), `${Math.round(priced.length / Math.max(1,cards.length) * 100)}% any-currency coverage · € ${pricedEUR.length.toLocaleString()} / $ ${pricedUSD.length.toLocaleString()}`],
+    ['Priced', priced.length.toLocaleString(), `${Math.round(priced.length / Math.max(1,cards.length) * 100)}% observed · ${Math.max(0,cards.length-priced.length).toLocaleString()} without public price data · € ${pricedEUR.length.toLocaleString()} / $ ${pricedUSD.length.toLocaleString()}`],
     ['30d pulse', avg30 == null ? '—' : pct(avg30), with30.length ? `${with30.length} cards with 30d data` : 'price history pending']
   ].map(([l,v,d]) => `<div class="metric"><div class="label">${l}</div><div class="value">${v}</div><div class="delta">${d}</div></div>`).join('');
 
@@ -715,8 +715,8 @@ async function renderCardHistory(c) {
   $('#historyEURBtn').classList.toggle('active',useEUR);
   $('#historyUSDBtn').classList.toggle('active',!useEUR);
   if(!marketRows.length){
-    $('#historySummary').textContent=`No ${state.historyCurrency} history yet for this printing.`;
-    $('#historyChart').innerHTML='<div class="empty-state compact-empty">History starts when an observed market price enters a daily snapshot.</div>';
+    $('#historySummary').textContent=`No publicly verified ${state.historyCurrency} price history available for this printing.`;
+    $('#historyChart').innerHTML='<div class="empty-state compact-empty">Not publicly available in the current dataset. History begins only after verified price observations are recorded.</div>';
     return;
   }
   const vals=[...marketRows.map(p=>Number(p[marketKey])),...fairRows.map(p=>Number(p[fairKey]))].filter(Number.isFinite);
