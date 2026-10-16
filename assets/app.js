@@ -5,7 +5,7 @@ function safeJson(raw, fallback) {
   try { return JSON.parse(raw); } catch { return fallback; }
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, marketAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, marketAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
@@ -68,7 +68,7 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, sources, jpMeta, research, marketAudit] = await Promise.all([
+  const [bootstrap, history, sources, jpMeta, research, marketAudit, jpIdentityAudit] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
@@ -77,7 +77,8 @@ async function load() {
     fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/research_status.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {records:[]}).catch(() => ({records:[]})),
-    fetch('data/market-source-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({}))
+    fetch('data/market-source-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/jp-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null)
   ]);
 
   state.cards = (bootstrap.cards || []).map(expandBrowserCard);
@@ -87,6 +88,7 @@ async function load() {
   state.history = history;
   state.sources = sources;
   state.marketAudit = marketAudit || {};
+  state.jpIdentityAudit = jpIdentityAudit;
   state.research = research || {records:[]};
   state.researchById = new Map((state.research.records||[]).map(x=>[x.id,x]));
   state.catalogGeneratedAt = bootstrap.generatedAt || null;
@@ -1041,6 +1043,15 @@ function renderCoverage(){
 
   const top=[...state.sets].sort((a,b)=>(Number(b.total)||0)-(Number(a.total)||0)).slice(0,20);
   $('#coverageSets').innerHTML=`<div class="table-scroll"><table><thead><tr><th>Set</th><th>Game</th><th>Lang</th><th>Total</th><th>Premium</th><th>Images</th><th>Priced</th></tr></thead><tbody>${top.map(x=>`<tr><td><b>${esc(x.name)}</b></td><td>${esc(gameLabel(x.game))}</td><td>${esc(x.language||'EN')}</td><td>${Number(x.total||0).toLocaleString()}</td><td>${Number(x.premium||0).toLocaleString()}</td><td>${x.imageCoverage??0}%</td><td>${x.priceCoverage??0}%</td></tr>`).join('')}</tbody></table></div>`;
+  const qa=state.jpIdentityAudit;
+  $('#jpIdentityAudit').innerHTML=qa && typeof qa.sourceFiles==='number' ? `<div class="stat-list">
+    <div class="stat"><span>Upstream card JSON files examined</span><b>${Number(qa.sourceFiles).toLocaleString()}</b></div>
+    <div class="stat"><span>Unique card codes retained</span><b>${Number(qa.uniquePrintingsByCode).toLocaleString()}</b></div>
+    <div class="stat"><span>Files with repeated collector code</span><b>${Number(qa.duplicateCodeFiles).toLocaleString()}</b></div>
+    <div class="stat"><span>Code groups with conflicting identity metadata</span><b>${Number(qa.conflictingCodeGroups).toLocaleString()} · verify manually</b></div>
+    <div class="stat"><span>Invalid JSON / missing card code</span><b>${Number(qa.invalidFiles).toLocaleString()} / ${Number(qa.missingCardCodeFiles).toLocaleString()}</b></div>
+  </div><p>Distinct printings are not invented from repeated IDs. This audit checks upstream duplicates, not completeness against Bushiroad's live official website. <a href="data/jp-identity-audit.json" target="_blank" rel="noreferrer">View full audit</a>.</p>` :
+    '<p>Japanese upstream identity audit is pending the next full data refresh. Current card counts do not prove that every distinct physical printing has been verified.</p>';
   $('#loadJPCoverageBtn').textContent=state.jpLoaded?'JP catalog loaded':'Load full JP catalog';
   $('#loadJPCoverageBtn').disabled=state.jpLoaded;
 }
