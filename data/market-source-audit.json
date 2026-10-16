@@ -3,15 +3,15 @@
   "linkedDated": 0,
   "indicationOnly": 8,
   "indicationOnlyCodes": [
-    "SFN/S108-E074SSP",
-    "SFN/S108-E073SSP",
-    "NIK/S117-E087EX",
-    "NIK/S117-E085EX",
+    "EBP01-001SSP",
     "EBP01-025SSP",
     "EBP01-049SSP",
-    "EBP01-001SSP",
-    "ESOUL-002"
+    "ESOUL-002",
+    "NIK/S117-E085EX",
+    "NIK/S117-E087EX",
+    "SFN/S108-E073SSP",
+    "SFN/S108-E074SSP"
   ],
-  "asOf": "2026-10-16",
-  "notice": "Unlinked manually entered prices are indications, not observed-market values or peer-model inputs. A dataset-level asOf is not a per-card observation date."
+  "notice": "Unlinked prices are research indications, excluded from observed market and peer-model prices.",
+  "generatedAt": "2026-10-16T21:36:53.945691+00:00"
 }
