@@ -1,12 +1,220 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BushiMetrics</title><meta name="description" content="Market analytics for Weiss Schwarz and Palworld OCG"><link rel="stylesheet" href="assets/styles.css"></head><body>
-<header class="top"><div><div class="brand">Bushi<span>Metrics</span></div><div class="sub">collectible card market intelligence</div></div><div class="top-actions"><button id="themeBtn" class="ghost">Theme</button><a class="ghost" href="https://github.com/bezdredoff/bushimetrics" target="_blank" rel="noreferrer">GitHub</a></div></header>
-<nav class="tabs" id="tabs"><button data-tab="market" class="active">Market</button><button data-tab="cards">Cards</button><button data-tab="compare">Compare <span id="compareCount">0</span></button><button data-tab="backtest">Backtest</button><button data-tab="sources">Sources</button></nav>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <title>BushiMetrics</title>
+  <meta name="description" content="Data-driven collectible card analytics for Weiss Schwarz and Palworld OCG">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <div class="brand">Bushi<span>Metrics</span></div>
+    <div class="sub">collectible card market intelligence</div>
+  </div>
+  <div class="top-actions">
+    <span id="globalStatus" class="status-pill">loading…</span>
+    <button id="themeBtn" class="ghost">Theme</button>
+    <a class="ghost" href="https://github.com/bezdredoff/bushimetrics" target="_blank" rel="noreferrer">GitHub</a>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="market" class="active">Market</button>
+  <button data-tab="cards">Cards</button>
+  <button data-tab="sets">Sets</button>
+  <button data-tab="portfolio">Portfolio <span id="portfolioCount">0</span></button>
+  <button data-tab="compare">Compare <span id="compareCount">0</span></button>
+  <button data-tab="backtest">Backtest</button>
+  <button data-tab="sources">Sources</button>
+</nav>
+
 <main>
-<section id="market" class="view active"><div class="hero"><div><p class="eyebrow">BushiMetrics v0.3</p><h1>Find strong cards before price catches up.</h1><p>Observed prices stay separate from model outputs. The model scores structural scarcity, character/IP strength, treatment, reprint durability, liquidity and momentum.</p></div><div class="seg" id="gameSeg"><button data-game="weiss" class="active">Weiss Schwarz</button><button data-game="palworld">Palworld OCG</button></div></div><div id="marketCards" class="metric-grid"></div><div class="panel"><div class="panel-head"><div><h2>Top opportunities</h2><p>Highest model gap among cards with usable market data.</p></div><button class="ghost" data-go="cards">Open explorer</button></div><div id="opportunityTable"></div></div></section>
-<section id="cards" class="view"><div class="section-head"><div><p class="eyebrow">Card Explorer</p><h1>Browse the catalog</h1><p id="catalogStatus">Loading catalog…</p></div></div><div class="filters"><input id="search" placeholder="Search name, set or card number"><select id="gameFilter"><option value="all">All games</option><option value="weiss">Weiss Schwarz</option><option value="palworld">Palworld OCG</option></select><select id="rarityFilter"><option value="all">All rarities</option></select><select id="setFilter"><option value="all">All sets</option></select><select id="sort"><option value="market-desc">Market price ↓</option><option value="gap-desc">Fair value gap ↓</option><option value="investment-desc">Investment score ↓</option><option value="momentum-desc">Momentum ↓</option><option value="name">Name A–Z</option></select><label class="check"><input id="premiumOnly" type="checkbox"> Premium only</label><label class="check"><input id="pricedOnly" type="checkbox"> With market price</label></div><div class="catalog-layout"><div><div id="cardGrid" class="card-grid"></div><div class="pager"><button id="prevPage">←</button><span id="pageInfo"></span><button id="nextPage">→</button></div></div><aside id="watchPanel" class="panel compact"><div class="panel-head"><div><h3>Watchlist</h3><p>Stored locally in your browser.</p></div></div><div id="watchList"></div></aside></div></section>
-<section id="compare" class="view"><div class="section-head"><div><p class="eyebrow">Compare</p><h1>Side-by-side analysis</h1><p>Add up to three cards from the explorer or preview.</p></div></div><div id="compareGrid" class="compare-grid"></div></section>
-<section id="backtest" class="view"><div class="section-head"><div><p class="eyebrow">Validation</p><h1>Historical checks</h1><p>Historical set/index evidence is factual; forward-looking score performance is only reported when enough snapshots exist.</p></div></div><div id="backtestContent"></div></section>
-<section id="sources" class="view"><div class="section-head"><div><p class="eyebrow">Data provenance</p><h1>Sources & model</h1><p>Every layer has a different job. Store asks never substitute for market prices.</p></div></div><div id="sourcesContent"></div></section>
+<section id="market" class="view active">
+  <div class="hero">
+    <div>
+      <p class="eyebrow">BushiMetrics v0.4</p>
+      <h1>Collector analytics built for Bushiroad markets.</h1>
+      <p>Browse the complete catalog, separate observed prices from model outputs, compare structural scarcity and character/IP strength, and track your own collection locally.</p>
+    </div>
+    <div class="seg" id="gameSeg">
+      <button data-game="weiss" class="active">Weiss Schwarz</button>
+      <button data-game="palworld">Palworld OCG</button>
+    </div>
+  </div>
+
+  <div id="marketCards" class="metric-grid"></div>
+
+  <div class="dashboard-two">
+    <div class="panel">
+      <div class="panel-head">
+        <div><h2>Fair-value opportunities</h2><p>Cards with observed market data, ranked by model gap.</p></div>
+        <button class="ghost" data-go="cards">Open explorer</button>
+      </div>
+      <div id="opportunityTable"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div><h2>Highest conviction</h2><p>Premium printings ranked by Investment Quality, price not required.</p></div>
+      </div>
+      <div id="convictionTable"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div><h2>Data health</h2><p>Catalog completeness and price coverage are intentionally reported separately.</p></div>
+    </div>
+    <div id="dataHealth" class="health-grid"></div>
+  </div>
+</section>
+
+<section id="cards" class="view">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Card Explorer</p>
+      <h1>Every printing, one explorer.</h1>
+      <p id="catalogStatus">Loading catalog…</p>
+    </div>
+    <div class="seg">
+      <button id="gridViewBtn" class="active">Grid</button>
+      <button id="tableViewBtn">Table</button>
+    </div>
+  </div>
+
+  <div class="filters filters-wide">
+    <input id="search" placeholder="Search name, set, card number…">
+    <select id="gameFilter"><option value="all">All games</option><option value="weiss">Weiss Schwarz</option><option value="palworld">Palworld OCG</option></select>
+    <select id="setFilter"><option value="all">All sets</option></select>
+    <select id="rarityFilter"><option value="all">All rarities</option></select>
+    <select id="availabilityFilter"><option value="released">Released</option><option value="all">Released + announced</option><option value="announced">Announced only</option></select>
+    <select id="sort"><option value="investment-desc">Investment score ↓</option><option value="market-desc">Market price ↓</option><option value="gap-desc">Fair-value gap ↓</option><option value="momentum-desc">Momentum ↓</option><option value="name">Name A–Z</option></select>
+    <label class="check"><input id="premiumOnly" type="checkbox"> Premium only</label>
+    <label class="check"><input id="pricedOnly" type="checkbox"> With market price</label>
+  </div>
+
+  <div class="catalog-layout">
+    <div>
+      <div id="cardGrid" class="card-grid"></div>
+      <div id="cardTable" class="panel card-table-wrap hidden"></div>
+      <div class="pager">
+        <button id="prevPage">←</button>
+        <span id="pageInfo"></span>
+        <button id="nextPage">→</button>
+      </div>
+    </div>
+    <aside class="side-stack">
+      <div id="watchPanel" class="panel compact">
+        <div class="panel-head"><div><h3>Watchlist</h3><p>Stored locally in this browser.</p></div></div>
+        <div id="watchList"></div>
+      </div>
+      <div class="panel compact utility-panel">
+        <h3>Local data</h3>
+        <p>Watchlist, compare list and portfolio never leave your browser.</p>
+        <div class="button-row">
+          <button id="exportLocalBtn" class="ghost">Export</button>
+          <button id="importLocalBtn" class="ghost">Import</button>
+          <input id="importLocalFile" type="file" accept="application/json" hidden>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section id="sets" class="view">
+  <div class="section-head">
+    <div><p class="eyebrow">Set Explorer</p><h1>See where collector density lives.</h1><p>Compare set size, premium-card density, image coverage, pricing coverage and average model score.</p></div>
+  </div>
+  <div class="filters set-filters">
+    <input id="setSearch" placeholder="Search set or franchise…">
+    <select id="setGameFilter"><option value="all">All games</option><option value="weiss">Weiss Schwarz</option><option value="palworld">Palworld OCG</option></select>
+    <select id="setSort"><option value="premium-desc">Premium count ↓</option><option value="total-desc">Total printings ↓</option><option value="investment-desc">Avg investment ↓</option><option value="coverage-desc">Price coverage ↓</option><option value="name">Name A–Z</option></select>
+  </div>
+  <div id="setGrid" class="set-grid"></div>
+</section>
+
+<section id="portfolio" class="view">
+  <div class="section-head">
+    <div><p class="eyebrow">Local Portfolio</p><h1>Your collection economics.</h1><p>Quantity and cost basis are saved only in localStorage. Market value appears only where the catalog has an observed price.</p></div>
+    <button id="portfolioExportBtn" class="ghost">Export portfolio</button>
+  </div>
+  <div id="portfolioMetrics" class="metric-grid"></div>
+  <div class="panel"><div id="portfolioTable"></div></div>
+</section>
+
+<section id="compare" class="view">
+  <div class="section-head">
+    <div><p class="eyebrow">Compare</p><h1>Four cards, side by side.</h1><p>Add cards from the explorer or preview. Compare price, rarity, model factors, momentum and investment quality.</p></div>
+  </div>
+  <div id="compareGrid" class="compare-grid"></div>
+</section>
+
+<section id="backtest" class="view">
+  <div class="section-head">
+    <div><p class="eyebrow">Validation</p><h1>Historical checks without look-ahead.</h1><p>Set-level history is factual where sourced. Model performance is reported only after enough immutable daily snapshots exist.</p></div>
+  </div>
+  <div id="backtestContent"></div>
+</section>
+
+<section id="sources" class="view">
+  <div class="section-head">
+    <div><p class="eyebrow">Data provenance</p><h1>Know what every number means.</h1><p>Identity, artwork, market observations and model estimates are different layers and are never silently substituted for each other.</p></div>
+  </div>
+  <div id="sourcesContent"></div>
+</section>
 </main>
-<div id="viewer" class="viewer" aria-hidden="true"><div class="viewer-backdrop" data-close></div><div class="viewer-shell"><button class="viewer-close" data-close>×</button><button class="nav-arrow left" id="viewerPrev">‹</button><button class="nav-arrow right" id="viewerNext">›</button><div class="viewer-image-wrap" id="viewerImageWrap"><img id="viewerImage" alt="Card preview"></div><div class="viewer-side"><div><p class="eyebrow" id="viewerGame"></p><h2 id="viewerName"></h2><p id="viewerMeta"></p></div><div id="viewerStats" class="stat-list"></div><div class="viewer-actions"><a id="sourceBtn" class="ghost" target="_blank" rel="noreferrer">Open source</a><button id="zoomOut">−</button><span id="zoomLabel">100%</span><button id="zoomIn">+</button><button id="watchBtn">Watch</button><button id="compareBtn">Compare</button></div><div id="thumbStrip" class="thumb-strip"></div></div></div></div>
-<script src="assets/app.js"></script></body></html>
+
+<div id="viewer" class="viewer" aria-hidden="true">
+  <div class="viewer-backdrop" data-close></div>
+  <div class="viewer-shell">
+    <button class="viewer-close" data-close>×</button>
+    <button class="nav-arrow left" id="viewerPrev">‹</button>
+    <button class="nav-arrow right" id="viewerNext">›</button>
+    <div class="viewer-image-wrap" id="viewerImageWrap">
+      <img id="viewerImage" alt="Card preview">
+      <div id="viewerPlaceholder" class="viewer-placeholder hidden">Preview unavailable</div>
+    </div>
+    <div class="viewer-side">
+      <div>
+        <p class="eyebrow" id="viewerGame"></p>
+        <h2 id="viewerName"></h2>
+        <p id="viewerMeta"></p>
+        <div id="viewerBadges" class="badge-row"></div>
+      </div>
+
+      <div id="viewerStats" class="stat-list"></div>
+
+      <div class="viewer-block">
+        <h3>Model factors</h3>
+        <div id="factorBars" class="factor-bars"></div>
+      </div>
+
+      <div class="viewer-block">
+        <h3>Portfolio</h3>
+        <div class="portfolio-inputs">
+          <label>Quantity<input id="portfolioQty" type="number" min="0" step="1" value="0"></label>
+          <label>Avg cost / card<input id="portfolioCost" type="number" min="0" step="0.01" value="0"></label>
+          <button id="savePortfolioBtn">Save</button>
+        </div>
+      </div>
+
+      <div class="viewer-actions">
+        <a id="sourceBtn" class="ghost" target="_blank" rel="noreferrer">Source</a>
+        <a id="imageBtn" class="ghost" target="_blank" rel="noreferrer">Image</a>
+        <button id="copyLinkBtn">Copy link</button>
+        <button id="zoomOut">−</button><span id="zoomLabel">100%</span><button id="zoomIn">+</button>
+        <button id="watchBtn">Watch</button>
+        <button id="compareBtn">Compare</button>
+      </div>
+
+      <div id="thumbStrip" class="thumb-strip"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" aria-live="polite"></div>
+<script src="assets/app.js"></script>
+</body>
+</html>
