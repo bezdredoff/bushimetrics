@@ -399,7 +399,7 @@ document.addEventListener('error', event => {
   const img = event.target;
   if (!(img instanceof HTMLImageElement)) return;
   const url = img.currentSrc || img.src;
-  if (img.dataset.artFallback !== 'tried' && /^https?:\\/\\/(?:www\\.)?ws-tcg\\.com\\//i.test(url)) {
+  if (img.dataset.artFallback !== 'tried' && (() => { try { return /^(www\\.)?ws-tcg\\.com$/i.test(new URL(url).hostname); } catch { return false; } })()) {
     img.dataset.artFallback = 'tried';
     img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
     return;
