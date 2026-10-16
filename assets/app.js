@@ -11,7 +11,7 @@ const state = {
   watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
   compare: safeJson(localStorage.getItem('bm-compare') || '[]', []).slice(0, 4),
   portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {}),
-  setCache: new Map(), setManifest: new Map(), fullCatalogLoaded: false, catalogGeneratedAt: null
+  setCache: new Map(), loadedSetKeys: new Set(), setManifest: new Map(), fullCatalogLoaded: false, catalogGeneratedAt: null
 };
 
 const currencyMoney = (v,currency='USD') => v == null || v === '' ? '—' : new Intl.NumberFormat(currency==='EUR'?'de-DE':'en-US', {
@@ -106,8 +106,13 @@ async function loadFullBrowserCatalog() {
     const r=await fetch('data/web/search-en.json',{cache:'no-cache'});
     if(!r.ok) throw new Error('web/search-en.json '+r.status);
     const full=await r.json();
+    const previous=new Map(state.cards.map(c=>[c.id,c]));
     const jp=state.jpLoaded ? state.cards.filter(c=>(c.language||'EN')==='JP') : [];
-    state.cards=[...(full.cards||[]).map(expandBrowserCard),...jp];
+    const en=(full.cards||[]).map(expandBrowserCard).map(c=>{
+      const old=previous.get(c.id);
+      return old && (old.image || old._detailLoaded) ? enrichCard({...c,...old}) : c;
+    });
+    state.cards=[...en,...jp];
     state.fullCatalogLoaded=true;
     state.catalogGeneratedAt=full.generatedAt||state.catalogGeneratedAt;
     // Set metadata already comes from bootstrap manifest; only card index changes here.
@@ -489,17 +494,22 @@ function applySetPayload(payload) {
   if(!payload || !Array.isArray(payload.cards)) return [];
   const rows=payload.compactJP ? payload.cards.map(expandJPCompact) : payload.cards.map(c=>enrichCard({...c,_setKey:payload.key}));
   const pos=new Map(state.cards.map((c,i)=>[c.id,i]));
+  const filteredPos=new Map(state.filtered.map((c,i)=>[c.id,i]));
+  const viewerPos=new Map(state.viewerList.map((c,i)=>[c.id,i]));
   for(const c of rows){
     const i=pos.get(c.id);
     if(i==null){ state.cards.push(c); pos.set(c.id,state.cards.length-1); }
     else state.cards[i]=c;
+    const fi=filteredPos.get(c.id); if(fi!=null) state.filtered[fi]=c;
+    const vi=viewerPos.get(c.id); if(vi!=null) state.viewerList[vi]=c;
     state.byId.set(c.id,c);
   }
+  if(payload.key) state.loadedSetKeys.add(payload.key);
   return rows;
 }
 
 async function hydrateSetKeys(keys) {
-  const wanted=[...new Set(keys.filter(Boolean))].filter(k=>!state.setCache.get(k)?true:false);
+  const wanted=[...new Set(keys.filter(Boolean))].filter(k=>!state.loadedSetKeys.has(k));
   if(!wanted.length) return false;
   const payloads=await Promise.all(wanted.map(fetchSetPayload));
   let changed=false;
