@@ -1057,9 +1057,12 @@ function renderCoverage(){
   const qa=state.jpIdentityAudit;
   $('#jpIdentityAudit').innerHTML=qa && typeof qa.sourceFiles==='number' ? `<div class="stat-list">
     <div class="stat"><span>Upstream card JSON files examined</span><b>${Number(qa.sourceFiles).toLocaleString()}</b></div>
-    <div class="stat"><span>Unique card codes retained</span><b>${Number(qa.uniquePrintingsByCode).toLocaleString()}</b></div>
+    <div class="stat"><span>Unique collector codes</span><b>${Number(qa.uniqueCollectorCodes??qa.uniquePrintingsByCode).toLocaleString()}</b></div>
+    <div class="stat"><span>Distinct printings, including verified parallels</span><b>${Number(qa.uniquePrintingsByCode).toLocaleString()}</b></div>
     <div class="stat"><span>Files with repeated collector code</span><b>${Number(qa.duplicateCodeFiles).toLocaleString()}</b></div>
-    <div class="stat"><span>Code groups with conflicting identity metadata</span><b>${Number(qa.conflictingCodeGroups).toLocaleString()} · verify manually</b></div>
+    <div class="stat"><span>Code groups with conflicting metadata</span><b>${Number(qa.conflictingCodeGroups).toLocaleString()}</b></div>
+    <div class="stat"><span>Verified parallel printings restored</span><b>${Number(qa.verifiedVariantRows||0).toLocaleString()}</b></div>
+    <div class="stat"><span>Unresolved conflict groups</span><b>${Number(qa.unresolvedConflictingCodeGroups??qa.conflictingCodeGroups).toLocaleString()} · manual review</b></div>
     <div class="stat"><span>Invalid JSON / missing card code</span><b>${Number(qa.invalidFiles).toLocaleString()} / ${Number(qa.missingCardCodeFiles).toLocaleString()}</b></div>
   </div><p>Distinct printings are not invented from repeated IDs. This audit checks upstream duplicates, not completeness against Bushiroad's live official website. <a href="data/jp-identity-audit.json" target="_blank" rel="noreferrer">View full audit</a>.</p>` :
     '<p>Japanese upstream identity audit is pending the next full data refresh. Current card counts do not prove that every distinct physical printing has been verified.</p>';
