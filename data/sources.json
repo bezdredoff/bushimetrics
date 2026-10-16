@@ -7,6 +7,12 @@
       "description": "MIT-licensed English Weiss Schwarz dataset. Premium parallel printings such as SR, SP, SSP and SEC+ are stored as distinct card numbers and point to official Bushiroad artwork URLs."
     },
     {
+      "name": "Akenaide/wsoffdata",
+      "role": "Japanese Weiss master printing catalog",
+      "url": "https://github.com/Akenaide/wsoffdata",
+      "description": "Public per-printing Japanese Weiss dataset. BushiMetrics keeps compact identity/rarity metadata and references official ws-tcg.com artwork URLs; rules and flavor text are not copied into the analytics catalog."
+    },
+    {
       "name": "Bushiroad Weiss Schwarz",
       "role": "Official identity / rules / reprint validation",
       "url": "https://en.ws-tcg.com/",
@@ -100,5 +106,5 @@
     "hype": "True HYPE requires comparing a card's current demand pressure with its own historical baseline. Daily snapshots now retain demandPressure so 30/60-day HYPE can be activated only after sufficient history exists.",
     "fairValueConfidence": "High requires at least 8 other rarity peers and 3 other subject observations; Medium requires at least 4 peers and 2 subject observations; otherwise Low/None. The Undervalued screener only accepts High/Medium Fair Value."
   },
-  "model": "Catalog identity, image source, observed market, store asks and model outputs are separate fields. Missing market data remains missing."
+  "model": "English and Japanese Weiss are separate language layers. JP identity is lazy-loaded and is not silently mixed into EN pricing or peer comparisons."
 }
