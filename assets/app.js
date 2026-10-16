@@ -424,7 +424,7 @@ function renderViewer() {
 
   $('#viewerGame').textContent = gameLabel(c.game);
   $('#viewerName').textContent = c.name;
-  $('#viewerMeta').textContent = [c.set,c.code,c.rarity,c.edition,c.treatment].filter(Boolean).join(' · ');
+  $('#viewerMeta').textContent = [c.language||'EN',c.set,c.code,c.rarity,c.edition,c.treatment].filter(Boolean).join(' · ');
   $('#viewerBadges').innerHTML = [
     c.availability !== 'released' ? '<span class="badge badge-warn">Announced</span>' : '<span class="badge">Released</span>',
     c.isPremium ? '<span class="badge badge-accent">Premium</span>' : '',
