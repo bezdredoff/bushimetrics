@@ -63,7 +63,10 @@ jobs:
       - name: Collect complete current Palworld catalog
         run: python scripts/collect_palworld.py
 
-      - name: Incrementally enrich market prices
+      - name: Enrich public Cardmarket EUR prices
+        run: python scripts/enrich_market_cardmarket.py
+
+      - name: Incrementally enrich TCGPlayer USD prices
         env:
           TCGAPI_KEY: ${{ secrets.TCGAPI_KEY }}
           TCGAPI_DAILY_REQUEST_BUDGET: '80'
