@@ -265,6 +265,9 @@ def attach_market_pressure(cards,today=None):
         for key in ('demandPressure','marketHeatPercentile',
                     'marketHeatLabel','demandPressureSales','demandPressureAsks'):
             c.pop(key,None)
+        # Always explicitly mark missing heat, even when a small sample
+        # qualifies for raw pressure but cannot support a percentile.
+        c['marketHeatPercentile']=None
         inputs,status=observed_activity_inputs(c,today=today)
         c['demandPressureStatus']=status
         if inputs is None:
