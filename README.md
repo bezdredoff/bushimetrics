@@ -26,7 +26,7 @@ The product goal is simple: separate **what a card is**, **what the market is ac
 - Missing market data remains missing; retailer asks are never silently substituted.
 - Investment Quality exposes the component scores used by the heuristic.
 - Palworld BP01 uses sourced community pull-rate evidence where available rather than relying only on rarity labels.
-- Set Explorer summarizes premium density, image coverage, price coverage and average Investment Quality.
+- Set Explorer summarizes premium density, artwork URL presence (not verified reachability), price coverage and average Investment Quality.
 
 ### Personal tools
 Everything below is browser-local; no account or server storage is required:
@@ -57,6 +57,16 @@ scarcity.json / priors / edition overrides ───────┘
 data/catalog.json ── snapshot_metrics.py ── data/snapshots/market-YYYY-MM-DD.json
                                               └── backtest.py
 ```
+
+## Hosted site, integrity checks and measured limitations (2026-10-17)
+
+- Live dashboard: https://bezdredoff.github.io/bushimetrics/
+- [Hosted Pages acceptance CI](https://github.com/bezdredoff/bushimetrics/actions/workflows/hosted-pages-smoke.yml) checks deployed HTML bundle/version, EN+Palworld and JP counts and source generation date against `main`, then runs desktop/mobile Chromium (PR #50). **The published site was verified on October 17, 2026.**
+- [Sampled JP artwork audit](https://github.com/bezdredoff/bushimetrics/actions/workflows/jp-artwork-health.yml) probes up to 16 Japanese-set sample cards each week, distinguishes valid bytes from 403/hotlink blocks, and uploads a JSON report. An initial PR run verified **8 of 8** sampled images; this is **not** proof that all 63,675 images work (PR #51).
+- [Data methodology and provenance](docs/research-data.md) explains why manually entered quotes, expired USD observations and Cardmarket price guides must be distinguished from completed sales.
+- [Market freshness report](data/market-freshness-audit.json) shows dated versus undated prices separately for USD/EUR. On 2026-10-17, USD: 2,303 records (253 stale, 2,050 without a confirmed observation date); EUR: 8,097 dated guide records. `fresh` for EUR means guide publication date, **not** sale activity.
+- Japanese prices from independently verified sales remain unavailable in the current dataset; the research engines return missing-data reasons rather than imaginary results.
+- Follow remaining work in [Issue #31](https://github.com/bezdredoff/bushimetrics/issues/31).
 
 ## Automatic refresh
 
@@ -106,11 +116,11 @@ Open <http://localhost:8080>.
 
 ## Data files
 
-- `data/catalog.json` — generated browser catalog + set summaries.
+- `data/catalog.json` — generated analytical EN/Palworld catalog + set summaries; `data/web/` contains the lightweight browser indices and per-set shards.
 - `data/raw/weiss.json` — generated full Weiss printing identity layer.
 - `data/raw/palworld.json` — generated released Palworld + announced promos.
 - `data/market/tcgapi.json` — incremental market cache, when configured.
-- `data/market_overrides.json` — explicit validated market observations.
+- `data/market_overrides.json` — manually researched USD indications; the eight current unlinked records are **not** included in observed-market prices or peer training.
 - `data/scarcity.json` — pull-rate/case evidence with sample size, confidence and source.
 - `data/manual_overrides.json` — versioned game/set priors.
 - `data/printing_overrides.json` — verified physical edition/treatment corrections only.
@@ -118,7 +128,7 @@ Open <http://localhost:8080>.
 - `data/history.json` — historical set-level validation notes.
 - `data/snapshots/` — compact walk-forward market snapshots.
 
-## Model v0.4
+## Investment heuristic + peer Fair Value v0.7
 
 Current Investment Quality weights:
 
@@ -152,17 +162,17 @@ A collector number is not always enough to distinguish a physical investment obj
 
 English Weiss + Palworld load initially. The Japanese Weiss catalog is generated separately and lazy-loaded by the browser only when JP/All is requested. This keeps initial Pages payload reasonable while retaining the full JP printing catalog.
 
-## Public-data availability audit (2026-10-16)
+## Public-data availability audit (2026-10-17)
 
 **Do not treat a missing observation as zero, a retailer asking price as a completed sale, or an unverified image URL as a working image.** The model's Investment Quality score is a heuristic, not an observed price or validated investment return.
 
 | Dataset | Available now | Missing / limitation | Status |
 | --- | --- | --- | --- |
 | Weiss Schwarz EN identity | 30,983 printings in generated catalog | May lag new releases and unusual variants | Available, refresh-dependent |
-| Weiss Schwarz JP identity | 63,673 printings in generated catalog | Official Japanese site currently reports 66,067 search results; definitions and update timing may differ | Partial / reconcile |
+| Weiss Schwarz JP identity | 63,675 printings in generated catalog | Official Japanese site currently reports 66,067 search results; definitions and update timing may differ | Partial / reconcile |
 | Palworld | 276 released and 13 announced printings in generated catalog | Announced items must not be counted as released | Available as-of date |
-| EN + Palworld market observations | 10,194 of 31,272 printings with price in at least one currency | 21,078 without price observations | Partial |
-| JP market observations | 0 of 63,673 with verified market price in generated metadata | No public, reproducible price dataset integrated | **Not available in current dataset** |
+| EN + Palworld market observations | 10,190 of 31,272 printings with price in at least one currency | 21,082 without price observations | Partial |
+| JP market observations | 0 of 63,675 with verified market price in generated metadata | No public, reproducible price dataset integrated | **Not available in current dataset** |
 | Historical price series | Sharded snapshots when observations exist | Insufficient history for many printings | Partial / pending |
 | Images | URL metadata exists for most records | JP source URLs may be stale; successful image load not independently validated | Partial |
 | Predictive backtest | Walk-forward framework exists | Needs sufficient time-stamped independent observations | Pending, no fabricated accuracy |
@@ -171,7 +181,7 @@ Public references: [official Japanese card list](https://ws-tcg.com/cardlist/sea
 
 ### Acceptance checks still required
 
-- [ ] Automated browser smoke test on published GitHub Pages (initial load, JP catalog, images, card viewer, price history, watchlist, compare, portfolio, import/export).
+- [x] Real Chromium checks for published GitHub Pages on desktop and mobile, including lazy JP browsing and matching the shipped catalog/bundle to `main` (PR #50). Local smoke additionally tests watchlist, compare, portfolio and backup import/export. This is not an exhaustive visual/manual QA pass.
 - [ ] Reconcile JP catalog against official printings, including rarity/parallel variants and release status.
 - [ ] Add per-card data freshness, provenance, and verified/unavailable flags for prices and artwork.
 - [ ] Validate each image URL rather than equating non-empty URL with an image.
