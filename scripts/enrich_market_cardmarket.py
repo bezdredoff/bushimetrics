@@ -11,7 +11,7 @@ Matching is deliberately evidence-gated:
 1) exact collector number (never fall back if an explicit number disagrees);
 2) unique name with all supplied rarity and set constraints;
 3) quarantine ambiguous products and collisions instead of overwriting values.
-A name without either rarity or expansion is too weak to identify a printing.
+Unannotated name-only guides are allowed only for globally unique, ordinary (non-premium) printings and remain explicitly labeled source-treatment-unverified.
 
 Cardmarket's public export includes expansionName. Using it resolves many false
 ambiguities where the same card title exists in multiple Weiss products.
@@ -199,23 +199,40 @@ def match_cardmarket(cards, products, guides, *, max_examples=40):
                 continue
             method='verified-collector-number'+('-rarity' if rarity else '')
         else:
-            if not name or (not rarity and not expansion):
+            if not name:
                 reject('insufficientIdentity',product,number,rarity,expansion)
                 continue
             matches=by_name.get(name,[])
-            if rarity:
-                matches=[card for card in matches if str(card.get('rarity') or '').upper()==rarity]
-            if expansion:
-                matches=[card for card in matches if compatible_expansion(card,expansion)]
-            if not matches:
-                reject('unmatchedProducts',product,number,rarity,expansion)
-                continue
-            if len(matches)>1:
-                reject('ambiguousProducts',product,number,rarity,expansion)
-                continue
-            candidate=matches[0]
-            method=('unique-name'+('-rarity' if rarity else '')+
-                    ('-compatible-expansion' if expansion else ''))
+            if not rarity and not expansion:
+                # Cardmarket's real public Weiss product export generally omits
+                # ALL of code, rarity and expansion. A globally unique normal
+                # printing is a usable *indicative guide* only; refuse premium
+                # cards, known V.2 parallels and merchandising foil/signed tags.
+                base={'C','U','R','RR','CC','CR','N','TD'}
+                raw_name=str(product.get('name') or '')
+                suspect=bool(VERSION_RE.search(raw_name)) or bool(
+                    re.search(r'\\b(foil|signed|serialized|parallel|alt[ -]?art)\\b',
+                              raw_name,re.I)
+                )
+                if len(matches)!=1 or str(matches[0].get('rarity') or '').upper() not in base or suspect:
+                    reject('insufficientIdentity',product,number,rarity,expansion)
+                    continue
+                candidate=matches[0]
+                method='unique-normal-name-unverified-source-treatment'
+            else:
+                if rarity:
+                    matches=[card for card in matches if str(card.get('rarity') or '').upper()==rarity]
+                if expansion:
+                    matches=[card for card in matches if compatible_expansion(card,expansion)]
+                if not matches:
+                    reject('unmatchedProducts',product,number,rarity,expansion)
+                    continue
+                if len(matches)>1:
+                    reject('ambiguousProducts',product,number,rarity,expansion)
+                    continue
+                candidate=matches[0]
+                method=('unique-name'+('-rarity' if rarity else '')+
+                        ('-compatible-expansion' if expansion else ''))
         if not candidate:
             raise AssertionError('Internal matching error: no candidate')
         code=candidate['code']
@@ -271,6 +288,7 @@ def match_cardmarket(cards, products, guides, *, max_examples=40):
         'A Cardmarket trend value is a price guide, not a verified completed sale.',
         'Explicit collector numbers that do not match this catalog never fall back to title.',
         'Rarity and expansion constraints are not silently discarded on name fallback.',
+        'When Cardmarket omits all code/rarity/set fields, unique normal printing title is indicative only; rare treatments and multiple printings are excluded.',
         'All distinct product collisions for one collector code are quarantined.',
         'Absent entries have unknown price; neither zero nor a substitute asking price.',
     ]
@@ -305,7 +323,8 @@ def main():
         raise RuntimeError(
             f'Cardmarket matched only {len(matched)} of {len(cards)} cards '
             f'(min {minimum} to publish). Investigate source/matcher and '
-            f'leave existing cached market file unchanged. Stats: {stats}'
+            f'leave existing cached market file unchanged. '
+            f'Matched={len(matched)}, unique title restrictions and collisions require review.'
         )
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),
