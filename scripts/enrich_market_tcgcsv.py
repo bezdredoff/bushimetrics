@@ -123,7 +123,9 @@ def main():
                 'tcgcsvMatch':'exact-collector-number',
                 'priceSource':'TCGCSV / TCGplayer daily mirror',
                 'marketSourceUrl':p.get('url'),
-                'marketAsOf':datetime.now(timezone.utc).date().isoformat(),
+                # A download timestamp is not the date the underlying market
+                # price was observed. TCGCSV's row has no proven price date.
+                'marketRetrievedAt':datetime.now(timezone.utc).isoformat(),
             }
             # In the unlikely event multiple TCGplayer products share the same collector
             # number, prefer the product whose group/card name is closest to our record;
