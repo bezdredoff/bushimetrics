@@ -4,6 +4,7 @@ Run after pip install playwright && python -m playwright install chromium:
 python tests/browser_smoke.py
 """
 import contextlib
+import json
 import socket
 import subprocess
 import sys
@@ -60,6 +61,11 @@ def main():
             page.keyboard.press("Escape")
             page.locator('[data-tab="portfolio"]').click()
             assert page.locator("#portfolioTable").inner_text().strip()
+            with page.expect_download() as portfolio_download:
+                page.locator("#portfolioExportBtn").click()
+            portfolio_backup=json.loads(Path(portfolio_download.value.path()).read_text(encoding="utf-8"))
+            assert portfolio_backup["version"] == 1
+            assert list(portfolio_backup["portfolio"].values())[0]["qty"] == 2
             page.locator('[data-tab="compare"]').click()
             assert page.locator("#compareGrid").inner_text().strip()
             page.locator('[data-tab="coverage"]').click()
@@ -71,6 +77,69 @@ def main():
             assert "Research model availability" in page.locator("#sourcesContent").inner_text()
             assert "Market source audit" in page.locator("#sourcesContent").inner_text()
             assert "Missing independent source or card-level date" in page.locator("#sourcesContent").inner_text()
+            # Card explorer pagination, CSV export and local backup round-trip.
+            page.locator('[data-tab="cards"]').click()
+            page.wait_for_function(
+                "() => !document.querySelector('#catalogStatus').textContent.includes('bootstrap visible')",
+                timeout=90000)
+            page.locator("#resetFiltersBtn").click()
+            page.locator("#pageSizeSelect").select_option("120")
+            assert page.locator("#cardGrid .card-tile").count() == 120
+            first_card=page.locator("#cardGrid .card-tile").first.get_attribute("data-id")
+            page.locator("#nextPage").click()
+            assert page.locator("#pageJump").input_value() == "2"
+            assert page.locator("#cardGrid .card-tile").first.get_attribute("data-id") != first_card
+            page.locator("#pageJump").fill("3")
+            page.locator("#pageJump").press("Tab")
+            assert page.locator("#pageJump").input_value() == "3"
+            page.locator("#search").fill("SFN/S108-E074SSP")
+            page.wait_for_function(
+                "() => document.querySelector('#cardGrid .card-tile') && document.querySelector('#cardGrid .card-tile').textContent.includes('SFN/S108-E074SSP')",
+                timeout=15000)
+            with page.expect_download() as csv_download:
+                page.locator("#exportFilteredBtn").click()
+            csv=Path(csv_download.value.path()).read_text(encoding="utf-8-sig")
+            assert "SFN/S108-E074SSP" in csv and "marketUSD" in csv
+
+            with page.expect_download() as local_download:
+                page.locator("#exportLocalBtn").click()
+            backup=json.loads(Path(local_download.value.path()).read_text(encoding="utf-8"))
+            assert backup["version"] == 1
+            assert len(backup["watch"]) == 1
+            assert len(backup["compare"]) == 1
+            assert list(backup["portfolio"].values())[0]["qty"] == 2
+            keys=["bm-watch","bm-compare","bm-portfolio"]
+            stored_before=page.evaluate("(keys) => keys.map(key => localStorage.getItem(key))",keys)
+            card_id=next(iter(backup["portfolio"]))
+            bad={"version":1,"watch":[],"portfolio":{
+                card_id:{"qty":"not-an-integer","cost":10,"currency":"EUR"}
+            }}
+            page.locator("#importLocalFile").set_input_files({
+                "name":"invalid-backup.json","mimeType":"application/json",
+                "buffer":json.dumps(bad).encode("utf-8")})
+            page.wait_for_function(
+                "() => document.querySelector('#toast').textContent.includes('Import rejected')",
+                timeout=10000)
+            assert page.evaluate("(keys) => keys.map(key => localStorage.getItem(key))",keys)==stored_before
+            page.locator("#importLocalFile").set_input_files({
+                "name":"empty-backup.json","mimeType":"application/json",
+                "buffer":json.dumps({"version":1,"watch":[],"compare":[],"portfolio":{}}).encode("utf-8")})
+            page.wait_for_function(
+                "() => document.querySelector('#portfolioCount').textContent.trim()==='0'",
+                timeout=10000)
+            page.locator("#importLocalFile").set_input_files({
+                "name":"restored-backup.json","mimeType":"application/json",
+                "buffer":json.dumps(backup).encode("utf-8")})
+            page.wait_for_function(
+                "() => document.querySelector('#portfolioCount').textContent.trim()==='2'",
+                timeout=10000)
+            assert json.loads(page.evaluate("() => localStorage.getItem('bm-portfolio')"))==backup["portfolio"]
+            page.reload(wait_until="domcontentloaded")
+            page.wait_for_function(
+                "() => document.querySelector('#catalogStatus').textContent.includes('loaded printings')",
+                timeout=60000)
+            assert page.locator("#portfolioCount").inner_text().strip() == "2"
+            page.locator('[data-tab="cards"]').click()
             # The full Japanese index must load on demand, rather than being claimed by metadata alone.
             page.locator('[data-tab="cards"]').click()
             page.locator('[data-preset="jp-weiss"]').click()
@@ -79,6 +148,18 @@ def main():
                 timeout=90000)
             page.locator("#cardGrid .card-tile").first.wait_for(timeout=45000)
             assert "JP" in page.locator("#catalogStatus").inner_text()
+            page.locator("#search").fill("GZL/SE33-12")
+            page.wait_for_function(
+                "() => [...document.querySelectorAll('#cardGrid .card-tile')].filter(el => el.textContent.includes('GZL/SE33-12')).length === 2",
+                timeout=20000)
+            variants=page.locator("#cardGrid .card-tile")
+            assert variants.count()==2
+            assert {"RR","SEC"} <= set(
+                badge.inner_text() for badge in page.locator("#cardGrid .card-tile .badge").all())
+            variants.filter(has_text="SEC").first.click()
+            page.locator("#viewer.open").wait_for(timeout=10000)
+            assert "GZL/SE33-12" in page.locator("#viewerMeta").inner_text()
+            assert "SEC" in page.locator("#viewerMeta").inner_text()
             assert not errors, "Browser JavaScript errors: "+"; ".join(errors[:6])
             browser.close()
         print("Chromium acceptance smoke passed")
