@@ -453,6 +453,37 @@ def main():
     }
     DATA.mkdir(exist_ok=True)
     (DATA/'catalog.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+    # Preserve data-source matching provenance separately from EUR price count.
+    # A pre-fix cached file may still exist until the next network refresh;
+    # in that case the UI must state that duplicate collisions were NOT checked.
+    cm_stats=cardmarket_file.get('stats',{})
+    cm_vetted='collisionCodeGroups' in cm_stats
+    cm_rows=cardmarket_file.get('cards',{})
+    cm_audit={
+        'schemaVersion':1,
+        'status':'vetted-identity-matching-v1' if cm_vetted else 'legacy-cache-unverified-mapping',
+        'priceGuideCreatedAt':cardmarket_file.get('cardmarketCreatedAt'),
+        'cacheRetrievedAt':cardmarket_file.get('generatedAt'),
+        'matchedPrintings':len(cm_rows),
+        'pricedPrintings':sum(
+            isinstance(row,dict) and row.get('marketEUR') is not None
+            and isinstance(row['marketEUR'],(int,float)) and row['marketEUR']>0
+            for row in cm_rows.values()
+        ),
+        'sourceStats':cm_stats,
+        'note':(
+            'Explicit collector code and rarity mismatches are rejected; '
+            'colliding product IDs are quarantined only after the new '
+            'Cardmarket source matcher has successfully refreshed. '
+            'Cached legacy records are NOT retroactively certified.'
+        )
+    }
+    (DATA/'cardmarket-match-audit.json').write_text(
+        json.dumps(cm_audit,ensure_ascii=False,indent=2),encoding='utf-8'
+    )
+    print('Cardmarket match audit',cm_audit['status'],
+          'priced',cm_audit['pricedPrintings'],
+          'collided groups',cm_stats.get('collisionCodeGroups','not checked'))
     source_audit=audit_manual_prices(market_overrides)
     source_audit['generatedAt']=payload['generatedAt']
     (DATA/'market-source-audit.json').write_text(json.dumps(source_audit,indent=2),encoding='utf-8')
