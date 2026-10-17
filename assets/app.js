@@ -462,6 +462,17 @@ document.addEventListener('error', event => {
     img.src = 'https://images.weserv.nl/?url=' + encodeURIComponent(url);
     return;
   }
+  // The viewer reuses this exact <img> for next/previous cards and zoom.
+  // Do not replace its DOM node after all artwork fallbacks fail.
+  if (img.id === 'viewerImage') {
+    img.style.display = 'none';
+    const placeholder = $('#viewerPlaceholder');
+    if (placeholder) {
+      placeholder.textContent = 'Artwork unavailable';
+      placeholder.classList.remove('hidden');
+    }
+    return;
+  }
   const replacement = document.createElement('div');
   replacement.className = 'placeholder';
   replacement.textContent = 'Artwork unavailable';
@@ -654,9 +665,15 @@ function renderViewer() {
   $('#viewerImageWrap').style.setProperty('--zoom','1');
   $('#zoomLabel').textContent = '100%';
 
-  $('#viewerImage').style.display = c.image ? 'block' : 'none';
-  $('#viewerPlaceholder').classList.toggle('hidden', !!c.image);
-  if (c.image) $('#viewerImage').src = c.image;
+  const viewerImg = $('#viewerImage');
+  const viewerPlaceholder = $('#viewerPlaceholder');
+  viewerImg.style.display = c.image ? 'block' : 'none';
+  viewerPlaceholder.textContent = c.image ? 'Artwork unavailable' : 'Preview unavailable';
+  viewerPlaceholder.classList.toggle('hidden', !!c.image);
+  // Previous card's retry state must not carry into a newly opened printing.
+  viewerImg.dataset.artFallback = '';
+  if (c.image) viewerImg.src = c.image;
+  else viewerImg.removeAttribute('src');
 
   $('#viewerGame').textContent = gameLabel(c.game);
   $('#viewerName').textContent = c.name;
