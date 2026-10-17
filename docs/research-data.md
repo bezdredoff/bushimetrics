@@ -195,3 +195,33 @@ matcher in `scripts/enrich_market_cardmarket.py` is now fail-closed:
 This conservatism may lower EUR price coverage. Such missing prices are
 preferable to attaching a price guide from a different rarity, signed parallel
 or physical treatment. It does not imply the underlying card is worthless.
+
+## TCGCSV / TCGplayer USD subtype integrity
+
+The TCGCSV mirror publishes market **price guides**, which do not establish a
+completed-sale price. Different price rows under a single TCGplayer product may
+refer to Normal versus Foil/Holofoil subtypes. A previous importer always
+preferred Foil even for ordinary Common/Uncommon/Rare/Double Rare Weiss cards,
+potentially overstating the price of the actual collectible.
+
+The importer now selects the **Normal** subtype for non-premium source
+printings and **Foil/Holofoil** for explicitly premium rarities (SP, SSP, SEC,
+SR, OFR, RRR and related variants). If an exactly matched collector-number product has *only one*
+subtype quote, it may still be retained even when the Normal/Foil designation
+looks inconsistent with the card rarity, but it is explicitly labelled
+`single-opposite-subtype-unverified-treatment`: the exact number is known,
+not the supplier's treatment semantics. A single source row with no subtype
+designation is separately provisional (`single-unspecified-subtype`).
+Multiple possible rows for the preferred subtype are rejected rather than
+chosen by source order.
+
+If two different TCGplayer product IDs resolve to the same exact collector
+number, *all those conflicting mappings* are quarantined until the exact
+physical versions can be verified. They are not treated as one printing merely
+because the text of the collector number matches.
+
+The next full refresh generates `data/tcgcsv-subtype-audit.json` with
+matched/duplicate/subtype-rejection counts. Earlier cached USD values keep a
+legacy/unverified subtype marker until this refresh has completed. Missing
+market values mean unknown, never zero or worthless. The sampling confidence
+of separate Palworld Prices completed-sales observations is unaffected.

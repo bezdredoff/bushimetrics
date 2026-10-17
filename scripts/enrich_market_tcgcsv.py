@@ -3,7 +3,7 @@
 
 TCGCSV mirrors TCGplayer category/group/product/price endpoints daily and does
 not require an API key. Products include extendedData; Weiss collector number
-and rarity are used for exact/conservative matching.
+and rarity are used to choose the correct Normal vs Foil price subtype.
 
 The script is intentionally polite:
 - one groups request;
@@ -12,10 +12,10 @@ The script is intentionally polite:
 - prior cache is kept if the source is temporarily unavailable.
 """
 from __future__ import annotations
-import argparse,json,time,re
+import argparse,json,time,re,math
+from collections import defaultdict
 from datetime import datetime,timezone
 from pathlib import Path
-import requests
 
 ROOT=Path(__file__).resolve().parents[1]
 WEISS=ROOT/'data/raw/weiss.json'
@@ -39,17 +39,77 @@ def ext(product,name):
 def norm_code(v):
     return re.sub(r'\s+','',str(v or '')).upper()
 
-def choose_price(rows):
-    """Prefer foil-ish price for premium Weiss printings, otherwise Normal.
-    When only one subtype exists, use it. We keep all rows for provenance."""
-    usable=[r for r in rows if r.get('marketPrice') not in (None,'')]
-    if not usable:return None
-    def rank(r):
-        sub=str(r.get('subTypeName') or '').lower()
-        if 'foil' in sub or 'holo' in sub:return 0
-        if 'normal' in sub:return 1
-        return 2
-    return sorted(usable,key=rank)[0]
+PREMIUM_RARITIES={'RRR','RRR+','SR','SP','SSP','SEC','SEC+','OFR',
+                  'TSP','SIR','AGR','OSR','TSR','SSS'}
+
+
+def subtype_kind(row):
+    text=str(row.get('subTypeName') or '').lower()
+    if 'foil' in text or 'holo' in text:
+        return 'foil'
+    if 'normal' in text or 'regular' in text:
+        return 'normal'
+    return 'unknown'
+
+
+def choose_price(rows, rarity):
+    """Select only an identifiable TCGplayer price subtype for the rarity.
+
+    The old code ranked Foil first for every printing, including ordinary
+    Common/Uncommon/Rare/Double-Rare cards, inflating their market price.
+    Return (row, reason), preserving explicit uncertainty for unknown or
+    contradictory provider subtype metadata.
+    """
+    good=[]
+    for row in rows:
+        value=row.get('marketPrice')
+        try:
+            number=float(value)
+        except (ValueError,TypeError,OverflowError):
+            continue
+        if not math.isfinite(number) or number<=0:
+            continue
+        good.append(row)
+    if not good:
+        return None,'missing-price'
+
+    expected='foil' if str(rarity or '').upper() in PREMIUM_RARITIES else 'normal'
+    preferred=[row for row in good if subtype_kind(row)==expected]
+    if len(preferred)==1:
+        return preferred[0],'preferred-'+expected
+    if len(preferred)>1:
+        return None,'ambiguous-'+expected+'-rows'
+
+    # The platform's subtype names are not guaranteed to represent the
+    # collectible treatment of a separately numbered Weiss rarity. If this
+    # exact collector-number product offers exactly ONE guide quote, retain it
+    # as provisional even when the subtype is surprising, but do NOT claim
+    # the physical Normal/Foil treatment is verified.
+    if len(good)==1:
+        kind=subtype_kind(good[0])
+        if kind=='unknown':
+            return good[0],'single-unspecified-subtype'
+        return good[0],'single-opposite-subtype-unverified-treatment'
+    return None,'ambiguous-unverified-subtypes'
+
+
+def finalize_candidates(candidates, max_examples=30):
+    """No arbitrary first-product winner for one collector number."""
+    matched={}
+    examples=[]
+    collisions=0
+    duplicate_products=0
+    for code,rows in sorted(candidates.items()):
+        if len(rows)>1:
+            collisions+=1
+            duplicate_products+=len(rows)-1
+            if len(examples)<max_examples:
+                examples.append({'collectorCode':code,
+                                 'productIds':sorted(rows)})
+            continue
+        matched[code]=next(iter(rows.values()))
+    return matched,collisions,duplicate_products,examples
+
 
 def main():
     ap=argparse.ArgumentParser()
@@ -63,6 +123,7 @@ def main():
     cards=identity.get('cards',[])
     by_code={norm_code(c.get('code')):c for c in cards if c.get('code')}
 
+    import requests
     s=requests.Session()
     try:
         groups=(get_json(s,f'{BASE}/{CATEGORY}/groups').get('results') or [])
@@ -74,8 +135,11 @@ def main():
             return
         raise
 
-    matched={}
-    stats={'groups':len(groups),'products':0,'pricedRows':0,'exactNumber':0,'missingNumber':0,'unmatchedNumber':0,'duplicateProducts':0}
+    candidates=defaultdict(dict)
+    stats={'groups':len(groups),'products':0,'pricedRows':0,'exactNumber':0,
+           'missingNumber':0,'unmatchedNumber':0,'duplicateProducts':0,
+           'subtypeRejections':{},'subtypeSelection':{},'collisionCodeGroups':0,
+           'collisionExamples':[]}
     product_seen=set()
     failures=[]
     for i,g in enumerate(groups,1):
@@ -103,10 +167,13 @@ def main():
             target=by_code.get(key)
             if not target:
                 stats['unmatchedNumber']+=1;continue
-            chosen=choose_price(prices_by.get(int(pid),[]))
-            if not chosen:continue
+            chosen,basis=choose_price(prices_by.get(int(pid),[]),target.get('rarity'))
+            if not chosen:
+                rejected=stats['subtypeRejections']
+                rejected[basis]=rejected.get(basis,0)+1
+                continue
             stats['exactNumber']+=1
-            prev=matched.get(target['code'])
+            stats['subtypeSelection'][basis]=stats['subtypeSelection'].get(basis,0)+1
             payload={
                 'tcgplayerProductId':int(pid),
                 'market':chosen.get('marketPrice'),
@@ -115,6 +182,7 @@ def main():
                 'high':chosen.get('highPrice'),
                 'directLow':chosen.get('directLowPrice'),
                 'marketSubtype':chosen.get('subTypeName'),
+                'marketSubtypeSelection':basis,
                 'tcgcsvGroupId':gid,
                 'tcgcsvGroupName':g.get('name'),
                 'tcgplayerName':p.get('name'),
@@ -127,16 +195,16 @@ def main():
                 # price was observed. TCGCSV's row has no proven price date.
                 'marketRetrievedAt':datetime.now(timezone.utc).isoformat(),
             }
-            # In the unlikely event multiple TCGplayer products share the same collector
-            # number, prefer the product whose group/card name is closest to our record;
-            # otherwise retain the first and report the duplicate.
-            if prev:
-                stats['duplicateProducts']+=1
-                continue
-            matched[target['code']]=payload
+            candidates[target['code']][int(pid)]=payload
         if i%25==0:
-            print('TCGCSV groups',i,'/',len(groups),'matched',len(matched),flush=True)
+            print('TCGCSV groups',i,'/',len(groups),
+                  'candidate printing codes',len(candidates),flush=True)
         time.sleep(.15)
+
+    matched,collisions,duplicates,examples=finalize_candidates(candidates)
+    stats['collisionCodeGroups']=collisions
+    stats['duplicateProducts']=duplicates
+    stats['collisionExamples']=examples
 
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),

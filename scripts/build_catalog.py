@@ -268,7 +268,9 @@ def apply_market(c,price_sources,palworldprices,manual_market,seed_market):
       'marketAskCount':'marketAskCount','marketAskLow':'marketAskLow','marketAskMedian':'marketAskMedian',
       'marketAskSpreadPct':'marketAskSpreadPct','marketAskAsOf':'marketAskAsOf','marketStale':'marketStale',
       'palworldPricesCardId':'palworldPricesCardId',
-      'marketRetrievedAt':'marketRetrievedAt','checkedAt':'marketRetrievedAt'
+      'marketRetrievedAt':'marketRetrievedAt','checkedAt':'marketRetrievedAt',
+      'marketSubtype':'marketSubtype','marketSubtypeSelection':'marketSubtypeSelection',
+      'tcgcsvMatch':'tcgcsvMatch','tcgplayerProductId':'tcgplayerProductId'
     }
     for a,b in mapping.items():
         if source.get(a) is not None:
@@ -343,7 +345,8 @@ def main():
     printing=read(DATA/'printing_overrides.json',{'cards':{}}).get('cards',{})
     market_file=read(DATA/'market_overrides.json',{'cards':{}})
     market_overrides=market_file.get('cards',{})
-    tcgcsv=read(MARKET/'tcgcsv.json',{'cards':{}}).get('cards',{})
+    tcgcsv_file=read(MARKET/'tcgcsv.json',{'cards':{}})
+    tcgcsv=tcgcsv_file.get('cards',{})
     tcgapi=read(MARKET/'tcgapi.json',{'cards':{}}).get('cards',{})
     # Public TCGCSV is the baseline USD layer; optional TCG API overrides it
     # when a fresher authenticated row exists for the same collector number.
@@ -484,6 +487,26 @@ def main():
     print('Cardmarket match audit',cm_audit['status'],
           'priced',cm_audit['pricedPrintings'],
           'collided groups',cm_stats.get('collisionCodeGroups','not checked'))
+    tcg_stats=tcgcsv_file.get('stats',{})
+    vetted='subtypeSelection' in tcg_stats and 'collisionCodeGroups' in tcg_stats
+    tcg_audit={
+        'schemaVersion':1,
+        'status':'vetted-subtype-matching-v1' if vetted else 'legacy-cache-unverified-subtypes',
+        'retrievedAt':tcgcsv_file.get('generatedAt'),
+        'matchedPrintings':len(tcgcsv),
+        'sourceStats':tcg_stats,
+        'note':(
+            'Normal and Foil selections require rarity-aware product subtype data. '
+            'Only one unspecified subtype is provisional; conflicting vendor '
+            'products for a collector number are excluded. Older cached records '
+            'are not retroactively validated.'
+        )
+    }
+    (DATA/'tcgcsv-subtype-audit.json').write_text(
+        json.dumps(tcg_audit,indent=2,ensure_ascii=False),encoding='utf-8'
+    )
+    print('TCGCSV subtype integrity audit',tcg_audit['status'],
+          'matched',tcg_audit['matchedPrintings'])
     source_audit=audit_manual_prices(market_overrides)
     source_audit['generatedAt']=payload['generatedAt']
     (DATA/'market-source-audit.json').write_text(json.dumps(source_audit,indent=2),encoding='utf-8')

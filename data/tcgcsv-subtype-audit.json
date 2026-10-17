@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "status": "pending-first-subtype-aware-refresh",
+  "retrievedAt": null,
+  "matchedPrintings": null,
+  "sourceStats": {},
+  "note": "The first full TCGCSV refresh using rarity-aware Normal/Foil selection has not been published yet. Historical cached USD guide subtypes remain unverified."
+}
