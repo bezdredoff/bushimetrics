@@ -1,8 +1,98 @@
 {
   "schemaVersion": 1,
-  "status": "pending-first-subtype-aware-refresh",
-  "retrievedAt": null,
-  "matchedPrintings": null,
-  "sourceStats": {},
-  "note": "The first full TCGCSV refresh using rarity-aware Normal/Foil selection has not been published yet. Historical cached USD guide subtypes remain unverified."
+  "status": "vetted-subtype-matching-v1",
+  "retrievedAt": "2026-10-17T11:35:10.152140+00:00",
+  "matchedPrintings": 2040,
+  "sourceStats": {
+    "groups": 177,
+    "products": 32123,
+    "pricedRows": 30054,
+    "exactNumber": 2060,
+    "missingNumber": 910,
+    "unmatchedNumber": 28643,
+    "duplicateProducts": 10,
+    "subtypeRejections": {
+      "missing-price": 510
+    },
+    "subtypeSelection": {
+      "preferred-normal": 1304,
+      "single-opposite-subtype-unverified-treatment": 756
+    },
+    "collisionCodeGroups": 10,
+    "collisionExamples": [
+      {
+        "collectorCode": "NK/WE22-E03",
+        "productIds": [
+          121689,
+          121690
+        ]
+      },
+      {
+        "collectorCode": "NK/WE22-E06",
+        "productIds": [
+          121695,
+          121696
+        ]
+      },
+      {
+        "collectorCode": "NK/WE22-E27",
+        "productIds": [
+          121739,
+          121740
+        ]
+      },
+      {
+        "collectorCode": "SY/WE09-E01",
+        "productIds": [
+          118116,
+          118117
+        ]
+      },
+      {
+        "collectorCode": "SY/WE09-E12",
+        "productIds": [
+          118138,
+          118139
+        ]
+      },
+      {
+        "collectorCode": "SY/WE09-E22",
+        "productIds": [
+          118164,
+          118165
+        ]
+      },
+      {
+        "collectorCode": "SY/WE09-E23",
+        "productIds": [
+          118166,
+          118167
+        ]
+      },
+      {
+        "collectorCode": "SY/WE09-E25",
+        "productIds": [
+          118170,
+          118171
+        ]
+      },
+      {
+        "collectorCode": "SY/WE09-E26",
+        "productIds": [
+          118172,
+          118173
+        ]
+      },
+      {
+        "collectorCode": "SY/WE09-E27",
+        "productIds": [
+          118174,
+          118175
+        ]
+      }
+    ],
+    "matchedCards": 2040,
+    "failures": 0
+  },
+  "note": "Normal and Foil selections require rarity-aware product subtype data. Only one unspecified subtype is provisional; conflicting vendor products for a collector number are excluded. Older cached records are not retroactively validated."
 }
