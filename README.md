@@ -128,7 +128,7 @@ Open <http://localhost:8080>.
 - `data/history.json` — historical set-level validation notes.
 - `data/snapshots/` — compact walk-forward market snapshots.
 
-## Investment heuristic + peer Fair Value v0.7
+## Investment heuristic + peer Fair Value v0.8
 
 Current Investment Quality weights:
 
@@ -145,7 +145,7 @@ Current Investment Quality weights:
 
 This is intentionally a transparent heuristic. It is **not** labelled a fitted predictive model until accumulated snapshots permit a real walk-forward calibration.
 
-Fair Value is only generated when an observed market price exists.
+Fair Value v0.8 excludes the target card's own market price **both directly and indirectly through the subject-premium peers**. It is a cross-sectional peer estimate, not a trained investment-return forecast. Its High/Medium/Low confidence labels refer only to **sample sizes**, not proven predictive accuracy, liquidity or verified completed sales. The interface only compares Fair Value to a target market price where that target has an observed price.
 
 ## Important collector-data rule
 
