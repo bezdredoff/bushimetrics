@@ -16,8 +16,9 @@ class MarketProvenanceTests(unittest.TestCase):
     def setUp(self):
         self.provider = {
             "market": 50.0,
-            "priceSource": "Completed sales",
+            "priceSource": "Palworld Prices — completed-sale median",
             "marketSourceUrl": "https://palworldprices.com/cards/test",
+            "palworldPricesCardId": "pal-BP01-001",
             "marketAsOf": "2026-09-17T22:30:01Z",
             "marketKind": "bare",
             "salesInBasis": 42,
