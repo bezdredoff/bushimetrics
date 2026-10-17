@@ -707,6 +707,8 @@ function renderViewer() {
       ? '<span class="badge badge-warn">USD Normal/Foil matching pending verification</span>' : '',
     c.market != null && c.marketSubtypeSelection==='single-unspecified-subtype'
       ? '<span class="badge badge-warn">USD subtype unspecified — provisional source match</span>' : '',
+    c.market != null && c.marketSubtypeSelection==='single-opposite-subtype-unverified-treatment'
+      ? '<span class="badge badge-warn">USD vendor subtype differs from rarity — treatment unverified</span>' : '',
     c.marketEUR != null && c.marketEURStale ? '<span class="badge badge-warn">EUR Cardmarket guide stale or undated</span>' : '',
     c.marketEUR != null && c.cardmarketMatch==='unique-normal-name-unverified-source-treatment'
       ? '<span class="badge badge-warn">EUR guide matched by title only — treatment unverified</span>' : '',
@@ -1262,7 +1264,7 @@ function renderSources() {
     <p><a target="_blank" rel="noreferrer" href="data/cardmarket-match-audit.json">Inspect individual source-match and conflict audit</a></p>
   </div>
   <div class="panel"><h3>TCGplayer Normal / Foil audit</h3>
-    <p>TCGCSV public prices are price guides. An ordinary printing should use its Normal price where available; premium-rarity printings select a Foil quote. Opposite-only or ambiguous subtypes and multiple vendor products sharing one collector number must not silently choose a price.</p>
+    <p>TCGCSV public prices are price guides. An ordinary printing should use its Normal price where available; premium-rarity printings select a Foil quote. When both Normal and Foil exist, the rarity determines the selected guide. If a collector number has only one quote with a surprising subtype, that value is provisional and does not verify physical treatment. Multiple ambiguous rows or vendor product IDs are quarantined.</p>
     ${state.tcgcsvAudit.status==='vetted-subtype-matching-v1' ?
       '<div class="stat-list"><div class="stat"><span>Unambiguous collector price guides</span><b>'+
         Number(state.tcgcsvAudit.matchedPrintings||0).toLocaleString()+'</b></div>'+
