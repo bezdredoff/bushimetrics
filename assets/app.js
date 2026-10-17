@@ -4,13 +4,53 @@ const $$ = s => [...document.querySelectorAll(s)];
 function safeJson(raw, fallback) {
   try { return JSON.parse(raw); } catch { return fallback; }
 }
+// Local backups are user-editable files. Validate them *before* changing state.
+// Unknown card IDs are retained so JP cards can resolve after lazy catalog load.
+const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const validCardId = id => typeof id === 'string' && id.length > 0 && id.length <= 256 &&
+  !['__proto__','prototype','constructor'].includes(id);
+function checkedIds(values, label, limit) {
+  if (!Array.isArray(values) || values.length > limit) throw new Error(label+' must be a small array');
+  if (!values.every(validCardId)) throw new Error(label+' contains an invalid card ID');
+  return [...new Set(values)];
+}
+function checkedPortfolio(rows) {
+  if (!isRecord(rows) || Object.keys(rows).length > 10000) throw new Error('Invalid portfolio');
+  const result=Object.create(null);
+  for (const [id,p] of Object.entries(rows)) {
+    if (!validCardId(id) || !isRecord(p) ||
+        !Number.isSafeInteger(p.qty) || p.qty < 1 || p.qty > 1000000 ||
+        typeof p.cost !== 'number' || !Number.isFinite(p.cost) || p.cost < 0 || p.cost > 1000000000 ||
+        !['EUR','USD'].includes(p.currency)) throw new Error('Invalid portfolio position');
+    result[id]={qty:p.qty,cost:p.cost,currency:p.currency};
+  }
+  return result;
+}
+function storedIds(key,limit) {
+  try { return checkedIds(safeJson(localStorage.getItem(key),[]),key,limit); }
+  catch { return []; }
+}
+function storedPortfolio() {
+  try { return checkedPortfolio(safeJson(localStorage.getItem('bm-portfolio'),{})); }
+  catch { return Object.create(null); }
+}
+function checkedBackup(value) {
+  if (!isRecord(value) || value.version !== 1) throw new Error('Unsupported backup version');
+  const has = key => Object.prototype.hasOwnProperty.call(value,key);
+  if (!['watch','compare','portfolio'].some(has)) throw new Error('No collection data to import');
+  return {
+    watch:has('watch') ? checkedIds(value.watch,'watch',10000) : null,
+    compare:has('compare') ? checkedIds(value.compare,'compare',4) : null,
+    portfolio:has('portfolio') ? checkedPortfolio(value.portfolio) : null
+  };
+}
 const state = {
   cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, marketAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
-  watch: new Set(safeJson(localStorage.getItem('bm-watch') || '[]', [])),
-  compare: safeJson(localStorage.getItem('bm-compare') || '[]', []).slice(0, 4),
-  portfolio: safeJson(localStorage.getItem('bm-portfolio') || '{}', {}),
+  watch: new Set(storedIds('bm-watch',10000)),
+  compare: storedIds('bm-compare',4),
+  portfolio: storedPortfolio(),
   setCache: new Map(), loadedSetKeys: new Set(), setManifest: new Map(), fullCatalogLoaded: false, catalogGeneratedAt: null
 };
 
@@ -956,18 +996,34 @@ $('#importLocalBtn').onclick = () => $('#importLocalFile').click();
 $('#importLocalFile').onchange = async e => {
   const file=e.target.files?.[0]; if(!file)return;
   try {
-    const d=JSON.parse(await file.text());
-    if (Array.isArray(d.watch)) state.watch=new Set(d.watch);
-    if (Array.isArray(d.compare)) state.compare=d.compare.slice(0,4);
-    if (d.portfolio && typeof d.portfolio==='object') state.portfolio=d.portfolio;
-    localStorage.setItem('bm-watch',JSON.stringify([...state.watch]));
-    persistCompare();
-    localStorage.setItem('bm-portfolio',JSON.stringify(state.portfolio));
-    renderWatch();renderPortfolio();updatePortfolioCount();toast('Local data imported.');
-  } catch { toast('Could not import that JSON file.'); }
+    if(file.size>4_000_000) throw new Error('Collection backup is too large');
+    // Reject malformed data as a whole; never partially overwrite a user's collection.
+    const backup=checkedBackup(JSON.parse(await file.text()));
+    const watch=backup.watch===null ? [...state.watch] : backup.watch;
+    const compare=backup.compare===null ? [...state.compare] : backup.compare;
+    const portfolio=backup.portfolio===null ? state.portfolio : backup.portfolio;
+    const previous=['bm-watch','bm-compare','bm-portfolio'].map(key=>localStorage.getItem(key));
+    try {
+      localStorage.setItem('bm-watch',JSON.stringify(watch));
+      localStorage.setItem('bm-compare',JSON.stringify(compare));
+      localStorage.setItem('bm-portfolio',JSON.stringify(portfolio));
+    } catch(error) {
+      ['bm-watch','bm-compare','bm-portfolio'].forEach((key,i)=>{
+        try { if(previous[i]===null) localStorage.removeItem(key); else localStorage.setItem(key,previous[i]); } catch {}
+      });
+      throw error;
+    }
+    state.watch=new Set(watch);
+    state.compare=compare;
+    state.portfolio=portfolio;
+    renderWatch(); renderCompare(); renderPortfolio(); updatePortfolioCount();
+    toast('Collection imported successfully.');
+  } catch(error) {
+    console.warn('Collection import rejected:',error?.message||error);
+    toast('Import rejected: invalid or unsupported collection backup.');
+  }
   e.target.value='';
 };
-
 
 function setExplorerPreset(name) {
   $$('#quickPresets .preset').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
