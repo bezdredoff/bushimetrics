@@ -7,12 +7,11 @@ credentials. Weiss Schwarz is Cardmarket game id 10.
 Important: Cardmarket stopped adding NEW Weiss singles in 2026, so this is a
 partial European market layer, never the master card catalog.
 
-Matching is deliberately conservative:
-1) collector number, if the published product row exposes one;
-2) unique (normalized card name, rarity, expansion) among our Weiss catalog;
-3) unique (normalized card name, expansion);
-4) unique (normalized card name, rarity);
-5) unique normalized name only.
+Matching is deliberately evidence-gated:
+1) exact collector number (never fall back if an explicit number disagrees);
+2) unique name with all supplied rarity and set constraints;
+3) quarantine ambiguous products and collisions instead of overwriting values.
+A name without either rarity or expansion is too weak to identify a printing.
 
 Cardmarket's public export includes expansionName. Using it resolves many false
 ambiguities where the same card title exists in multiple Weiss products.
@@ -20,7 +19,8 @@ ambiguities where the same card title exists in multiple Weiss products.
 Ambiguous rows are skipped rather than attached to the wrong printing.
 """
 from __future__ import annotations
-import json,re,unicodedata
+import json,math,re,unicodedata
+from collections import defaultdict
 from datetime import datetime,timezone
 from pathlib import Path
 import requests
@@ -80,92 +80,153 @@ def get_json(session,url):
     r.raise_for_status()
     return r.json()
 
-def main():
-    if not WEISS.exists():
-        print('Weiss catalog missing; Cardmarket enrichment skipped.')
-        return
-    source=json.loads(WEISS.read_text(encoding='utf-8'))
-    cards=source.get('cards',[])
-    by_code={str(c.get('code') or '').upper():c for c in cards if c.get('code')}
-    by_name={}
-    by_name_rarity={}
-    by_name_set={}
-    by_name_rarity_set={}
-    for c in cards:
-        n=norm(c.get('name')); r=str(c.get('rarity') or '').upper(); st=set_norm(c.get('set'))
-        if not n:continue
-        by_name.setdefault(n,[]).append(c)
-        by_name_rarity.setdefault((n,r),[]).append(c)
-        if st:
-            by_name_set.setdefault((n,st),[]).append(c)
-            by_name_rarity_set.setdefault((n,r,st),[]).append(c)
+def normalized_code(value):
+    """Do not conflate two physical products merely by a similar name."""
+    return re.sub(r'\s+', '', str(value or '')).upper()
 
-    def expansion_candidates(name, rarity, expansion):
-        """Conservative fallback when set strings differ only by light naming boilerplate."""
-        if not expansion:return []
-        pool=by_name_rarity.get((name,rarity),[]) if rarity else by_name.get(name,[])
-        out=[]
-        for c in pool:
-            st=set_norm(c.get('set'))
-            if not st:continue
-            if st==expansion or st in expansion or expansion in st:
-                out.append(c)
-        return out
 
-    session=requests.Session()
+def positive_price(value):
     try:
-        products_file=get_json(session,PRODUCTS_URL)
-        prices_file=get_json(session,PRICES_URL)
-    except Exception as e:
-        if OUT.exists():
-            print('Cardmarket download failed; keeping prior cache:',e)
-            return
-        print('Cardmarket unavailable and no prior cache:',e)
-        return
+        number=float(value)
+        return math.isfinite(number) and number>0
+    except (TypeError,ValueError,OverflowError):
+        return False
 
-    products=products_file.get('products') or []
-    guides=prices_file.get('priceGuides') or []
-    by_product={int(g.get('idProduct')):g for g in guides if g.get('idProduct') is not None}
 
-    matched={}; ambiguous=0; no_price=0; no_match=0
-    methods={}; ambiguous_examples=[]
-    for p in products:
-        pid=p.get('idProduct')
-        if pid is None:continue
-        guide=by_product.get(int(pid))
-        if not guide:
-            no_price+=1;continue
-        n,r,number,expansion=product_identity(p)
-        candidate=None;method=None
-        if number and number.upper() in by_code:
-            candidate=by_code[number.upper()];method='collector-number'
-        elif r and expansion and len(by_name_rarity_set.get((n,r,expansion),[]))==1:
-            candidate=by_name_rarity_set[(n,r,expansion)][0];method='unique-name-rarity-expansion'
-        elif expansion and len(by_name_set.get((n,expansion),[]))==1:
-            candidate=by_name_set[(n,expansion)][0];method='unique-name-expansion'
-        else:
-            ex=expansion_candidates(n,r,expansion)
-            if len(ex)==1:
-                candidate=ex[0];method='compatible-expansion'
-            elif r and len(by_name_rarity.get((n,r),[]))==1:
-                candidate=by_name_rarity[(n,r)][0];method='unique-name-rarity'
-            elif len(by_name.get(n,[]))==1:
-                candidate=by_name[n][0];method='unique-name'
-            else:
-                if n in by_name:
-                    ambiguous+=1
-                    if len(ambiguous_examples)<30:
-                        ambiguous_examples.append({'product':p.get('name'),'rarity':p.get('rarity'),'expansion':p.get('expansionName'),'number':number,'catalogCandidates':len(by_name.get(n,[]))})
-                else:no_match+=1
+def compatible_expansion(card, expansion):
+    name=set_norm(card.get('set'))
+    # Very short/shared fragments are insufficient to identify a product.
+    return bool(name and expansion and (
+        name==expansion or
+        (min(len(name),len(expansion))>=6 and (
+            name in expansion or expansion in name
+        ))
+    ))
+
+
+def match_cardmarket(cards, products, guides, *, max_examples=40):
+    """Map price guides only to unambiguous physical printings.
+
+    * A specified collector number is authoritative: if absent from our
+      catalog, or if specified rarity disagrees, NEVER retry name matching.
+    * Name fallback must respect every rarity and expansion constraint that
+      the source actually supplies.
+    * Multiple distinct Cardmarket product IDs for one catalog code are
+      quarantined, not overwritten by source enumeration order.
+    """
+    by_code=defaultdict(list)
+    by_name=defaultdict(list)
+    for card in cards:
+        if card.get('code'):
+            by_code[normalized_code(card['code'])].append(card)
+        name=norm(card.get('name'))
+        if name:
+            by_name[name].append(card)
+
+    by_product={}
+    for row in guides:
+        try:
+            pid=int(row['idProduct'])
+        except (KeyError,TypeError,ValueError,OverflowError):
+            continue
+        by_product[pid]=row
+
+    accepted=defaultdict(dict)
+    stats={
+        'catalogCards':len(cards),
+        'publishedProducts':len(products),
+        'priceRows':len(guides),
+        'productsWithoutPrice':0,
+        'invalidPriceRows':0,
+        'explicitNumberNotFound':0,
+        'explicitNumberAmbiguous':0,
+        'explicitRarityConflict':0,
+        'insufficientIdentity':0,
+        'unmatchedProducts':0,
+        'ambiguousProducts':0,
+        'duplicateSourceRows':0,
+        'candidateProducts':0,
+        'collisionCodeGroups':0,
+        'collisionProducts':0,
+        'collisionExamples':[],
+        'rejectionExamples':[],
+    }
+    seen_products=set()
+
+    def reject(reason, product, number, rarity, expansion):
+        stats[reason]+=1
+        if len(stats['rejectionExamples'])<max_examples:
+            stats['rejectionExamples'].append({
+                'reason':reason,
+                'cardmarketProductId':product.get('idProduct'),
+                'name':product.get('name'),
+                'number':number,
+                'rarity':rarity,
+                'expansion':expansion,
+            })
+
+    for product in products:
+        try:
+            pid=int(product['idProduct'])
+        except (KeyError,TypeError,ValueError,OverflowError):
+            stats['unmatchedProducts']+=1
+            continue
+        if pid in seen_products:
+            stats['duplicateSourceRows']+=1
+            continue
+        seen_products.add(pid)
+        guide=by_product.get(pid)
+        if guide is None:
+            stats['productsWithoutPrice']+=1
+            continue
+        if not positive_price(guide.get('trend')):
+            stats['invalidPriceRows']+=1
+            continue
+
+        name,rarity,number,expansion=product_identity(product)
+        candidate=None
+        method=None
+        if number:
+            matches=by_code.get(normalized_code(number),[])
+            if not matches:
+                reject('explicitNumberNotFound',product,number,rarity,expansion)
                 continue
-
+            if len(matches)!=1:
+                reject('explicitNumberAmbiguous',product,number,rarity,expansion)
+                continue
+            candidate=matches[0]
+            if rarity is not None and str(candidate.get('rarity') or '').upper()!=rarity:
+                reject('explicitRarityConflict',product,number,rarity,expansion)
+                continue
+            method='verified-collector-number'+('-rarity' if rarity else '')
+        else:
+            if not name or (not rarity and not expansion):
+                reject('insufficientIdentity',product,number,rarity,expansion)
+                continue
+            matches=by_name.get(name,[])
+            if rarity:
+                matches=[card for card in matches if str(card.get('rarity') or '').upper()==rarity]
+            if expansion:
+                matches=[card for card in matches if compatible_expansion(card,expansion)]
+            if not matches:
+                reject('unmatchedProducts',product,number,rarity,expansion)
+                continue
+            if len(matches)>1:
+                reject('ambiguousProducts',product,number,rarity,expansion)
+                continue
+            candidate=matches[0]
+            method=('unique-name'+('-rarity' if rarity else '')+
+                    ('-compatible-expansion' if expansion else ''))
+        if not candidate:
+            raise AssertionError('Internal matching error: no candidate')
+        code=candidate['code']
         def val(*keys):
-            for k in keys:
-                if guide.get(k) not in (None,''):return guide.get(k)
+            for key in keys:
+                if guide.get(key) not in (None,''):
+                    return guide[key]
             return None
-        methods[method]=methods.get(method,0)+1
-        matched[candidate['code']]={
-            'cardmarketProductId':int(pid),
+        accepted[code][pid]={
+            'cardmarketProductId':pid,
             'marketEUR':val('trend'),
             'marketEURLow':val('low'),
             'marketEURAvg':val('avg'),
@@ -173,27 +234,93 @@ def main():
             'marketEURAvg7':val('avg7'),
             'marketEURAvg30':val('avg30'),
             'cardmarketMatch':method,
-            'cardmarketProductName':p.get('name'),
-            'cardmarketCategory':p.get('categoryName'),
-            'cardmarketExpansionId':p.get('idExpansion'),
-            'cardmarketExpansionName':p.get('expansionName')
+            'cardmarketProductName':product.get('name'),
+            'cardmarketCategory':product.get('categoryName'),
+            'cardmarketExpansionId':product.get('idExpansion'),
+            'cardmarketExpansionName':product.get('expansionName'),
         }
+        stats['candidateProducts']+=1
 
+    matched={}
+    methods=defaultdict(int)
+    for code,variants in sorted(accepted.items()):
+        if len(variants)>1:
+            stats['collisionCodeGroups']+=1
+            stats['collisionProducts']+=len(variants)
+            if len(stats['collisionExamples'])<max_examples:
+                stats['collisionExamples'].append({
+                    'collectorCode':code,
+                    'productIds':sorted(variants),
+                    'matchMethods':[variants[pid]['cardmarketMatch']
+                                    for pid in sorted(variants)],
+                })
+            continue
+        chosen=next(iter(variants.values()))
+        matched[code]=chosen
+        methods[chosen['cardmarketMatch']]+=1
+
+    stats['matchedCards']=len(matched)
+    stats['matchMethods']=dict(sorted(methods.items()))
+    stats['rejectedProductRows']=sum(
+        stats[key] for key in (
+            'explicitNumberNotFound','explicitNumberAmbiguous',
+            'explicitRarityConflict','insufficientIdentity',
+            'unmatchedProducts','ambiguousProducts',
+        )
+    )
+    stats['notes']=[
+        'A Cardmarket trend value is a price guide, not a verified completed sale.',
+        'Explicit collector numbers that do not match this catalog never fall back to title.',
+        'Rarity and expansion constraints are not silently discarded on name fallback.',
+        'All distinct product collisions for one collector code are quarantined.',
+        'Absent entries have unknown price; neither zero nor a substitute asking price.',
+    ]
+    return matched,stats
+
+
+def main():
+    if not WEISS.exists():
+        print('Weiss catalog missing; Cardmarket enrichment skipped.')
+        return
+    source=json.loads(WEISS.read_text(encoding='utf-8'))
+    cards=source.get('cards',[])
+    session=requests.Session()
+    try:
+        products_file=get_json(session,PRODUCTS_URL)
+        prices_file=get_json(session,PRICES_URL)
+    except Exception as exc:
+        if OUT.exists():
+            print('Cardmarket download failed; keeping prior cache:',exc)
+            return
+        print('Cardmarket unavailable and no prior cache:',exc)
+        return
+
+    products=products_file.get('products') or []
+    guides=prices_file.get('priceGuides') or []
+    matched,stats=match_cardmarket(cards,products,guides)
+    # Prevent a changed provider format from wiping the established EUR market
+    # on the next scheduled refresh. The explicit audit examples explain drops.
+    minimum=max(100,int(len(cards)*0.02))
+    if len(matched)<minimum:
+        raise RuntimeError(
+            f'Cardmarket matched only {len(matched)} of {len(cards)} cards '
+            f'(min {minimum} to publish). Investigate source/matcher and '
+            f'leave existing cached market file unchanged. Stats: {stats}'
+        )
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),
         'cardmarketCreatedAt':prices_file.get('createdAt'),
         'productsCreatedAt':products_file.get('createdAt'),
         'source':{'products':PRODUCTS_URL,'prices':PRICES_URL,'gameId':10},
-        'stats':{
-            'catalogCards':len(cards),'publishedProducts':len(products),'priceRows':len(guides),
-            'matchedCards':len(matched),'ambiguousProducts':ambiguous,
-            'productsWithoutPrice':no_price,'unmatchedProducts':no_match,
-            'matchMethods':methods,'ambiguousExamples':ambiguous_examples
-        },
-        'cards':matched
+        'stats':stats,
+        'cards':matched,
     }
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
-    print('Cardmarket matched',len(matched),'of',len(cards),'Weiss cards;',payload['stats'])
+    print('Cardmarket unambiguous matches',len(matched),'of',len(cards),
+          'Weiss cards; collision groups',stats['collisionCodeGroups'],
+          'rejected rows',stats['rejectedProductRows'])
 
-if __name__=='__main__':main()
+
+if __name__=='__main__':
+    main()
