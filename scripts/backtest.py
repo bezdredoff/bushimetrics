@@ -136,12 +136,12 @@ def dated_calendar_pairs(snapshots,horizon,tolerance_days=3):
         latest=earliest+timedelta(days=tolerance_days)
         future=next((d for d in days if earliest<=d<=latest),None)
         if future is not None:
-            yield start_day,snapshots[start_day],snapshots[future]
+            yield start_day,snapshots[start_day],future,snapshots[future]
 
 
 def calendar_pairs(snapshots,horizon,tolerance_days=3):
     """Legacy two-card-map interface used by earlier contract tests."""
-    for _,start,end in dated_calendar_pairs(snapshots,horizon,tolerance_days):
+    for _,start,_,end in dated_calendar_pairs(snapshots,horizon,tolerance_days):
         yield start,end
 
 
@@ -176,8 +176,8 @@ def build_report(snapshots,versions,*,generated_at=None,
         dates=list(dated_calendar_pairs(snapshots,horizon))
         by_model=[]
         for model in models:
-            group=[(start_day,start,end)
-                   for start_day,start,end in dates
+            group=[(start_day,start,end_day,end)
+                   for start_day,start,end_day,end in dates
                    if versions.get(start_day,'unknown-legacy')==model]
             metrics={}
             for currency,market_key,fair_key in (
@@ -186,7 +186,7 @@ def build_report(snapshots,versions,*,generated_at=None,
                 accepted=[]
                 excluded=Counter()
                 valid_dates=0
-                for start_day,start,end in group:
+                for start_day,start,end_day,end in group:
                     first={}
                     future={}
                     for cid,current in start.items():
@@ -196,14 +196,9 @@ def build_report(snapshots,versions,*,generated_at=None,
                             continue
                         reason=outcome_exclusion(
                             current,later,market_key,fair_key,
-                            start_day,start_day+timedelta(days=horizon),
-                            horizon
+                            start_day,end_day,horizon
                         )
-                        # This horizon value is only the earliest legal
-                        # publication date; actual end snapshot day may be
-                        # 1..3 days later. Recheck below against that day.
-                        # (The loop uses the dated pair's real end below.)
-                        if reason is not None:
+                         if reason is not None:
                             excluded[reason]+=1
                             continue
                         first[cid]=current
@@ -259,8 +254,12 @@ def build_report(snapshots,versions,*,generated_at=None,
             'Results are isolated by the originating snapshot modelVersion.',
             'No future snapshot before the requested calendar horizon is used.',
             'A changed modelVersion never rewrites past forecast snapshots.',
-            'At least three different start dates and 30 matched observations are required before any exploratory score appears.',
-            'EUR and USD never mix; guide price changes are not verified completed sales or realizable investment returns.',
+            'A captured copy of an older provider quote is not a fresh price observation.',
+            'Both source dates must be present, within 14 days of their snapshots, non-future, and the later one must pass the requested calendar horizon.',
+            'Both quotes must identify the same independently qualified provider product/physical printing.',
+            'Legacy snapshots without the source identity/date remain immutable but are ineligible for future model-accuracy scoring.',
+            'At least three independently dated start snapshots and 30 matched observations are required before exploratory scores appear.',
+            'EUR and USD never mix; guide-price and rolling-sale estimates are not realized investment returns.',
         ],
     }
 
