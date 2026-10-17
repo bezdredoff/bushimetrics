@@ -170,9 +170,14 @@ matcher in `scripts/enrich_market_cardmarket.py` is now fail-closed:
   a similar title. Any explicit rarity that conflicts with the identified
   printing rejects the price, even if the name matches.
 - When the collector number is absent, name-based matching respects **every**
-  rarity and product-expansion constraint supplied by Cardmarket. A name
-  alone (no rarity and no expansion) cannot identify a physical printing.
-  Multiple matching cards are quarantined rather than arbitrarily chosen.
+  rarity and product-expansion constraint supplied by Cardmarket. Where
+  Cardmarket provides only a title (common in its public Weiss export),
+  only a globally unique **ordinary/base printing** may receive an
+  *indicative* guide price. Premium/signature, V.2, foil and signed titles
+  require stronger physical metadata. These tentative title-only matches
+  are explicitly marked `unique-normal-name-unverified-source-treatment`
+  and are **not** verified physical treatment identities. Multiple matching
+  cards are quarantined rather than arbitrarily chosen.
 - Multiple distinct Cardmarket products mapping to the same BushiMetrics
   collector code **all remain unpriced** until their physical variants can be
   independently reviewed. Product ordering or higher asking prices do not
