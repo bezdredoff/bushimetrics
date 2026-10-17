@@ -81,6 +81,8 @@ def main():
             page.locator('[data-tab="sources"]').click()
             assert "Research model availability" in page.locator("#sourcesContent").inner_text()
             assert "Market source audit" in page.locator("#sourcesContent").inner_text()
+            assert "Cardmarket printing identity audit" in page.locator("#sourcesContent").inner_text()
+            assert "Mapping verification pending" in page.locator("#sourcesContent").inner_text() or "Quarantined code collisions" in page.locator("#sourcesContent").inner_text()
             assert "Market price-source freshness" in page.locator("#sourcesContent").inner_text()
             assert "Price guides are not completed sales" in page.locator("#sourcesContent").inner_text()
             assert "Missing independent source or card-level date" in page.locator("#sourcesContent").inner_text()
