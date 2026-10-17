@@ -1,13 +1,19 @@
 {
   "schemaVersion": 1,
-  "status": "awaiting-evidence-gated-refresh",
-  "generatedAt": null,
-  "cardsAssessed": null,
-  "eligibleDemandRatios": null,
-  "eligibleCrossSectionalHeat": null,
-  "exclusionReasons": {},
+  "generatedAt": "2026-10-17T18:05:05.801405+00:00",
+  "cardsAssessed": 31272,
+  "eligibleDemandRatios": 0,
+  "eligibleCrossSectionalHeat": 0,
+  "exclusionReasons": {
+    "no-attributed-completed-sale-sample": 31006,
+    "not-released": 13,
+    "stale-or-undated-sales": 253
+  },
   "notes": [
-    "Demand, liquidity and heat can only use independent fresh completed-sale and ask-inventory observations.",
-    "The next full catalog refresh will generate real eligibility counts; no eligibility is inferred from cache downloads."
+    "Source price date and ask inventory date must both be independently published and <=14 days old, and within 7 days of one another.",
+    "Market heat is a tied mid-rank percentile of contemporaneous sales/asks, only if at least 10 printing observations exist.",
+    "No source-stamped asks means unavailable pressure, NOT zero demand or zero liquidity.",
+    "Past sample counts and cached price-guide downloads never imply current sales activity.",
+    "Qualified demand is still only a contemporaneous cross-sectional proxy, not historical HYPE or forecast return."
   ]
 }
