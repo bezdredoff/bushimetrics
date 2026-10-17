@@ -62,3 +62,16 @@ The local JSON exporter uses `version: 1` and includes watchlist IDs, at most fo
 The browser acceptance test now checks a real export/import round trip, rejects a malformed portfolio, checks persistence after reload, verifies CSV output and catalog pagination, and confirms both distinct Godzilla RR/SEC variants are searchable in Japanese Weiss.
 
 No watchlist, portfolio or comparison data is uploaded to a server by this feature; only user-triggered downloads and local browser storage are used.
+
+## Japanese artwork health: limited remote sample (2026-10-17)
+
+`scripts/audit_jp_artwork.py` checks a **fixed, deterministic, spread-across-sets sample** from the published Japanese set shards. It does **not** change artwork URLs, use guessed rewrites, scrape entire image collections, or treat a nonempty image URL as proof of a working file.
+
+- Local offline inspection: `python scripts/audit_jp_artwork.py --offline`.
+- Limited remote inspection: `python scripts/audit_jp_artwork.py --samples 16` (maximum 40).
+- A scheduled workflow `.github/workflows/jp-artwork-health.yml` runs weekly, also on initial merge; its result is a downloadable JSON Actions artifact retained for 14 days with the individual tested paths.
+- It tries the same image URL, official `/images/cardlist/` alternative and (if needed) an image relay, in the existing app's order. The script only reads a few response bytes and checks known image signatures.
+- It distinguishes `confirmed-in-sample`, `sample-failed`, and `blocked-or-unverifiable` (HTTP 403/429 or network timeouts). A CDN blocking GitHub runners is **not** evidence that a user's browser cannot load an image.
+- Sampling status never implies all Japanese card artwork is verified. Confidence in the catalog remains limited by independent proof of each remote image; separate source identity and pricing audits remain in place.
+
+[See sampled results in GitHub Actions](https://github.com/bezdredoff/bushimetrics/actions/workflows/jp-artwork-health.yml).

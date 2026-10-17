@@ -1,0 +1,53 @@
+name: JP artwork availability sample
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/jp-artwork-health.yml
+      - scripts/audit_jp_artwork.py
+  schedule:
+    - cron: '27 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify artwork audit unit tests
+        run: python -m unittest discover -s tests -p 'test_artwork_health.py' -v
+      - name: Sample 16 Japanese sets (bounded, no bulk scanning)
+        run: python scripts/audit_jp_artwork.py --samples 16 --output artifacts/jp-artwork-health.json
+      - name: Report sampled reachability, not catalog-wide coverage
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          d=json.loads(Path('artifacts/jp-artwork-health.json').read_text())
+          text=(
+              "### Japanese artwork sample\n"
+              f"Sampled: {d['sampleCount']} cards across {d['totalJPSetGroups']} JP set groups\n\n"
+              "| Outcome | Count |\n| --- | ---: |\n"
+              + "".join(f"| {key} | {value} |\n" for key,value in d['summary'].items())
+              + "\n*GitHub Actions hotlink denials and timeouts are inconclusive. "
+              "A sampled success is not proof of catalog-wide image availability.*\n"
+          )
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
+              f.write(text)
+          print(text)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jp-artwork-health-sample
+          path: artifacts/jp-artwork-health.json
+          if-no-files-found: error
+          retention-days: 14

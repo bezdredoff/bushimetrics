@@ -1165,7 +1165,7 @@ function renderSources() {
       <div class="stat"><span>Linked and dated records</span><b>${Number(state.marketAudit.linkedDated||0).toLocaleString()}</b></div>
     </div>
   </div>
-  <div class="panel"><h3>Artwork data limitations</h3><p>Coverage means a catalog record contains an artwork URL — not that the remote image exists or loads successfully. Broken sources may fall back to alternative paths or an unavailable placeholder. Japanese image links are not verified in bulk.</p></div>
+  <div class="panel"><h3>Artwork data limitations</h3><p>Coverage means a catalog record contains an artwork URL — not that the remote image exists or loads successfully. Broken sources may fall back to alternative paths or an unavailable placeholder. Japanese image links are not verified in bulk. A bounded weekly sample of 16 sets independently tests actual image responses, with HTTP blocks/timeout labelled inconclusive. <a href="https://github.com/bezdredoff/bushimetrics/actions/workflows/jp-artwork-health.yml" target="_blank" rel="noreferrer">View image-health sampling runs and evidence</a>.</p></div>
   <div class="panel"><h3>Model boundaries</h3><p>Observed market prices, retailer asks, catalog identity and model outputs remain separate. A missing price stays missing. Fair Value and Investment Quality are research estimates, not guaranteed returns.</p></div>`;
 }
 
