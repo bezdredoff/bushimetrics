@@ -84,6 +84,7 @@ def main():
             assert "Cardmarket printing identity audit" in page.locator("#sourcesContent").inner_text()
             assert "TCGplayer Normal / Foil audit" in page.locator("#sourcesContent").inner_text()
             assert "Palworld physical printing and completed sales" in page.locator("#sourcesContent").inner_text()
+            assert "Optional premium Weiss TCG API source validation" in page.locator("#sourcesContent").inner_text()
             assert ("Exact source printings" in page.locator("#sourcesContent").inner_text() or
                     "Exact Palworld source-variant identity audit pending" in page.locator("#sourcesContent").inner_text())
             assert "Source subtype verification pending" in page.locator("#sourcesContent").inner_text() or "Quarantined duplicate product numbers" in page.locator("#sourcesContent").inner_text()
