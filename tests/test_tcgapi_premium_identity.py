@@ -103,6 +103,7 @@ class TcgApiPremiumIdentityTests(unittest.TestCase):
             'market':125,'priceSource':'TCG API / TCGPlayer price guide',
             'marketIdentityStatus':'exact-code-rarity-foil-dated',
             'targetCode':CODE,'targetRarity':'SSP',
+            'tcgapiCardId':101,
             'marketAsOf':'2026-10-16','printing':'Foil',
         }}
         chosen,audit=combine_usd_guide_sources(baseline,verified,today=TODAY)
@@ -116,7 +117,10 @@ class TcgApiPremiumIdentityTests(unittest.TestCase):
             with self.subTest(asof=asof):
                 provider={CODE:{
                     'market':199,'marketIdentityStatus':'exact-code-rarity-foil-dated',
-                    'targetCode':CODE,'marketAsOf':asof,
+                    'targetCode':CODE,'targetRarity':'SSP',
+                    'tcgapiCardId':101,'printing':'Foil',
+                    'priceSource':'TCG API / TCGPlayer price guide',
+                    'marketAsOf':asof,
                 }}
                 chosen,audit=combine_usd_guide_sources(base,provider,today=TODAY)
                 self.assertEqual(chosen[CODE]['market'],35)
@@ -126,7 +130,9 @@ class TcgApiPremiumIdentityTests(unittest.TestCase):
         base={CODE:{'market':35}}
         provider={CODE:{
             'market':199,'marketIdentityStatus':'exact-code-rarity-foil-dated',
-            'targetCode':'SFN/S108-E073SSP','marketAsOf':'2026-10-16',
+            'targetCode':'SFN/S108-E073SSP','targetRarity':'SSP',
+            'tcgapiCardId':101,'printing':'Foil',
+            'priceSource':'TCG API / TCGPlayer price guide','marketAsOf':'2026-10-16',
         }}
         chosen,_=combine_usd_guide_sources(base,provider,today=TODAY)
         self.assertEqual(chosen[CODE]['market'],35)
