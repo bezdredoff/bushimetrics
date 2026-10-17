@@ -1,6 +1,11 @@
 name: JP artwork availability sample
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/jp-artwork-health.yml
+      - scripts/audit_jp_artwork.py
   schedule:
     - cron: '27 5 * * 1'
   workflow_dispatch:
