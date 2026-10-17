@@ -118,7 +118,8 @@ def browser_check(base, output_dir):
             try:
                 page.goto(base+"?bushi-smoke="+str(int(time.time())),wait_until="domcontentloaded",
                           timeout=BROWSER_TIMEOUT)
-                page.locator("#catalogStatus").wait_for(timeout=BROWSER_TIMEOUT)
+                # catalogStatus is deliberately hidden by the app's CSS.
+                # Waiting for visibility would time out on a correctly loaded page.
                 page.wait_for_function(
                     "() => document.querySelector('#catalogStatus')?.textContent.includes('loaded printings')",
                     timeout=BROWSER_TIMEOUT)
