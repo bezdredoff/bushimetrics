@@ -45,7 +45,7 @@ function checkedBackup(value) {
   };
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, marketAudit: {}, marketFreshness: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, backtestStatus: {}, sources: {}, marketAudit: {}, marketFreshness: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(storedIds('bm-watch',10000)),
@@ -111,12 +111,13 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, sources, jpMeta, research, marketAudit, marketFreshness, jpIdentityAudit, enIdentityAudit] = await Promise.all([
+  const [bootstrap, history, backtestStatus, sources, jpMeta, research, marketAudit, marketFreshness, jpIdentityAudit, enIdentityAudit] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
     }),
     fetch('data/history.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/backtest-status.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/sources.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/research_status.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {records:[]}).catch(() => ({records:[]})),
@@ -131,6 +132,7 @@ async function load() {
   state.sets = bootstrap.sets || [];
   state.setManifest = new Map((bootstrap.sets||[]).map(x=>[x.key,x]));
   state.history = history;
+  state.backtestStatus = backtestStatus || {};
   state.sources = sources;
   state.marketAudit = marketAudit || {};
   state.marketFreshness = marketFreshness || {};
@@ -1162,12 +1164,41 @@ function renderCoverage(){
 $('#loadJPCoverageBtn').onclick=async()=>{await ensureJPCatalog();renderCoverage();renderSets();};
 
 function renderBacktest() {
-  const sets=state.history.sets||[];
-  $('#backtestContent').innerHTML = `<div class="backtest-grid">${sets.map(s=>`<div class="source-card">
+  // The old hardcoded set examples had no independent dates or source URLs.
+  // Only render set indices with attributable historical evidence.
+  const sets=(state.history.sets||[]).filter(s=>s.sourceUrl && s.asOf && s.index!=null);
+  const report=state.backtestStatus||{};
+  const modelRows=(report.horizons||[]).flatMap(h=>(h.byModel||[]).map(model=>{
+    const values=['EUR','USD'].map(currency=>{
+      const metric=model.currencies?.[currency]||{};
+      if(metric.status!=='exploratory-guide-price-backtest')
+        return currency+': pending ('+Number(metric.observations||0)+' matched outcomes; '
+          +Number(metric.eligibleStartDates||0)+' distinct start dates)';
+      return currency+': exploratory guide-price MAE '+Number(metric.mae).toFixed(3)
+        +', direction '+Math.round(100*Number(metric.directional))+'%';
+    });
+    return '<div class="stat"><span>'+Number(h.horizonDays)+'d · '+esc(model.modelVersion)
+      +'</span><b>'+esc(values.join(' · '))+'</b></div>';
+  }));
+  const published=sets.length ? `<div class="backtest-grid">${sets.map(s=>`<div class="source-card">
     <p class="eyebrow">${esc(s.game||'Weiss')}</p><h3>${esc(s.name)}</h3>
-    <div class="stat-list"><div class="stat"><span>Since first prices</span><b class="${s.sinceFirst>=0?'pos':'neg'}">${pct(s.sinceFirst)}</b></div><div class="stat"><span>30d</span><b>${pct(s.change30d)}</b></div><div class="stat"><span>Current index</span><b>${s.index??'—'}</b></div></div>
-  </div>`).join('')}</div>
-  <div class="panel"><h3>Walk-forward status</h3><p>${esc(state.history.note || 'Compact daily market snapshots are accumulating. 30/90/180-day model accuracy appears only after the horizon can be evaluated without future leakage.')}</p></div>`;
+    <div class="stat-list"><div class="stat"><span>Since first verified prices</span><b>${pct(s.sinceFirst)}</b></div>
+    <div class="stat"><span>30d</span><b>${pct(s.change30d)}</b></div>
+    <div class="stat"><span>Current sourced index</span><b>${s.index??'—'}</b></div></div>
+    <p>Source: ${esc(s.sourceUrl)} · observed ${esc(s.asOf)}</p>
+  </div>`).join('')}</div>` :
+    '<p>No independently sourced historical set-level indices are available. Previous unsourced example values have been withheld.</p>';
+  $('#backtestContent').innerHTML = `<div class="panel"><h3>Historical return evidence</h3>
+    ${published}</div>
+    <div class="panel"><h3>Versioned 30 / 90 / 180-day holdouts</h3>
+      <p>Old model forecasts stay associated with the version that generated them. Future price-guide observations are compared only after the calendar horizon has elapsed. EUR and USD are never mixed. A minimum of three dated forecast snapshots and 30 matched observations is required before exploratory metrics are shown.</p>
+      ${report.snapshots==null?'<p>Versioned report pending the next data refresh.</p>':
+        '<p>Captured market snapshots: '+Number(report.snapshots).toLocaleString()+
+        '. Versions: '+esc((report.modelVersions||[]).join(', ')||'None yet')+'.</p>'}
+      ${modelRows.length?'<div class="stat-list">'+modelRows.join('')+'</div>':
+        '<p>No evaluated future-dated pairs yet. No predictive accuracy has been established.</p>'}
+      <p>Observed price-guide changes are not independently verified trading returns, and sample-size confidence is not model calibration. <a href="data/backtest-status.json" target="_blank" rel="noreferrer">Inspect dated backtest report</a>.</p>
+    </div>`;
 }
 
 function renderSources() {

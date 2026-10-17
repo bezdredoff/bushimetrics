@@ -60,6 +60,23 @@ jobs:
       - run: python scripts/enrich_market_palworldprices.py
       - run: python scripts/build_catalog.py
       - run: python scripts/build_web_catalog.py
+      - name: Generate version-separated walk-forward status from immutable snapshots
+        run: python scripts/backtest.py
+      - name: Check pending reports cannot claim accuracy without dated evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('data/backtest-status.json').read_text(encoding='utf-8'))
+          assert report['schemaVersion']==1
+          for horizon in report['horizons']:
+              assert horizon['horizonDays'] in (30,90,180)
+              for model in horizon['byModel']:
+                  for metric in model['currencies'].values():
+                      if metric['status']=='pending':
+                          assert metric['mae'] is None and metric['directional'] is None
+          print('Versioned backtest accuracy gate passed')
+          PY
 
       - name: Validate complete generated catalog
         run: |
