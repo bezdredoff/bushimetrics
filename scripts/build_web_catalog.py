@@ -26,6 +26,8 @@ SEARCH_FIELDS={
     'marketHeatPercentile':'hp','characterPremiumIndex':'cp',
     'characterPremiumObservations':'co','marketKind':'mk','marketConfidence':'mc',
     'marketEvidenceStatus':'es','marketObservationAgeDays':'ea',
+    'palworldMatch':'pm','palworldPricesCardId':'pi',
+    'palworldSourceVariant':'pv','marketSelectionReason':'mr',
     'marketStale':'st','unverifiedMarketIndicationUSD':'ui',
     'marketAsOf':'ma','cardmarketAsOf':'ca',
     'marketEURAgeDays':'eg','marketEURStale':'et',
