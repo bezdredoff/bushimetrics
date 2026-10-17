@@ -206,11 +206,14 @@ potentially overstating the price of the actual collectible.
 
 The importer now selects the **Normal** subtype for non-premium source
 printings and **Foil/Holofoil** for explicitly premium rarities (SP, SSP, SEC,
-SR, OFR, RRR and related variants). If the only quoted subtype contradicts
-the expected printing, it is *not* silently substituted. A single source row
-with no subtype designation can remain a provisional guide, marked
-`single-unspecified-subtype`. Multiple possible rows for the preferred
-subtype are rejected rather than chosen by source order.
+SR, OFR, RRR and related variants). If an exactly matched collector-number product has *only one*
+subtype quote, it may still be retained even when the Normal/Foil designation
+looks inconsistent with the card rarity, but it is explicitly labelled
+`single-opposite-subtype-unverified-treatment`: the exact number is known,
+not the supplier's treatment semantics. A single source row with no subtype
+designation is separately provisional (`single-unspecified-subtype`).
+Multiple possible rows for the preferred subtype are rejected rather than
+chosen by source order.
 
 If two different TCGplayer product IDs resolve to the same exact collector
 number, *all those conflicting mappings* are quarantined until the exact
