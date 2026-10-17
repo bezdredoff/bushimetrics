@@ -20,7 +20,18 @@ class VersionedBacktestTests(unittest.TestCase):
             snapshots[day]={
                 f'item-{n}':{'marketEUR':100+step,
                              'fairEUR':125 if step<20 else 108,
-                             'market':40+step,'fair':45}
+                             'market':40+step,'fair':45,
+                             'cardmarketAsOf':day.isoformat(),
+                             'cardmarketProductId':1000+n,
+                             'cardmarketMatch':'verified-collector-number-rarity',
+                             'priceSourceEUR':'Cardmarket public daily price guide',
+                             'marketAsOf':day.isoformat(),
+                             'marketSourceUrl':f'https://palworldprices.com/cards/{n}',
+                             'priceSource':'Palworld Prices — completed-sale median',
+                             'marketEvidenceStatus':'completed-sale-sample',
+                             'marketKind':'bare',
+                             'salesInBasis':15,
+                             'palworldPricesCardId':n}
                 for n in range(35)
             }
             versions[day]='v0.7' if step<20 else 'v0.8'

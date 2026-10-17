@@ -13,7 +13,11 @@ class SnapshotImmutabilityTests(unittest.TestCase):
             (root/'data').mkdir()
             path=root/'data/catalog.json'
             path.write_text(json.dumps({'modelVersion':'v1','cards':[
-                {'id':'released','availability':'released','marketEUR':20,'fairEUR':22},
+                {'id':'released','availability':'released','marketEUR':20,'fairEUR':22,
+                 'cardmarketAsOf':'2026-10-15T02:00:00+0200',
+                 'cardmarketProductId':930,
+                 'cardmarketMatch':'verified-collector-number-rarity',
+                 'priceSourceEUR':'Cardmarket public daily price guide'},
                 {'id':'unpriced','availability':'released'},
                 {'id':'future','availability':'announced','market':400}
             ]}),encoding='utf-8')
@@ -22,7 +26,13 @@ class SnapshotImmutabilityTests(unittest.TestCase):
             original=snap.read_bytes()
             result=json.loads(original)
             self.assertEqual(list(result['cards']),['released'])
+            self.assertEqual(result['schemaVersion'],2)
             self.assertEqual(result['cards']['released']['marketEUR'],20)
+            self.assertEqual(result['cards']['released']['cardmarketProductId'],930)
+            self.assertEqual(result['cards']['released']['cardmarketAsOf'],
+                             '2026-10-15T02:00:00+0200')
+            self.assertEqual(result['cards']['released']['cardmarketMatch'],
+                             'verified-collector-number-rarity')
             path.write_text(json.dumps({'modelVersion':'v2','cards':[
                 {'id':'released','availability':'released','marketEUR':999,'fairEUR':1000}
             ]}),encoding='utf-8')

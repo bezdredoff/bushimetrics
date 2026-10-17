@@ -9,6 +9,7 @@ from __future__ import annotations
 import json,shutil
 from collections import defaultdict
 from pathlib import Path
+from backtest import stable_price_identity
 
 ROOT=Path(__file__).resolve().parents[1]
 SNAP=ROOT/'data/snapshots'
@@ -27,6 +28,18 @@ def main():
             point={'d':date}
             for src,dst in [('market','u'),('fair','fu'),('marketEUR','e'),('fairEUR','fe')]:
                 if row.get(src) is not None:point[dst]=row[src]
+            # Keep provider publication dates distinct from the file capture day.
+            # Legacy snapshots legitimately have no dates and no qualified IDs.
+            if row.get('market') is not None:
+                if row.get('marketAsOf'):
+                    point['ua']=str(row['marketAsOf'])[:10]
+                if stable_price_identity(row,'USD'):
+                    point['uv']=1
+            if row.get('marketEUR') is not None:
+                if row.get('cardmarketAsOf'):
+                    point['ea']=str(row['cardmarketAsOf'])[:10]
+                if stable_price_identity(row,'EUR'):
+                    point['ev']=1
             if len(point)>1:by_card[cid].append(point)
     if OUT.exists():shutil.rmtree(OUT)
     OUT.mkdir(parents=True,exist_ok=True)

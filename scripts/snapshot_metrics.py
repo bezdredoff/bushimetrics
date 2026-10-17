@@ -12,6 +12,18 @@ ROOT=Path(__file__).resolve().parents[1]
 FIELDS=('market','fair','marketEUR','fairEUR','investment','momentum',
         'confidence','fairValueConfidence','demandPressure',
         'marketHeatPercentile','characterPremiumIndex')
+# An immutable card-level source record must accompany each captured price.
+# MarketAsOf and CardmarketAsOf are upstream dates, NOT a local download date.
+# Unknown and legacy identities are retained transparently but never made
+# eligible for a publishable historical accuracy statistic.
+PROVENANCE_FIELDS=(
+    'marketAsOf','marketSourceUrl','priceSource','marketEvidenceStatus',
+    'marketKind','salesInBasis','palworldPricesCardId','marketSubtypeSelection',
+    'tcgcsvMatch','tcgplayerProductId','marketStale',
+    'cardmarketAsOf','cardmarketProductId','cardmarketMatch',
+    'priceSourceEUR','marketEURDateStatus','marketEURStale',
+)
+SNAPSHOT_SCHEMA_VERSION=2
 
 
 def capture(root=ROOT, day=None):
@@ -24,8 +36,21 @@ def capture(root=ROOT, day=None):
             continue
         if card.get('market') is None and card.get('marketEUR') is None:
             continue
-        cards[card['id']]={key:card[key] for key in FIELDS if card.get(key) is not None}
-    out={'date':day,'modelVersion':catalog.get('modelVersion'),'cards':cards}
+        cards[card['id']]={
+            key:card[key] for key in (*FIELDS,*PROVENANCE_FIELDS)
+            if card.get(key) is not None
+        }
+    out={
+        'schemaVersion':SNAPSHOT_SCHEMA_VERSION,
+        'date':day,
+        'modelVersion':catalog.get('modelVersion'),
+        'cards':cards,
+        'notes':[
+            'The snapshot date is the catalog capture day, not a sale or price publication date.',
+            'marketAsOf and cardmarketAsOf are separate upstream currency-specific publication dates.',
+            'Unknown source dates and provisional product-to-printing matches are not backtest outcomes.',
+        ],
+    }
     path=root/'data/snapshots'/f'market-{day}.json'
     path.parent.mkdir(parents=True,exist_ok=True)
     try:
