@@ -1,1 +1,5 @@
-{"sets":[{"game":"Weiss","name":"Frieren: Beyond Journey's End","index":171.6,"sinceFirst":71.6,"change30d":-1.3},{"game":"Weiss","name":"GODDESS OF VICTORY: NIKKE","index":74.6,"sinceFirst":-25.4,"change30d":2.7},{"game":"Weiss","name":"Azur Lane","index":137.4,"sinceFirst":37.4,"change30d":0.7}],"note":"Set-level historical validation is factual where sourced. Card-level walk-forward Fair Value validation starts only after enough immutable daily snapshots accumulate."}
+{
+  "sets": [],
+  "excludedUnverifiedSetRows": 3,
+  "note": "Previously displayed Frieren, NIKKE and Azur Lane set indices lacked dated independent source references; withheld until observable historical data is verified. Only real timestamped market snapshots can support walk-forward results."
+}
