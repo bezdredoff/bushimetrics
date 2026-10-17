@@ -273,7 +273,9 @@ def apply_market(c,price_sources,palworldprices,manual_market,seed_market):
       'marketSelectionReason':'marketSelectionReason',
       'marketRetrievedAt':'marketRetrievedAt','checkedAt':'marketRetrievedAt',
       'marketSubtype':'marketSubtype','marketSubtypeSelection':'marketSubtypeSelection',
-      'tcgcsvMatch':'tcgcsvMatch','tcgplayerProductId':'tcgplayerProductId'
+      'tcgcsvMatch':'tcgcsvMatch','tcgplayerProductId':'tcgplayerProductId',
+      'tcgapiCardId':'tcgapiCardId','tcgapiIdentityStatus':'tcgapiIdentityStatus',
+      'marketIdentityStatus':'marketIdentityStatus'
     }
     for a,b in mapping.items():
         if source.get(a) is not None:
