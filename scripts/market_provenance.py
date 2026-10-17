@@ -84,8 +84,16 @@ def combine_usd_guide_sources(tcgcsv,tcgapi,today=None):
         reason=None
         if not isinstance(row,dict) or not positive_market(row.get('market')):
             reason='no-valid-price'
-        elif (row.get('marketIdentityStatus')!='exact-code-rarity-foil-dated'
-              or row.get('targetCode')!=code):
+        elif (
+            row.get('marketIdentityStatus')!='exact-code-rarity-foil-dated'
+            or row.get('targetCode')!=code
+            or str(row.get('targetRarity') or '').upper() not in (
+                'SP','SSP','SEC','SEC+','SIR','AGR','OFR','RRR+','SR'
+            )
+            or str(row.get('printing') or '').lower() not in ('foil','holofoil')
+            or row.get('tcgapiCardId') is None
+            or not str(row.get('priceSource') or '').startswith('TCG API / TCGPlayer')
+        ):
             reason='unverified-source-card-or-physical-treatment'
         elif observation_age_days(row.get('marketAsOf'),today) is None:
             reason='undated-or-future-source-guide'
