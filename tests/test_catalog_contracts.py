@@ -55,6 +55,9 @@ class CatalogContracts(unittest.TestCase):
         self.assertLess(self.app.index("img.dataset.artFallback = 'cardlist'"),
                         self.app.index("img.dataset.artFallback = 'relay'"))
         self.assertNotIn('preferredArtwork(c.image)', self.app)
+        self.assertIn("if (img.id === 'viewerImage')", self.app)
+        self.assertIn("img.dataset.artFallback = 'unavailable'", self.app)
+        self.assertIn('viewerImg.dataset.viewerPrintingKey', self.app)
 
     def test_app_bundle_and_required_panels_exist(self):
         self.assertIn('assets/app.js?v=', self.html)
