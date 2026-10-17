@@ -225,3 +225,51 @@ matched/duplicate/subtype-rejection counts. Earlier cached USD values keep a
 legacy/unverified subtype marker until this refresh has completed. Missing
 market values mean unknown, never zero or worthless. The sampling confidence
 of separate Palworld Prices completed-sales observations is unaffected.
+
+## Snapshot source-lineage and no-lookahead gate (2026-10-17)
+
+The daily `data/snapshots/market-YYYY-MM-DD.json` files are **capture
+snapshots**, not evidence of a trade, independently published price change, or
+new sale. Snapshot schema v2 retains separate per-card fields for USD and EUR:
+source publication dates (`marketAsOf`, `cardmarketAsOf`), provider identity
+(`palworldPricesCardId`, `tcgplayerProductId`,
+`cardmarketProductId`), subtype/match method, source labels, and the
+underlying sale-sample basis where available. It continues to use exclusive
+file creation; existing v0.7/v0.8 snapshots are NEVER rewritten.
+
+`scripts/backtest.py` now publishes a schema-v2
+`data/backtest-status.json` with exclusion counts/reasons per model,
+currency and horizon. An exploratory 30/90/180-day comparison is only eligible
+when BOTH source records:
+
+- Have positive numeric quotes and an earlier positive prediction for the
+  same card, **without crossing currencies**.
+- Have independently date-stamped price-source publication dates, not just
+  local download or snapshot times. Neither date can be future relative to
+  its capture; source age is at most 14 days, and the later publication date
+  must occur AFTER the entire requested calendar horizon.
+- Refer to the **same separately traceable provider product/printing ID**.
+  Cardmarket title-only matches, TCGCSV's provisional/unverified Normal-Foil
+  choices, legacy records with no such identity, and provider switches
+  are excluded rather than assigned a false numerical forecast accuracy.
+- Are not explicitly marked stale by their own price provider.
+
+An old cached price copied into a new daily snapshot therefore contributes
+**zero qualifying future observations**. The metrics remain pending until
+there are >=3 independent source-qualified forecast start dates and >=30
+same-currency comparison records. Even at that threshold results describe
+**exploratory movement in provider guide/rolling-sale estimates, not
+verified profitable sales or net realizable returns**. Provider publication
+dates for Palworld are not by themselves proof that fresh individual
+completed sales entered the provider's rolling sample.
+
+The browser's per-card history chart now explicitly labels saved daily
+captures, distinct upstream price-publication dates and dates with sufficient
+source identity. It does not show a percent *source-guide move* unless
+multiple independently dated qualified readings exist. This avoids
+conflating a flat re-downloaded quote with 30 days of new sales observations.
+
+Tests use fabricated fixtures for legacy/undated quotes, repeated old prices,
+future-dated source updates, changed product IDs, mismatched treatments,
+and distinct valid publications. These synthetic tests validate guardrails;
+they do NOT constitute market evidence.
