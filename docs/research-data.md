@@ -135,3 +135,26 @@ sales; USD peer evidence varies by provider. Never interpret these estimates
 as tradeable bids or guaranteed realizable proceeds. Existing immutable daily
 snapshots retain their original model version; do not rewrite old forecasts
 when methodology changes.
+
+## Version-aware walk-forward research (v0.8, 2026-10-17)
+
+Every immutable daily snapshot stores the model version that produced its
+forecast. The new `scripts/backtest.py` preserves this identifier and
+separately evaluates 30/90/180-calendar-day EUR and USD forecasts for each
+originating version (v0.7, v0.8, etc.). A later market price observation can
+close an earlier forecast even if model logic has changed since; the old model
+is never retroactively re-fitted or overwritten.
+
+Scores remain **pending** without at least 3 distinct source dates and 30
+card-level matches per currency/model/horizon. Even when sufficient guide
+prices accumulate, scores are marked **exploratory price-guide changes**, not
+realized sales returns. There is no defensible investment model calibration
+until independent dated completed sales, adequate cohorts and future holdouts
+exist. The output `data/backtest-status.json` is published by the daily
+refresh; the Backtest tab renders the status without combining versions.
+
+Previous hard-coded historical indices for Frieren, NIKKE and Azur Lane
+were missing independent source URLs and dated underlying observations. The
+three rows were removed from the displayed Backtest examples rather than
+claiming unverified index changes are factual. Verified set-level figures
+can return once source URL, as-of date and comparable methodology are available.
