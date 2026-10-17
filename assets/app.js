@@ -45,7 +45,7 @@ function checkedBackup(value) {
   };
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, backtestStatus: {}, sources: {}, marketAudit: {}, marketFreshness: {}, cardmarketAudit: {}, tcgcsvAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, backtestStatus: {}, sources: {}, marketAudit: {}, marketFreshness: {}, cardmarketAudit: {}, tcgcsvAudit: {}, palworldIdentityAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(storedIds('bm-watch',10000)),
@@ -99,6 +99,8 @@ function expandBrowserCard(x) {
     characterPremiumIndex:x.cp, characterPremiumObservations:x.co,
     marketKind:x.mk, marketConfidence:x.mc, confidence:x.cf,
     marketEvidenceStatus:x.es, marketObservationAgeDays:x.ea,
+    palworldMatch:x.pm, palworldPricesCardId:x.pi,
+    palworldSourceVariant:x.pv, marketSelectionReason:x.mr,
     marketStale:x.st, unverifiedMarketIndicationUSD:x.ui,
     marketRetrievedAt:x.mt, marketSourceUrl:x.su,
     marketEURAgeDays:x.eg, marketEURStale:x.et, marketEURDateStatus:x.ed,
@@ -111,7 +113,7 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, backtestStatus, sources, jpMeta, research, marketAudit, marketFreshness, cardmarketAudit, tcgcsvAudit, jpIdentityAudit, enIdentityAudit] = await Promise.all([
+  const [bootstrap, history, backtestStatus, sources, jpMeta, research, marketAudit, marketFreshness, cardmarketAudit, tcgcsvAudit, palworldIdentityAudit, jpIdentityAudit, enIdentityAudit] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
@@ -125,6 +127,7 @@ async function load() {
     fetch('data/market-freshness-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/cardmarket-match-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/tcgcsv-subtype-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/palworld-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/jp-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch('data/en-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null)
   ]);
@@ -140,6 +143,7 @@ async function load() {
   state.marketFreshness = marketFreshness || {};
   state.cardmarketAudit = cardmarketAudit || {};
   state.tcgcsvAudit = tcgcsvAudit || {};
+  state.palworldIdentityAudit = palworldIdentityAudit || {};
   state.jpIdentityAudit = jpIdentityAudit;
   state.enIdentityAudit = enIdentityAudit;
   state.research = research || {records:[]};
@@ -703,6 +707,9 @@ function renderViewer() {
     observed(c) ? `<span class="badge">Price source: ${esc(observed(c).source)}</span>` : '',
     !modelFair(c) ? '<span class="badge">Model fair value unavailable</span>' : '',
     c.market != null && c.marketStale ? '<span class="badge badge-warn">USD price observation stale or undated</span>' : '',
+    c.market != null && String(c.priceSource||'').startsWith('Palworld Prices') &&
+      state.palworldIdentityAudit.status!=='exact-printing-cardid-v1'
+      ? '<span class="badge badge-warn">Palworld printing identity audit pending refresh</span>' : '',
     c.market != null && String(c.priceSource||'').includes('TCGCSV') && state.tcgcsvAudit.status!=='vetted-subtype-matching-v1'
       ? '<span class="badge badge-warn">USD Normal/Foil matching pending verification</span>' : '',
     c.market != null && c.marketSubtypeSelection==='single-unspecified-subtype'
@@ -754,6 +761,9 @@ function renderViewer() {
     ['USD market price / estimate',c.marketKind==='thin' ? '~'+money(c.market) : money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
     ['TCGplayer price subtype',esc(c.marketSubtype||'Not specified')],
     ['USD subtype selection',esc(c.marketSubtypeSelection||'Not verified in this catalog view')],
+    ['Palworld source printing',esc(c.palworldPricesCardId||'Not available')],
+    ['Palworld physical match',esc(c.palworldMatch||'Not independently audited')],
+    ['USD source selection',esc(c.marketSelectionReason||'Not supplied')],
     ['USD evidence class',esc(c.marketEvidenceStatus||'Not available in this catalog view')],['USD observation age',c.market!=null ? (c.marketObservationAgeDays!=null ? `${c.marketObservationAgeDays} days${c.marketStale ? ' · stale':''}` : 'Undated — cannot verify freshness') : 'Not available'],['Unverified research quote (not market)',c.unverifiedMarketIndicationUSD!=null ? `${money(c.unverifiedMarketIndicationUSD)} · not used in calculations` : '—'],['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
     ['Peer fair value',fairLabel(c)],['Fair-value gap',pct(c.gap)],['Fair confidence (cohort size only)',c.fairValueConfidence||'None'],['Fair method',c.fairValueMethod||'Insufficient peers'],['Peer price evidence',c.fairValueDataBasis||'Unavailable — insufficient comparable prices'],['Fair confidence measures',c.fairValueConfidenceBasis||'No calibrated predictive-accuracy estimate'],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
     ['Price-change momentum (heuristic)', c.change7d!=null || c.change30d!=null ? `${c.momentum}/100` : 'Unavailable — no measured price change'],['Observed demand / inventory proxy',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · cross-sectional P${c.marketHeatPercentile??'—'} (not historical HYPE)`:'Unavailable — no verified sales and inventory observations'],['Investment quality',`${c.investment}/100`],
@@ -1271,6 +1281,19 @@ function renderSources() {
       '</b></div></div>' :
       '<p>Mapping verification pending. Existing cached Cardmarket guide rows are not retroactively certified; the next successful complete price-source refresh must generate the collision audit.</p>'}
     <p><a target="_blank" rel="noreferrer" href="data/cardmarket-match-audit.json">Inspect individual source-match and conflict audit</a></p>
+  </div>
+  <div class="panel"><h3>Palworld physical printing and completed sales</h3>
+    <p>Palworld Prices distinguishes the base printing from explicit RR, OSR, SP and SSP variants. A source cardId with a suffix never falls back to the unsuffixed catalog card. Unrecognized and duplicate printings are left unpriced until independently reconciled. Completed-sale medians are kept separate from retail price guides and asking prices.</p>
+    ${state.palworldIdentityAudit.status==='exact-printing-cardid-v1' ?
+      '<div class="stat-list"><div class="stat"><span>Exact source printings</span><b>'+
+        Number(state.palworldIdentityAudit.matchedPrintings||0).toLocaleString()+'</b></div>'+
+      '<div class="stat"><span>Completed-sale median records</span><b>'+
+        Number(state.palworldIdentityAudit.pricedPrintings||0).toLocaleString()+'</b></div>'+
+      '<div class="stat"><span>Variant and source identity exclusions</span><b>'+
+        Object.values(state.palworldIdentityAudit.sourceStats?.rejectionReasons||{})
+          .reduce((sum,v)=>sum+Number(v||0),0).toLocaleString()+'</b></div></div>' :
+      '<p>Exact Palworld source-variant identity audit pending the next complete provider refresh. Previously cached printings are not retroactively certified.</p>'}
+    <p><a target="_blank" rel="noreferrer" href="data/palworld-identity-audit.json">Inspect Palworld identity and variant exclusions</a></p>
   </div>
   <div class="panel"><h3>TCGplayer Normal / Foil audit</h3>
     <p>TCGCSV public prices are price guides. An ordinary printing should use its Normal price where available; premium-rarity printings select a Foil quote. When both Normal and Foil exist, the rarity determines the selected guide. If a collector number has only one quote with a surprising subtype, that value is provisional and does not verify physical treatment. Multiple ambiguous rows or vendor product IDs are quarantined.</p>
