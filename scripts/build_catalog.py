@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import hashlib,json,math,re
-from collections import defaultdict
+from collections import Counter,defaultdict
 from datetime import datetime,timezone
 from pathlib import Path
 from market_provenance import choose_usd_market, describe_usd_evidence, audit_manual_prices, combine_usd_guide_sources
 from market_freshness import eur_evidence, audit_market_freshness
+from market_provenance import (
+    OUTDATED_AFTER_DAYS,observation_age_days,observation_date,
+    is_completed_sale_sample
+)
 
 ROOT=Path(__file__).resolve().parents[1]
 DATA=ROOT/'data'; RAW=DATA/'raw'; MARKET=DATA/'market'
@@ -203,41 +207,124 @@ def attach_peer_fair_value(cards):
             c['fairValueConfidence']='None'
     return cards
 
-def attach_market_pressure(cards):
-    """Attach a current absorption proxy where completed-sales + fresh-ask data exist.
+def observed_activity_inputs(c,today=None):
+    """Require independent, *current* sales and inventory observations.
 
-    This is deliberately NOT called historical HYPE. HYPE needs an own-card time
-    baseline and will only be derived after enough daily snapshots accumulate.
+    A cached quote's download time is NOT its source observation time.
+    Without a source-stamped inventory snapshot, sales/ask absorption cannot
+    be measured. Provider marketStale is respected in addition to date age.
+    """
+    if c.get('availability')!='released':
+        return None,'not-released'
+    if not is_completed_sale_sample(c):
+        return None,'no-attributed-completed-sale-sample'
+    observed=observation_date(c.get('marketAsOf'))
+    sale_age=observation_age_days(c.get('marketAsOf'),today)
+    if (observed is None or sale_age is None or
+            sale_age>OUTDATED_AFTER_DAYS or c.get('marketStale')):
+        return None,'stale-or-undated-sales'
+    ask_age=observation_age_days(c.get('marketAskAsOf'),today)
+    ask_date=observation_date(c.get('marketAskAsOf'))
+    if ask_age is None or ask_date is None:
+        return None,'undated-or-future-ask-inventory'
+    if ask_age>OUTDATED_AFTER_DAYS:
+        return None,'stale-ask-inventory'
+    if abs((ask_date-observed).days)>7:
+        return None,'sales-and-asks-not-contemporaneous'
+    if str(c.get('marketBasisWindow') or '').lower() not in (
+            '7d','14d','30d','60d','90d'):
+        return None,'unknown-sales-window'
+    sales=c.get('salesInWindow')
+    if sales is None:sales=c.get('salesInBasis')
+    asks=c.get('marketAskCount')
+    try:
+        if any(isinstance(v,bool) for v in (sales,asks)):
+            raise ValueError('boolean counts')
+        sales=float(sales)
+        asks=float(asks)
+        if not math.isfinite(sales) or not math.isfinite(asks):
+            raise ValueError('non-finite')
+    except (ValueError,TypeError,OverflowError):
+        return None,'missing-or-invalid-sales-asks'
+    if sales<=0 or asks<=0:
+        # Zero live listings is NOT infinite liquidity or a valid 100% heat.
+        return None,'zero-sales-or-available-asks'
+    return (sales,asks),'qualified-current-sales-and-asks'
+
+
+def attach_market_pressure(cards,today=None):
+    """Only genuine overlapping *fresh* sales/inventory have demand pressure.
+
+    True historical HYPE still needs >=30 independent observations for the
+    SAME physical printing. This cross-sectional heat score is never HYPE.
+    Equal pressure ratios must yield the same mid-rank heat percentile.
     """
     measured=[]
     for c in cards:
-        sales=c.get('salesInWindow')
-        if sales is None:sales=c.get('salesInBasis')
-        asks=c.get('marketAskCount')
-        try:sales=float(sales) if sales is not None else None
-        except:sales=None
-        try:asks=float(asks) if asks is not None else None
-        except:asks=None
-        if sales is None or asks is None or sales+asks<=0:
+        # Prevent stale fields left by repeated in-memory attachment.
+        for key in ('demandPressure','marketHeatPercentile',
+                    'marketHeatLabel','demandPressureSales','demandPressureAsks'):
+            c.pop(key,None)
+        inputs,status=observed_activity_inputs(c,today=today)
+        c['demandPressureStatus']=status
+        if inputs is None:
             c['demandPressure']=None
             c['marketHeatPercentile']=None
             continue
+        sales,asks=inputs
         pressure=100*sales/(sales+asks)
         c['demandPressure']=round(pressure,1)
         c['demandPressureSales']=int(sales)
         c['demandPressureAsks']=int(asks)
         measured.append((pressure,c))
-    if measured:
-        ordered=sorted(measured,key=lambda x:x[0])
-        n=len(ordered)
-        for i,(pressure,c) in enumerate(ordered):
-            # Mid-rank percentile; cross-sectional, not historical.
-            c['marketHeatPercentile']=round(100*(i+.5)/n)
-            c['marketHeatLabel']=('Hot' if c['marketHeatPercentile']>=80 else
-                                  'Warm' if c['marketHeatPercentile']>=60 else
-                                  'Neutral' if c['marketHeatPercentile']>=40 else
-                                  'Cool' if c['marketHeatPercentile']>=20 else 'Cold')
+
+    if len(measured)<10:
+        for _,c in measured:
+            c['demandPressureStatus']='qualified-insufficient-heat-cohort'
+        return cards
+    ordered=sorted(measured,key=lambda row:row[0])
+    n=len(ordered)
+    i=0
+    while i<n:
+        j=i+1
+        while j<n and ordered[j][0]==ordered[i][0]:
+            j+=1
+        # Group tied ratios so iteration/card ordering cannot create "hot"
+        # vs "cold" labels for otherwise identical demand evidence.
+        midrank_pct=round(100*(i+j)/(2*n))
+        label=('Hot' if midrank_pct>=80 else
+               'Warm' if midrank_pct>=60 else
+               'Neutral' if midrank_pct>=40 else
+               'Cool' if midrank_pct>=20 else 'Cold')
+        for k in range(i,j):
+            item=ordered[k][1]
+            item['marketHeatPercentile']=midrank_pct
+            item['marketHeatLabel']=label
+        i=j
     return cards
+
+
+def audit_current_demand(cards,generated_at=None):
+    statuses=Counter(c.get('demandPressureStatus') or 'not-assessed'
+                     for c in cards)
+    qualifying=sum(c.get('demandPressure') is not None for c in cards)
+    heat=sum(c.get('marketHeatPercentile') is not None for c in cards)
+    return {
+        'schemaVersion':1,
+        'generatedAt':generated_at or datetime.now(timezone.utc).isoformat(),
+        'cardsAssessed':len(cards),
+        'eligibleDemandRatios':qualifying,
+        'eligibleCrossSectionalHeat':heat,
+        'exclusionReasons':dict(sorted(statuses.items())),
+        'notes':[
+            'Source price date and ask inventory date must both be independently published and <=14 days old, and within 7 days of one another.',
+            'Market heat is a tied mid-rank percentile of contemporaneous sales/asks, only if at least 10 printing observations exist.',
+            'No source-stamped asks means unavailable pressure, NOT zero demand or zero liquidity.',
+            'Past sample counts and cached price-guide downloads never imply current sales activity.',
+            'Qualified demand is still only a contemporaneous cross-sectional proxy, not historical HYPE or forecast return.',
+        ],
+    }
+
 
 def stable(c):
     raw='|'.join(str(c.get(k) or '') for k in ('game','code','rarity','edition','treatment','availability'))
@@ -304,16 +391,35 @@ def score(c,set_priors,game_priors,scarcity_evidence):
     market=float(c.get('market') or 0)
     market_eur=float(c.get('marketEUR') or 0)
     d7=c.get('change7d');d30=c.get('change30d')
-    momentum=clamp(50+(float(d7 or 0)*1.6)+(float(d30 or 0)*.45))
+    # No fabricated momentum from an undated guide or merely a downloaded
+    # stale sales sample. No data = neutral heuristic prior, NOT 0% change.
+    moving=(c.get('marketIdentityStatus')=='exact-code-rarity-foil-dated'
+            and observation_age_days(c.get('marketAsOf')) is not None
+            and observation_age_days(c.get('marketAsOf'))<=OUTDATED_AFTER_DAYS
+            and not c.get('marketStale')
+            and any(isinstance(v,(int,float)) and math.isfinite(v)
+                    for v in (d7,d30)))
+    momentum=(clamp(50+(float(d7 or 0)*1.6)+(float(d30 or 0)*.45))
+              if moving else 50)
+    c['momentumEvidenceStatus']=(
+        'source-qualified-provider-price-movement' if moving else
+        'neutral-prior-no-current-independent-movement')
     p=prior_for(c,set_priors,game_priors)
     ip=float(p.get('ip',55));character=float(c.get('characterPremiumScore') or 50);reprint=float(p.get('reprint',55));historical=float(p.get('historical',50))
     treatment=float(c.get('treatmentScore') or (82 if rr>=86 else 55 if rr>=62 else 30))
-    sold_n=float(c.get('salesInBasis') or 0)
-    ask_n=float(c.get('marketAskCount') or 0)
-    if sold_n:
+    # An old quoted price is not evidence of current trading liquidity.
+    # Only source-qualified current activity can influence the 7% factor.
+    has_current_activity=c.get('demandPressureStatus') in (
+        'qualified-current-sales-and-asks','qualified-insufficient-heat-cohort'
+    )
+    if has_current_activity:
+        sold_n=float(c['demandPressureSales'])
+        ask_n=float(c['demandPressureAsks'])
         liquidity=clamp(28+18*math.log10(1+sold_n)+6*math.log10(1+ask_n))
+        c['liquidityEvidenceStatus']='fresh-dated-sales-and-inventory'
     else:
-        liquidity=clamp(35+math.log10(max(market,1))*10 if market else 25)
+        liquidity=25
+        c['liquidityEvidenceStatus']='neutral-prior-no-current-activity'
     edition_bonus=float(c.get('editionScore') or 50)
     investment=clamp(round(
         scarcity_score*.24 + ip*.10 + character*.10 + reprint*.13 + historical*.11 + treatment*.10 +
@@ -338,7 +444,7 @@ def score(c,set_priors,game_priors,scarcity_evidence):
             'historicalSignificance':round(historical),'treatment':round(treatment),
             'liquidity':round(liquidity),'editionDurability':round(edition_bonus)
         },
-        'modelStatus':'peer-fair-v0.8-true-loo'
+        'modelStatus':'peer-fair-v0.8-evidence-gated-iq-v0.9'
     })
     return c
 
@@ -462,7 +568,7 @@ def main():
     }
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),
-        'modelVersion':'0.8-peer-fair-true-leave-one-out',
+        'modelVersion':'0.9-evidence-gated-iq-peer-fair-v0.8',
         'counts':counts,
         'sets':set_rows,
         'cards':out
@@ -560,6 +666,13 @@ def main():
     source_audit=audit_manual_prices(market_overrides)
     source_audit['generatedAt']=payload['generatedAt']
     (DATA/'market-source-audit.json').write_text(json.dumps(source_audit,indent=2),encoding='utf-8')
+    activity=audit_current_demand(out,generated_at=payload['generatedAt'])
+    (DATA/'current-demand-audit.json').write_text(
+        json.dumps(activity,indent=2,ensure_ascii=False),encoding='utf-8'
+    )
+    print('Current demand activity audit',activity['eligibleDemandRatios'],
+          'eligible ratios and',activity['eligibleCrossSectionalHeat'],
+          'heat-qualified cards',activity['exclusionReasons'])
     freshness=audit_market_freshness(out, generated_at=payload['generatedAt'])
     (DATA/'market-freshness-audit.json').write_text(
         json.dumps(freshness,indent=2,ensure_ascii=False),encoding='utf-8'
