@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "status": "awaiting-first-versioned-refresh",
+  "generatedAt": null,
+  "snapshots": null,
+  "modelVersions": [],
+  "horizons": [],
+  "notes": [
+    "The next scheduled catalog refresh will generate a version-stratified backtest report from immutable snapshots.",
+    "No prediction accuracy is reported without sufficient verified dated samples."
+  ]
+}
