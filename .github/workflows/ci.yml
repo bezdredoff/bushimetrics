@@ -60,6 +60,32 @@ jobs:
       - run: python scripts/enrich_market_palworldprices.py
       - run: python scripts/build_catalog.py
       - run: python scripts/build_web_catalog.py
+      - name: Validate source-dated current demand and neutral activity counts
+        run: |
+          python - <<'PY'
+          import json
+          catalog=json.load(open('data/catalog.json',encoding='utf-8'))
+          audit=json.load(open('data/current-demand-audit.json',encoding='utf-8'))
+          cards=catalog['cards']
+          assert audit['schemaVersion']==1
+          assert audit['cardsAssessed']==len(cards)
+          assert catalog['modelVersion']=='0.9-evidence-gated-iq-peer-fair-v0.8'
+          eligible=[c for c in cards if c.get('demandPressure') is not None]
+          heat=[c for c in cards if c.get('marketHeatPercentile') is not None]
+          assert len(eligible)==audit['eligibleDemandRatios']
+          assert len(heat)==audit['eligibleCrossSectionalHeat']
+          assert sum(audit['exclusionReasons'].values())==len(cards)
+          for c in eligible:
+              assert c.get('marketAskAsOf') and c.get('marketAsOf')
+              assert not c.get('marketStale')
+              assert c.get('priceSource','').startswith('Palworld Prices')
+          for c in cards:
+              if c.get('liquidityEvidenceStatus')=='neutral-prior-no-current-activity':
+                  assert c['modelFactors']['liquidity']==25
+              if c.get('momentumEvidenceStatus')=='neutral-prior-no-current-independent-movement':
+                  assert c['momentum']==50
+          print('Current market activity evidence gate validated:',len(eligible),'pressure cards,',len(heat),'heat ranks')
+          PY
       - name: Generate version-separated walk-forward status from immutable snapshots
         run: python scripts/backtest.py
       - name: Check pending reports cannot claim accuracy without dated evidence
