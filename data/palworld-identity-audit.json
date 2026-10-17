@@ -1,11 +1,134 @@
 {
   "schemaVersion": 1,
-  "status": "pending-exact-printing-refresh",
-  "cacheRetrievedAt": null,
-  "priceSourceAsOf": null,
-  "sourceStale": null,
-  "matchedPrintings": null,
-  "pricedPrintings": null,
-  "sourceStats": {},
-  "notice": "Prior Palworld prices were not independently audited against the API cardId and explicit variant. The next successful full catalog refresh must generate the exact-printing source identity report."
+  "status": "exact-printing-cardid-v1",
+  "cacheRetrievedAt": "2026-10-17T17:24:15.695179+00:00",
+  "priceSourceAsOf": "2026-09-17T22:30:01.508Z",
+  "sourceStale": false,
+  "matchedPrintings": 263,
+  "pricedPrintings": 253,
+  "sourceStats": {
+    "apiCards": 280,
+    "matched": 263,
+    "priced": 253,
+    "skipped": 17,
+    "duplicateTargets": 0,
+    "collisionCodeGroups": 0,
+    "rejectionReasons": {
+      "base-printing-absent-from-catalog": 16,
+      "explicit-variant-absent-from-catalog": 1
+    },
+    "rejectionExamples": [
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-001",
+        "collectorCode": "DEMO-001",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-002",
+        "collectorCode": "DEMO-002",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-003",
+        "collectorCode": "DEMO-003",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-004",
+        "collectorCode": "DEMO-004",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-005",
+        "collectorCode": "DEMO-005",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-006",
+        "collectorCode": "DEMO-006",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-007",
+        "collectorCode": "DEMO-007",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-008",
+        "collectorCode": "DEMO-008",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-009",
+        "collectorCode": "DEMO-009",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-010",
+        "collectorCode": "DEMO-010",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-011",
+        "collectorCode": "DEMO-011",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-012",
+        "collectorCode": "DEMO-012",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-013",
+        "collectorCode": "DEMO-013",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-014",
+        "collectorCode": "DEMO-014",
+        "sourceVariant": null
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-DEMO-015",
+        "collectorCode": "DEMO-015",
+        "sourceVariant": null
+      },
+      {
+        "reason": "explicit-variant-absent-from-catalog",
+        "sourceCardId": "pal-TD01-024-TSRMIS",
+        "collectorCode": "TD01-024",
+        "sourceVariant": "TSRMIS"
+      },
+      {
+        "reason": "base-printing-absent-from-catalog",
+        "sourceCardId": "pal-ESOUL-009",
+        "collectorCode": "ESOUL-009",
+        "sourceVariant": null
+      }
+    ],
+    "collisionExamples": [],
+    "identityMethod": "exact-source-cardId-and-explicit-variant",
+    "notes": [
+      "An explicit RR/OSR/SSP/SP or other variant never inherits the base printing price.",
+      "Distinct source physical printings and duplicate target rows are quarantined.",
+      "Only bare/thin positive sale medians become observed USD market prices.",
+      "Provider stale status and source publication date are preserved separately from download time."
+    ]
+  },
+  "notice": "Palworld Prices completed-sale estimates are only assigned to printings with an exact API cardId/code/explicit variant match. Older provider caches cannot be retroactively certified."
 }
