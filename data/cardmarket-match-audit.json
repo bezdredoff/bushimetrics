@@ -1,10 +1,805 @@
 {
   "schemaVersion": 1,
-  "status": "pending-first-vetted-refresh",
-  "priceGuideCreatedAt": null,
-  "cacheRetrievedAt": null,
-  "matchedPrintings": null,
-  "pricedPrintings": null,
-  "sourceStats": {},
-  "note": "First full catalog refresh with the vetted Cardmarket collector/rarity matcher is pending. Older cached guides have not been retroactively verified for duplicate product mapping."
+  "status": "vetted-identity-matching-v1",
+  "priceGuideCreatedAt": "2026-10-17T02:45:02+0200",
+  "cacheRetrievedAt": "2026-10-17T11:26:14.187373+00:00",
+  "matchedPrintings": 7434,
+  "pricedPrintings": 7434,
+  "sourceStats": {
+    "catalogCards": 30983,
+    "publishedProducts": 28140,
+    "priceRows": 29203,
+    "productsWithoutPrice": 0,
+    "invalidPriceRows": 3866,
+    "explicitNumberNotFound": 0,
+    "explicitNumberAmbiguous": 0,
+    "explicitRarityConflict": 0,
+    "insufficientIdentity": 16330,
+    "unmatchedProducts": 0,
+    "ambiguousProducts": 0,
+    "duplicateSourceRows": 0,
+    "candidateProducts": 7944,
+    "collisionCodeGroups": 251,
+    "collisionProducts": 510,
+    "collisionExamples": [
+      {
+        "collectorCode": "AB/W31-TE22",
+        "productIds": [
+          321194,
+          321195
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "AB/W31-TE23",
+        "productIds": [
+          321205,
+          321206
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "AB/W31-TE24",
+        "productIds": [
+          321198,
+          321199
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "AW/S18-E033",
+        "productIds": [
+          321608,
+          321610
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "AW/S18-E059",
+        "productIds": [
+          321556,
+          321557
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "AW/S18-E083",
+        "productIds": [
+          321542,
+          321543
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "AW/S18-E103",
+        "productIds": [
+          676017,
+          676089
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "BM/S15-E101",
+        "productIds": [
+          321995,
+          321996
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "FS/S34-E036",
+        "productIds": [
+          322229,
+          322230
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "FS/S34-E037",
+        "productIds": [
+          322264,
+          322265
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "FS/S34-E051",
+        "productIds": [
+          322273,
+          322274
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "FS/S34-E076",
+        "productIds": [
+          322226,
+          322227
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "FZ/S17-E101",
+        "productIds": [
+          322812,
+          322813
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "FZ/S17-E103",
+        "productIds": [
+          322816,
+          322817
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/S31-E005",
+        "productIds": [
+          323385,
+          323386
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E01",
+        "productIds": [
+          323575,
+          323576
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E04",
+        "productIds": [
+          323533,
+          323534
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E09",
+        "productIds": [
+          323473,
+          323474
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E10",
+        "productIds": [
+          323571,
+          323572
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E11",
+        "productIds": [
+          323535,
+          323536
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E12",
+        "productIds": [
+          323546,
+          323547
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E16",
+        "productIds": [
+          323511,
+          323512
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E18",
+        "productIds": [
+          323561,
+          323562
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E19",
+        "productIds": [
+          323496,
+          323497
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E20",
+        "productIds": [
+          323554,
+          323555
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E22",
+        "productIds": [
+          323506,
+          323507
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E23",
+        "productIds": [
+          323559,
+          323560
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E24",
+        "productIds": [
+          323540,
+          323541
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E28",
+        "productIds": [
+          323488,
+          323489
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E29",
+        "productIds": [
+          323565,
+          323566
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E30",
+        "productIds": [
+          323567,
+          323568
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E35",
+        "productIds": [
+          323573,
+          323574
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E36",
+        "productIds": [
+          323526,
+          323527
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E37",
+        "productIds": [
+          323528,
+          323529
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E38",
+        "productIds": [
+          323542,
+          323543
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E39",
+        "productIds": [
+          323550,
+          323551
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E42",
+        "productIds": [
+          323552,
+          323553
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E43",
+        "productIds": [
+          323513,
+          323514
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E44",
+        "productIds": [
+          323517,
+          323518
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      },
+      {
+        "collectorCode": "KC/SE28-E45",
+        "productIds": [
+          323569,
+          323570
+        ],
+        "matchMethods": [
+          "unique-normal-name-unverified-source-treatment",
+          "unique-normal-name-unverified-source-treatment"
+        ]
+      }
+    ],
+    "rejectionExamples": [
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316365,
+        "name": "Karen Araragi & Tsukihi Araragi",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316373,
+        "name": "Bashful, Nadeko Sengoku",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316377,
+        "name": "Black Hanekawa",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316379,
+        "name": "Cat Ears, Tsubasa Hanekawa",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316380,
+        "name": "Classmate of Tsukihi, Nadeko Sengoku",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316381,
+        "name": "Classmate of Tsukihi, Nadeko Sengoku",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316384,
+        "name": "Curse-lifting Ritual, Nadeko Sengoku",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316391,
+        "name": "Everything About Me",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316395,
+        "name": "Fully Armed, Hitagi Senjyogahara",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316396,
+        "name": "Girl Bound By a Snake, Nadeko Sengoku",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316397,
+        "name": "Girl Charmed By a Cat, Tsubasa Hanekawa",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316400,
+        "name": "Girl Who Cannot Be Left Alone, Hitagi Senjyogahara",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316401,
+        "name": "Girl Who Lost All Weight, Hitagi Senjyogahara",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316402,
+        "name": "Girl Who Met a Crab, Hitagi Senjyogahara",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316403,
+        "name": "Girl Who Wished on the Monkey, Suruga Kanbaru",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316405,
+        "name": "Girl With Twintails, Mayoi Hachikuji",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316406,
+        "name": "Girl With Twintails, Mayoi Hachikuji",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316410,
+        "name": "HITAGI Crab",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316411,
+        "name": "Hitagi Senjyogahara in Regular Clothes",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316412,
+        "name": "Hitagi Senjyogahara on Holiday",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316413,
+        "name": "Hitagi Senjyogahara on Holiday",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316423,
+        "name": "Koyomi's Lover, Hitagi Senjyogahara",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316427,
+        "name": "Lost Cattle, Mayoi Hachikuji",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316428,
+        "name": "Lovers, Koyomi Araragi & Hitagi Senjyogahara",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316430,
+        "name": "Loves BL, Suruga Kanbaru",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316432,
+        "name": "Maturing Girl, Nadeko Sengoku",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316450,
+        "name": "Shy Mayoi Hachikuji",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316453,
+        "name": "Suruga Kanbaru",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316454,
+        "name": "Suruga Kanbaru",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316456,
+        "name": "Suruga Kanbaru in Regular Clothes",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316462,
+        "name": "Tsubasa Hanekawa in Pajamas",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316467,
+        "name": "Wandering Girl, Mayoi Hachikuji",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316468,
+        "name": "Wandering Girl, Mayoi Hachikuji",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316471,
+        "name": "Girl Lost in the Snail, Mayoi Hachikuji",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316472,
+        "name": "Lost Cattle, Mayoi Hachikuji",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316474,
+        "name": "Girl Who Wished on the Monkey, Suruga Kanbaru",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316477,
+        "name": "Fully Armed, Hitagi Senjyogahara",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316478,
+        "name": "Girl Charmed By a Cat, Tsubasa Hanekawa",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 316479,
+        "name": "Girl Bound By a Snake, Nadeko Sengoku",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      },
+      {
+        "reason": "insufficientIdentity",
+        "cardmarketProductId": 321008,
+        "name": "\"\"Crow Song\"\" Iwasawa",
+        "number": "",
+        "rarity": null,
+        "expansion": ""
+      }
+    ],
+    "matchedCards": 7434,
+    "matchMethods": {
+      "unique-normal-name-unverified-source-treatment": 7434
+    },
+    "titleOnlyProvisional": 7434,
+    "numberMatched": 0,
+    "rejectedProductRows": 16330,
+    "notes": [
+      "A Cardmarket trend value is a price guide, not a verified completed sale.",
+      "Explicit collector numbers that do not match this catalog never fall back to title.",
+      "Rarity and expansion constraints are not silently discarded on name fallback.",
+      "When Cardmarket omits all code/rarity/set fields, unique normal printing title is indicative only; rare treatments and multiple printings are excluded.",
+      "All distinct product collisions for one collector code are quarantined.",
+      "Absent entries have unknown price; neither zero nor a substitute asking price."
+    ]
+  },
+  "note": "Explicit collector code and rarity mismatches are rejected; colliding product IDs are quarantined only after the new Cardmarket source matcher has successfully refreshed. Cached legacy records are NOT retroactively certified."
 }
