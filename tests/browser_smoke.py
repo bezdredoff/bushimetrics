@@ -76,6 +76,8 @@ def main():
             page.locator('[data-tab="sources"]').click()
             assert "Research model availability" in page.locator("#sourcesContent").inner_text()
             assert "Market source audit" in page.locator("#sourcesContent").inner_text()
+            assert "Market price-source freshness" in page.locator("#sourcesContent").inner_text()
+            assert "Price guides are not completed sales" in page.locator("#sourcesContent").inner_text()
             assert "Missing independent source or card-level date" in page.locator("#sourcesContent").inner_text()
             # Card explorer pagination, CSV export and local backup round-trip.
             page.locator('[data-tab="cards"]').click()
