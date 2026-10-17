@@ -1,0 +1,96 @@
+name: Palworld physical printing identity audit
+
+on:
+  pull_request:
+    paths:
+      - scripts/enrich_market_palworldprices.py
+      - scripts/market_provenance.py
+      - tests/test_palworld_physical_identity.py
+      - .github/workflows/palworld-identity-audit.yml
+  push:
+    branches: [main]
+    paths:
+      - scripts/enrich_market_palworldprices.py
+      - .github/workflows/palworld-identity-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install source HTTP dependency
+        run: python -m pip install requests
+      - name: Validate exact physical variant test fixtures
+        run: python -m unittest discover -s tests -p 'test_palworld_physical_identity.py' -v
+      - name: Collect the live public Palworld completed-sales feed (one bulk request)
+        run: python scripts/enrich_market_palworldprices.py
+      - name: Verify strict cardId variant coverage and source exclusions
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          from sys import path
+          path.insert(0,'scripts')
+          from enrich_market_palworldprices import target_identity
+          raw=json.loads(Path('data/raw/palworld.json').read_text(encoding='utf-8'))
+          data=json.loads(Path('data/market/palworldprices.json').read_text(encoding='utf-8'))
+          known={c['code'].upper() for c in raw['cards']}
+          stats=data['stats']
+          assert stats.get('identityMethod')=='exact-source-cardId-and-explicit-variant'
+          assert stats['matched']==len(data['cards'])
+          assert stats['matched'] >= 100
+          assert stats['priced'] <= stats['matched']
+          for code,record in data['cards'].items():
+              assert code in known
+              source_id=record['palworldPricesCardId']
+              assert source_id.startswith('pal-')
+              variant=record.get('palworldSourceVariant')
+              assert (record['palworldMatch']=='exact-printing-cardid-variant') == bool(variant)
+              assert not (variant and not code.upper().endswith(str(variant).upper()))
+              if record.get('market') is not None:
+                  assert record['market'] > 0
+                  assert record['marketKind'] in ('bare','thin')
+          report={
+              'sourceAsOf':data.get('asOf'),
+              'sourceStale':data.get('stale'),
+              'matchedPrintings':stats['matched'],
+              'pricedPrintings':stats['priced'],
+              'quarantinedCodeGroups':stats['collisionCodeGroups'],
+              'rejectionReasons':stats['rejectionReasons'],
+              'rejectionExamples':stats['rejectionExamples'],
+              'collisionExamples':stats['collisionExamples'],
+              'sourceIdentityMethod':stats['identityMethod'],
+              'notice':'Some source variants are absent from this English catalog; they are NOT priced as base printings.',
+          }
+          Path('artifacts').mkdir(exist_ok=True)
+          Path('artifacts/palworld-printing-audit.json').write_text(
+              json.dumps(report,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+          summary=(
+              '### Palworld source physical-printing integrity\n\n'
+              f"- Exact source printings: {stats['matched']}\n"
+              f"- Quoted completed-sale medians: {stats['priced']}\n"
+              f"- Rejected variant/identity rows: {sum(stats['rejectionReasons'].values())}\n"
+              f"- Colliding catalog printing groups: {stats['collisionCodeGroups']}\n"
+              f"- Source publication: {data.get('asOf')} (stale={data.get('stale')})\n"
+              '\nNo explicit variant was silently priced as the base printing.\n'
+          )
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
+              f.write(summary)
+          print(summary)
+          print('Rejections:',stats['rejectionReasons'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: palworld-printing-evidence
+          path: artifacts/palworld-printing-audit.json
+          retention-days: 14
+          if-no-files-found: warn
