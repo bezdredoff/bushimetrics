@@ -1,6 +1,11 @@
 name: JP artwork availability sample
 
 on:
+  pull_request:
+    paths:
+      - .github/workflows/jp-artwork-health.yml
+      - scripts/audit_jp_artwork.py
+      - tests/test_artwork_health.py
   push:
     branches: [main]
     paths:
@@ -24,8 +29,10 @@ jobs:
           python-version: '3.12'
       - name: Verify artwork audit unit tests
         run: python -m unittest discover -s tests -p 'test_artwork_health.py' -v
-      - name: Sample 16 Japanese sets (bounded, no bulk scanning)
-        run: python scripts/audit_jp_artwork.py --samples 16 --output artifacts/jp-artwork-health.json
+      - name: Sample a limited Japanese artwork set (no bulk scanning)
+        env:
+          AUDIT_SAMPLES: ${{ github.event_name == 'pull_request' && '8' || '16' }}
+        run: python scripts/audit_jp_artwork.py --samples "$AUDIT_SAMPLES" --output artifacts/jp-artwork-health.json
       - name: Report sampled reachability, not catalog-wide coverage
         shell: bash
         run: |
