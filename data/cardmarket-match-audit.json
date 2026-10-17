@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "status": "pending-first-vetted-refresh",
+  "priceGuideCreatedAt": null,
+  "cacheRetrievedAt": null,
+  "matchedPrintings": null,
+  "pricedPrintings": null,
+  "sourceStats": {},
+  "note": "First full catalog refresh with the vetted Cardmarket collector/rarity matcher is pending. Older cached guides have not been retroactively verified for duplicate product mapping."
+}

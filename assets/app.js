@@ -45,7 +45,7 @@ function checkedBackup(value) {
   };
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, backtestStatus: {}, sources: {}, marketAudit: {}, marketFreshness: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, backtestStatus: {}, sources: {}, marketAudit: {}, marketFreshness: {}, cardmarketAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(storedIds('bm-watch',10000)),
@@ -111,7 +111,7 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, backtestStatus, sources, jpMeta, research, marketAudit, marketFreshness, jpIdentityAudit, enIdentityAudit] = await Promise.all([
+  const [bootstrap, history, backtestStatus, sources, jpMeta, research, marketAudit, marketFreshness, cardmarketAudit, jpIdentityAudit, enIdentityAudit] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
@@ -123,6 +123,7 @@ async function load() {
     fetch('data/research_status.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {records:[]}).catch(() => ({records:[]})),
     fetch('data/market-source-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/market-freshness-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/cardmarket-match-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/jp-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch('data/en-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null)
   ]);
@@ -136,6 +137,7 @@ async function load() {
   state.sources = sources;
   state.marketAudit = marketAudit || {};
   state.marketFreshness = marketFreshness || {};
+  state.cardmarketAudit = cardmarketAudit || {};
   state.jpIdentityAudit = jpIdentityAudit;
   state.enIdentityAudit = enIdentityAudit;
   state.research = research || {records:[]};
@@ -700,6 +702,10 @@ function renderViewer() {
     !modelFair(c) ? '<span class="badge">Model fair value unavailable</span>' : '',
     c.market != null && c.marketStale ? '<span class="badge badge-warn">USD price observation stale or undated</span>' : '',
     c.marketEUR != null && c.marketEURStale ? '<span class="badge badge-warn">EUR Cardmarket guide stale or undated</span>' : '',
+    c.marketEUR != null && c.cardmarketMatch==='unique-normal-name-unverified-source-treatment'
+      ? '<span class="badge badge-warn">EUR guide matched by title only — treatment unverified</span>' : '',
+    c.marketEUR != null && state.cardmarketAudit.status!=='vetted-identity-matching-v1'
+      ? '<span class="badge badge-warn">EUR catalog mapping audit pending refresh</span>' : '',
     c.unverifiedMarketIndicationUSD != null ? '<span class="badge badge-warn">Unverified quote excluded from market data</span>' : ''
   ].join('');
 
@@ -1229,6 +1235,23 @@ function renderSources() {
       <div class="stat"><span>Missing independent source or card-level date</span><b>${Number(state.marketAudit.indicationOnly||0).toLocaleString()}</b></div>
       <div class="stat"><span>Linked and dated records</span><b>${Number(state.marketAudit.linkedDated||0).toLocaleString()}</b></div>
     </div>
+  </div>
+  <div class="panel"><h3>Cardmarket printing identity audit</h3>
+    <p>Matching the right printing is separate from guide freshness. The importer rejects conflicting collector numbers and rarities and quarantines duplicate product-to-printing collisions. Most public Cardmarket Weiss rows contain only a title: a globally unique ordinary printing may receive a provisional guide, explicitly <b>not</b> verified treatment identity.</p>
+    ${state.cardmarketAudit.status==='vetted-identity-matching-v1' ?
+      '<div class="stat-list"><div class="stat"><span>Non-colliding guide mappings (not necessarily verified treatment)</span><b>'+
+        Number(state.cardmarketAudit.matchedPrintings||0).toLocaleString()+'</b></div>'+
+      '<div class="stat"><span>Provisional title-only base printings</span><b>'+
+        Number(state.cardmarketAudit.sourceStats?.titleOnlyProvisional||0).toLocaleString()+'</b></div>'+
+      '<div class="stat"><span>Quarantined code collisions</span><b>'+
+        Number(state.cardmarketAudit.sourceStats?.collisionCodeGroups||0).toLocaleString()+'</b></div>'+
+      '<div class="stat"><span>Rejected number/rarity disagreements</span><b>'+
+        (Number(state.cardmarketAudit.sourceStats?.explicitNumberNotFound||0)+
+         Number(state.cardmarketAudit.sourceStats?.explicitNumberAmbiguous||0)+
+         Number(state.cardmarketAudit.sourceStats?.explicitRarityConflict||0)).toLocaleString()+
+      '</b></div></div>' :
+      '<p>Mapping verification pending. Existing cached Cardmarket guide rows are not retroactively certified; the next successful complete price-source refresh must generate the collision audit.</p>'}
+    <p><a target="_blank" rel="noreferrer" href="data/cardmarket-match-audit.json">Inspect individual source-match and conflict audit</a></p>
   </div>
   <div class="panel"><h3>Market price-source freshness</h3><p>Each currency has its own source date. A successful download is not proof that price observations were published today. Price guides are not completed sales.</p>
     ${state.marketFreshness.currencies ? '<div class="stat-list">'+

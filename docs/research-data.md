@@ -158,3 +158,40 @@ were missing independent source URLs and dated underlying observations. The
 three rows were removed from the displayed Backtest examples rather than
 claiming unverified index changes are factual. Verified set-level figures
 can return once source URL, as-of date and comparable methodology are available.
+
+## Cardmarket-to-physical-printing identity gate (2026-10-17)
+
+Cardmarket's public Weiss Schwarz EUR export is a **price guide**, not a
+source of independently verified completed sale prices. The collector-number
+matcher in `scripts/enrich_market_cardmarket.py` is now fail-closed:
+
+- Where Cardmarket publishes a collector number, it must identify **exactly
+  one** known Weiss printing. An unknown number never falls back to matching
+  a similar title. Any explicit rarity that conflicts with the identified
+  printing rejects the price, even if the name matches.
+- When the collector number is absent, name-based matching respects **every**
+  rarity and product-expansion constraint supplied by Cardmarket. Where
+  Cardmarket provides only a title (common in its public Weiss export),
+  only a globally unique **ordinary/base printing** may receive an
+  *indicative* guide price. Premium/signature, V.2, foil and signed titles
+  require stronger physical metadata. These tentative title-only matches
+  are explicitly marked `unique-normal-name-unverified-source-treatment`
+  and are **not** verified physical treatment identities. Multiple matching
+  cards are quarantined rather than arbitrarily chosen.
+- Multiple distinct Cardmarket products mapping to the same BushiMetrics
+  collector code **all remain unpriced** until their physical variants can be
+  independently reviewed. Product ordering or higher asking prices do not
+  decide which observation is used.
+- Reports record matched product IDs, matching methods, rejected source rows
+  and a limited list of collided source IDs. The generated
+  `data/cardmarket-match-audit.json` marks older cached mappings as
+  **legacy/unverified** until a complete fetch is processed by the new
+  matcher. A cache date does not certify identity matching.
+- The scheduled refresh refuses to publish a suspiciously small new EUR
+  mapping result (less than 2% of the English Weiss catalog, minimum 100)
+  rather than silently discarding almost all price coverage. The previous
+  published catalog remains intact if this validation fails.
+
+This conservatism may lower EUR price coverage. Such missing prices are
+preferable to attaching a price guide from a different rarity, signed parallel
+or physical treatment. It does not imply the underlying card is worthless.
