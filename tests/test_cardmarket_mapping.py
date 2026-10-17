@@ -72,12 +72,31 @@ class CardmarketPhysicalMatchTests(unittest.TestCase):
         self.assertEqual(audit['matchedCards'],2)
         self.assertEqual(audit['unmatchedProducts'],3)
 
-    def test_name_only_without_expansion_or_rarity_is_not_enough(self):
+    def test_title_only_price_is_indicative_only_for_unique_normal_printing(self):
         matched,audit=match_cardmarket(catalog(),[
-            product(1,'Unique Girl'),product(2,'A Hero')
-        ],[price(1),price(2)])
+            product(1,'Unique Girl'),product(2,'A Hero'),
+            product(3,'Unique Girl (V.2)'),
+            product(4,'Unique Girl (Signed)')
+        ],[price(i) for i in range(1,5)])
+        self.assertEqual(set(matched),{'CC/W01-003'})
+        self.assertEqual(matched['CC/W01-003']['cardmarketMatch'],
+                         'unique-normal-name-unverified-source-treatment')
+        self.assertEqual(audit['insufficientIdentity'],3)
+
+    def test_unique_premium_name_alone_is_rejected(self):
+        cards=[{'code':'AA/W01-100','name':'Rare signed portrait',
+                'rarity':'SP','set':'Alpha Adventure'}]
+        matched,audit=match_cardmarket(cards,
+            [product(1,'Rare signed portrait')],[price(1,300)])
         self.assertEqual(matched,{})
-        self.assertEqual(audit['insufficientIdentity'],2)
+        self.assertEqual(audit['insufficientIdentity'],1)
+
+    def test_multiple_title_only_products_cannot_overwrite_normal_printing(self):
+        matched,audit=match_cardmarket(catalog(),[
+            product(1,'Unique Girl'),product(2,'Unique Girl')
+        ],[price(1,20),price(2,300)])
+        self.assertNotIn('CC/W01-003',matched)
+        self.assertEqual(audit['collisionCodeGroups'],1)
 
     def test_collision_quarantines_all_products_regardless_of_order(self):
         inputs=[
