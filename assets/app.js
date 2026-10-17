@@ -834,17 +834,24 @@ async function renderCardHistory(c) {
   $('#historyEURBtn').classList.toggle('active',useEUR);
   $('#historyUSDBtn').classList.toggle('active',!useEUR);
   if(!marketRows.length){
-    $('#historySummary').textContent=`No publicly verified ${state.historyCurrency} price history available for this printing.`;
-    $('#historyChart').innerHTML='<div class="empty-state compact-empty">Not publicly available in the current dataset. History begins only after verified price observations are recorded.</div>';
+    $('#historySummary').textContent=`No captured ${state.historyCurrency} price-guide history available for this printing.`;
+    $('#historyChart').innerHTML='<div class="empty-state compact-empty">No dated source price was captured for this printing. Missing does not mean zero market value.</div>';
     return;
   }
   const vals=[...marketRows.map(p=>Number(p[marketKey])),...fairRows.map(p=>Number(p[fairKey]))].filter(Number.isFinite);
   let min=Math.min(...vals),max=Math.max(...vals);
   if(max===min){min*=.95;max*=1.05;if(max===min){min-=1;max+=1}}
   const first=marketRows[0],last=marketRows[marketRows.length-1];
-  const change=Number(first[marketKey]) ? (Number(last[marketKey])/Number(first[marketKey])-1)*100 : null;
+  const sourceKey=useEUR?'ea':'ua',verifiedKey=useEUR?'ev':'uv';
+  const qualifiedRows=marketRows.filter(p=>p[sourceKey] && p[verifiedKey]===1);
+  const qualifiedDates=[...new Set(qualifiedRows.map(p=>p[sourceKey]))];
+  const datesSeen=[...new Set(marketRows.map(p=>p[sourceKey]).filter(Boolean))];
+  const qualifiedFirst=qualifiedRows[0], qualifiedLast=qualifiedRows[qualifiedRows.length-1];
+  const change=qualifiedDates.length>1 && Number(qualifiedFirst[marketKey])>0
+    ? (Number(qualifiedLast[marketKey])/Number(qualifiedFirst[marketKey])-1)*100 : null;
   const fmt=useEUR?euro:money;
-  $('#historySummary').innerHTML=`<b>${fmt(last[marketKey])}</b><span class="${(change||0)>=0?'pos':'neg'}">${marketRows.length>1?pct(change):'first snapshot'}</span><small>${marketRows.length} daily point${marketRows.length===1?'':'s'} · ${esc(first.d)} → ${esc(last.d)}</small>`;
+  const lastSourceDate=last[sourceKey] ? esc(last[sourceKey]) : 'unknown';
+  $('#historySummary').innerHTML=`<b>${fmt(last[marketKey])}</b><span class="${change==null?'':change>=0?'pos':'neg'}">${change==null?'Movement unverified':pct(change)+' source-guide move'}</span><small>${marketRows.length} saved daily capture${marketRows.length===1?'':'s'} · ${datesSeen.length} distinct source date${datesSeen.length===1?'':'s'} · ${qualifiedDates.length} qualified physical-source date${qualifiedDates.length===1?'':'s'} · latest publication ${lastSourceDate} · captures ${esc(first.d)} → ${esc(last.d)}</small>`;
   const w=720,h=220,pad=28;
   const marketLine=chartPath(points,marketKey,min,max,w,h,pad);
   const fairLine=chartPath(points,fairKey,min,max,w,h,pad);
@@ -862,7 +869,8 @@ async function renderCardHistory(c) {
     <polyline points="${marketLine}" class="chart-line chart-market"/>
     <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="4" class="chart-dot"/>
   </svg>
-  <div class="chart-legend"><span><i class="legend-market"></i>Observed market</span><span><i class="legend-fair"></i>Model fair value</span></div>`;
+  <div class="chart-legend"><span><i class="legend-market"></i>Saved provider guide/estimate</span><span><i class="legend-fair"></i>Model fair value</span></div>
+  <p class="muted">This line joins daily catalog captures, not completed sales. Repeated source dates are not new observations; unverified edition matches do not establish an investment return.</p>`;
 }
 $('#historyEURBtn').onclick=()=>{state.historyCurrency='EUR';const c=state.viewerList[state.viewerIndex];if(c)renderCardHistory(c);};
 $('#historyUSDBtn').onclick=()=>{state.historyCurrency='USD';const c=state.viewerList[state.viewerIndex];if(c)renderCardHistory(c);};
@@ -1188,8 +1196,9 @@ function renderBacktest() {
     const values=['EUR','USD'].map(currency=>{
       const metric=model.currencies?.[currency]||{};
       if(metric.status!=='exploratory-guide-price-backtest')
-        return currency+': pending ('+Number(metric.observations||0)+' matched outcomes; '
-          +Number(metric.eligibleStartDates||0)+' distinct start dates)';
+        return currency+': pending ('+Number(metric.observations||0)+' source-qualified outcomes; '
+          +Number(metric.eligibleStartDates||0)+' qualified start dates; '
+          +Number(metric.excludedComparisons||0)+' exclusions)';
       return currency+': exploratory guide-price MAE '+Number(metric.mae).toFixed(3)
         +', direction '+Math.round(100*Number(metric.directional))+'%';
     });
@@ -1207,7 +1216,7 @@ function renderBacktest() {
   $('#backtestContent').innerHTML = `<div class="panel"><h3>Historical return evidence</h3>
     ${published}</div>
     <div class="panel"><h3>Versioned 30 / 90 / 180-day holdouts</h3>
-      <p>Old model forecasts stay associated with the version that generated them. Future price-guide observations are compared only after the calendar horizon has elapsed. EUR and USD are never mixed. A minimum of three dated forecast snapshots and 30 matched observations is required before exploratory metrics are shown.</p>
+      <p>Old forecasts stay associated with their original model version. Backtests require the same verified supplier product, a fresh upstream publication date on both sides, and a new source observation after the full 30/90/180-day calendar horizon. Re-downloaded old quotes and undated price guides are excluded. EUR and USD never mix; at least three qualified start dates and 30 matched outcomes are needed for exploratory metrics.</p>
       ${report.snapshots==null?'<p>Versioned report pending the next data refresh.</p>':
         '<p>Captured market snapshots: '+Number(report.snapshots).toLocaleString()+
         '. Versions: '+esc((report.modelVersions||[]).join(', ')||'None yet')+'.</p>'}
