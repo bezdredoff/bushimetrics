@@ -4,6 +4,7 @@ An unlinked, manually entered price is a research indication, NOT a verified
 sale or guide price. It must never silently overwrite the price and evidence
 metadata of a different provider. Keep source age separate from sample confidence.
 """
+import math
 from datetime import date, datetime, timezone
 from urllib.parse import urlparse
 
@@ -41,6 +42,32 @@ def observation_age_days(value, today=None):
     return age if age >= 0 else None
 
 
+def positive_market(value):
+    try:
+        amount=float(value)
+        return math.isfinite(amount) and amount>0 and not isinstance(value,bool)
+    except (TypeError,ValueError,OverflowError):
+        return False
+
+
+def is_completed_sale_sample(row):
+    """Require actual Palworld provider evidence, not source-like keywords."""
+    if not isinstance(row,dict) or not positive_market(row.get('market')):
+        return False
+    url=urlparse(str(row.get('marketSourceUrl') or ''))
+    return (
+        str(row.get('priceSource') or '').startswith('Palworld Prices')
+        and url.scheme=='https'
+        and url.hostname in ('palworldprices.com','www.palworldprices.com')
+        and bool(row.get('palworldPricesCardId'))
+        and row.get('marketKind') in ('bare','thin')
+        and isinstance(row.get('salesInBasis'),(int,float))
+        and not isinstance(row.get('salesInBasis'),bool)
+        and math.isfinite(row['salesInBasis'])
+        and row['salesInBasis']>0
+    )
+
+
 def choose_usd_market(code, provider_prices, palworld_prices,
                       manual_overrides, seed_prices):
     """Return one atomic source record and a separate unsourced indication.
@@ -48,10 +75,24 @@ def choose_usd_market(code, provider_prices, palworld_prices,
     No mixing of sale samples/source URLs from one supplier with a market price
     from another supplier. Unlinked manual/seed prices remain outside market.
     """
-    chosen = None
-    for candidate in (palworld_prices.get(code), provider_prices.get(code)):
-        if candidate and candidate.get("market") is not None:
-            chosen = dict(candidate)
+    pal=palworld_prices.get(code) or {}
+    guide=provider_prices.get(code) or {}
+    chosen=None
+    if is_completed_sale_sample(pal):
+        # Completed-sale samples are materially different evidence from a
+        # market guide. Never let iteration order overwrite a real-sale
+        # sample with a TCGplayer/TCGCSV price guide.
+        chosen=dict(pal)
+        chosen['marketSelectionReason']=(
+            'completed-sales-preferred-over-provider-guide'
+            if positive_market(guide.get('market')) else 'completed-sales'
+        )
+    elif positive_market(guide.get('market')):
+        chosen=dict(guide)
+        chosen['marketSelectionReason']='provider-price-guide-or-estimate'
+    elif positive_market(pal.get('market')):
+        chosen=dict(pal)
+        chosen['marketSelectionReason']='unqualified-provider-price-no-sale-proof'
     indication = {}
     manual = manual_overrides.get(code) or {}
     if manual.get("market") is not None:
@@ -63,6 +104,7 @@ def choose_usd_market(code, provider_prices, palworld_prices,
             chosen = dict(manual)
             chosen["marketAsOf"] = as_of
             chosen["marketEvidenceStatus"] = "linked-manual-observation"
+            chosen["marketSelectionReason"] = "explicit-linked-manual-override"
         else:
             indication = {
                 "unverifiedMarketIndicationUSD": manual["market"],
@@ -88,10 +130,7 @@ def describe_usd_evidence(source, today=None):
     source_url = source.get("marketSourceUrl")
     status = source.get("marketEvidenceStatus")
     if not status:
-        if (external_evidence_url(source_url)
-                and source.get("marketKind") in ("bare", "thin")
-                and isinstance(source.get("salesInBasis"), (int, float))
-                and source["salesInBasis"] > 0):
+        if is_completed_sale_sample(source):
             status = "completed-sale-sample"
         elif external_evidence_url(source_url):
             status = "market-price-guide-or-provider-estimate"
