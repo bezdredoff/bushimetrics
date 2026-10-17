@@ -6,7 +6,7 @@ catalog usable. A daily request budget lets even the free tier fill the cache
 progressively instead of blocking a refresh.
 """
 from __future__ import annotations
-import json,os,time
+import json,math,os,re,time
 from datetime import datetime,timezone,timedelta
 from pathlib import Path
 from urllib.parse import quote
@@ -30,30 +30,95 @@ def flatten(x):
     elif isinstance(x,list):
         for v in x: yield from flatten(v)
 
-def pick_candidate(payload, code):
-    code_l=code.lower()
-    candidates=[]
-    for d in flatten(payload):
-        if not isinstance(d,dict):continue
-        hay=' '.join(str(d.get(k) or '') for k in ('number','card_number','cardNumber','name','product_name','code')).lower()
-        if code_l in hay:
-            candidates.append(d)
-    if not candidates:return None
-    exact=[]
-    for d in candidates:
-        vals=[str(d.get(k) or '').lower() for k in ('number','card_number','cardNumber','code')]
-        if code_l in vals: exact.append(d)
-    return (exact or candidates)[0]
+SOURCE_RARITY_ALIASES={
+    'SPECIALRARE':'SP','SUPERSPECIALRARE':'SSP','SECRET RARE':'SEC',
+    'SECRETRARE':'SEC','SUPERRARE':'SR','TRIPLERARE':'RRR',
+    'SUPERSECRETRARE':'SSS','OVERFRAMERARE':'OFR',
+}
+PREMIUM_PRINTING_TYPES={'FOIL','HOLOFOIL'}
 
-def price_row(payload):
-    rows=[]
-    for d in flatten(payload):
-        if not isinstance(d,dict):continue
-        if any(k in d for k in ('market_price','marketPrice','low_price','price_change_7d')):
-            rows.append(d)
-    if not rows:return None
-    rows.sort(key=lambda d:(str(d.get('printing') or '').lower() not in ('foil','holofoil'), -(float(d.get('market_price') or d.get('marketPrice') or 0))))
-    return rows[0]
+
+def normalized_code(value):
+    return re.sub(r'\s+','',str(value or '')).upper()
+
+
+def normalized_rarity(value):
+    raw=re.sub(r'[\s_-]+','',str(value or '')).upper()
+    return SOURCE_RARITY_ALIASES.get(raw,raw)
+
+
+def positive_price(value):
+    try:
+        amount=float(value)
+        return amount if math.isfinite(amount) and amount>0 else None
+    except (ValueError,TypeError,OverflowError):
+        return None
+
+
+def exact_identity(candidate,code,rarity):
+    """Printed number AND explicit premium rarity must match target."""
+    if not isinstance(candidate,dict) or candidate.get('id') is None:
+        return False
+    slug=candidate.get('game_slug') or candidate.get('game_name')
+    if slug and str(slug).lower().strip() not in (
+        'weiss-schwarz','weiss schwarz','weiss'
+    ):
+        return False
+    ids=[candidate.get(k) for k in ('number','card_number','cardNumber','code')]
+    if not any(normalized_code(n)==normalized_code(code) for n in ids):
+        return False
+    source_rarity=normalized_rarity(candidate.get('rarity'))
+    if not source_rarity or source_rarity!=normalized_rarity(rarity):
+        return False
+    return True
+
+
+def pick_candidate(payload,code,rarity=None):
+    """A fuzzy title/subcode match can never price a different signed parallel.
+
+    If two different provider IDs assert the same printed code/rarity, leave
+    the identity unresolved. The input search response ordering is irrelevant.
+    """
+    matches={}
+    for candidate in flatten(payload):
+        if not exact_identity(candidate,code,rarity):
+            continue
+        identifier=str(candidate['id'])
+        if identifier in matches:
+            continue
+        matches[identifier]=candidate
+    return next(iter(matches.values())) if len(matches)==1 else None
+
+
+def price_row(payload,card_id=None,rarity=None,today=None):
+    """Require exactly one dated foil price of the selected premium product."""
+    from market_provenance import observation_age_days,OUTDATED_AFTER_DAYS
+    if normalized_rarity(rarity) not in PREMIUM:
+        return None
+    rows={}
+    for item in flatten(payload):
+        if not isinstance(item,dict):
+            continue
+        value=item.get('market_price')
+        if value is None:value=item.get('marketPrice')
+        amount=positive_price(value)
+        if amount is None:
+            continue
+        printing=str(item.get('printing') or '').strip().upper()
+        if printing not in PREMIUM_PRINTING_TYPES:
+            continue
+        pid=item.get('card_id')
+        if pid is not None and str(pid)!=str(card_id):
+            continue
+        asof=item.get('market_price_as_of') or item.get('marketPriceAsOf')
+        age=observation_age_days(asof,today=today)
+        if age is None or age>OUTDATED_AFTER_DAYS:
+            continue
+        # Deduplicate repeated JSON copies of exactly the same provider quote.
+        key=(str(card_id),printing,round(amount,6),str(asof))
+        rows[key]=item
+    return next(iter(rows.values())) if len(rows)==1 else None
+
 
 def get_json(session,url,key):
     r=session.get(url,headers={'User-Agent':UA,'X-API-Key':key},timeout=30)
@@ -80,7 +145,7 @@ def main():
     for c in premium:
         old=cardcache.get(c['code'])
         fresh=False
-        if old and old.get('checkedAt'):
+        if old and old.get('checkedAt') and old.get('marketIdentityStatus')=='exact-code-rarity-foil-dated':
             try:fresh=datetime.fromisoformat(old['checkedAt'].replace('Z','+00:00'))>=stale_before
             except:pass
         if not fresh:todo.append(c)
