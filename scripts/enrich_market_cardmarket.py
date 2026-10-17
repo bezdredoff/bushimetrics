@@ -277,6 +277,11 @@ def match_cardmarket(cards, products, guides, *, max_examples=40):
 
     stats['matchedCards']=len(matched)
     stats['matchMethods']=dict(sorted(methods.items()))
+    stats['titleOnlyProvisional']=methods.get(
+        'unique-normal-name-unverified-source-treatment',0)
+    stats['numberMatched']=sum(
+        value for method,value in methods.items()
+        if method.startswith('verified-collector-number'))
     stats['rejectedProductRows']=sum(
         stats[key] for key in (
             'explicitNumberNotFound','explicitNumberAmbiguous',
