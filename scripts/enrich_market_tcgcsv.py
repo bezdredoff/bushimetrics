@@ -89,6 +89,24 @@ def choose_price(rows, rarity):
     return None,'ambiguous-unverified-subtypes'
 
 
+def finalize_candidates(candidates, max_examples=30):
+    """No arbitrary first-product winner for one collector number."""
+    matched={}
+    examples=[]
+    collisions=0
+    duplicate_products=0
+    for code,rows in sorted(candidates.items()):
+        if len(rows)>1:
+            collisions+=1
+            duplicate_products+=len(rows)-1
+            if len(examples)<max_examples:
+                examples.append({'collectorCode':code,
+                                 'productIds':sorted(rows)})
+            continue
+        matched[code]=next(iter(rows.values()))
+    return matched,collisions,duplicate_products,examples
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--max-groups',type=int,default=0,help='Smoke-test only the first N groups; 0 means all groups.')
@@ -179,18 +197,10 @@ def main():
                   'candidate printing codes',len(candidates),flush=True)
         time.sleep(.15)
 
-    matched={}
-    for code,rows in sorted(candidates.items()):
-        if len(rows)>1:
-            stats['collisionCodeGroups']+=1
-            stats['duplicateProducts']+=len(rows)-1
-            if len(stats['collisionExamples'])<30:
-                stats['collisionExamples'].append({
-                    'collectorCode':code,
-                    'productIds':sorted(rows)
-                })
-            continue
-        matched[code]=next(iter(rows.values()))
+    matched,collisions,duplicates,examples=finalize_candidates(candidates)
+    stats['collisionCodeGroups']=collisions
+    stats['duplicateProducts']=duplicates
+    stats['collisionExamples']=examples
 
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),
