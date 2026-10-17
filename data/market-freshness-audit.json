@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-17T10:26:33.834284+00:00",
+  "staleAfterDays": 14,
+  "currencies": {
+    "USD": {
+      "priced": 2303,
+      "fresh": 0,
+      "stale": 253,
+      "undated": 2050,
+      "invalid-or-future-date": 0
+    },
+    "EUR": {
+      "priced": 8097,
+      "fresh": 8097,
+      "stale": 0,
+      "undated": 0,
+      "invalid-or-future-date": 0
+    }
+  },
+  "providers": [
+    {
+      "currency": "EUR",
+      "name": "Cardmarket price guide",
+      "priced": 8097,
+      "fresh": 8097
+    },
+    {
+      "currency": "USD",
+      "name": "Palworld Prices completed-sale sample",
+      "priced": 253,
+      "stale": 253
+    },
+    {
+      "currency": "USD",
+      "name": "TCGCSV / TCGplayer price guide",
+      "priced": 2050,
+      "undated": 2050
+    }
+  ],
+  "notes": [
+    "Price guide observations are not completed sales.",
+    "A successful API fetch today is not proof of a fresh source observation.",
+    "Source timestamps missing or in the future are not silently replaced by catalog build time.",
+    "A card with EUR and USD prices contributes to both currency totals.",
+    "Source sample confidence and calendar age are independent factors."
+  ]
+}
