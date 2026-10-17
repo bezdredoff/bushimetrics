@@ -4,7 +4,7 @@ import hashlib,json,math,re
 from collections import defaultdict
 from datetime import datetime,timezone
 from pathlib import Path
-from market_provenance import choose_usd_market, describe_usd_evidence, audit_manual_prices
+from market_provenance import choose_usd_market, describe_usd_evidence, audit_manual_prices, combine_usd_guide_sources
 from market_freshness import eur_evidence, audit_market_freshness
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -350,10 +350,18 @@ def main():
     market_overrides=market_file.get('cards',{})
     tcgcsv_file=read(MARKET/'tcgcsv.json',{'cards':{}})
     tcgcsv=tcgcsv_file.get('cards',{})
-    tcgapi=read(MARKET/'tcgapi.json',{'cards':{}}).get('cards',{})
-    # Public TCGCSV is the baseline USD layer; optional TCG API overrides it
-    # when a fresher authenticated row exists for the same collector number.
-    usd_market={**tcgcsv,**{code:row for code,row in tcgapi.items() if row.get('market') is not None}}
+    tcgapi_file=read(MARKET/'tcgapi.json',{'cards':{}})
+    tcgapi=tcgapi_file.get('cards',{})
+    # Optional authenticated data is NOT trusted by its mere presence in
+    # the local cache. It must meet the exact printed-identity, foil, and
+    # upstream publication-date gate before replacing a TCGCSV guide.
+    usd_market,tcgapi_guide_audit=combine_usd_guide_sources(tcgcsv,tcgapi)
+    tcgapi_guide_audit['status']=(
+        'not-configured-no-price-cache' if not tcgapi else
+        'source-qualified-selections' if tcgapi_guide_audit['tcgapiQualifiedSelections'] else
+        'no-qualified-selections-or-legacy-cache'
+    )
+    tcgapi_guide_audit['cacheGeneratedAt']=tcgapi_file.get('generatedAt')
     palworldprices_file=read(MARKET/'palworldprices.json',{'cards':{}})
     palworldprices=palworldprices_file.get('cards',{})
     cardmarket_file=read(MARKET/'cardmarket.json',{'cards':{}})
@@ -540,6 +548,13 @@ def main():
     )
     print('Palworld source-identity audit',palworld_audit['status'],
           'priced',palworld_audit['pricedPrintings'])
+    (DATA/'tcgapi-identity-audit.json').write_text(
+        json.dumps(tcgapi_guide_audit,indent=2,ensure_ascii=False),
+        encoding='utf-8'
+    )
+    print('Optional TCG API premium identity audit',
+          tcgapi_guide_audit['status'],
+          tcgapi_guide_audit['tcgapiQualifiedSelections'])
     source_audit=audit_manual_prices(market_overrides)
     source_audit['generatedAt']=payload['generatedAt']
     (DATA/'market-source-audit.json').write_text(json.dumps(source_audit,indent=2),encoding='utf-8')
