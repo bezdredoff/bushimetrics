@@ -10,7 +10,7 @@ import json,math,os,re,time
 from datetime import datetime,timezone,timedelta
 from pathlib import Path
 from urllib.parse import quote
-import requests
+
 
 ROOT=Path(__file__).resolve().parents[1]
 RAW=ROOT/'data/raw/weiss.json'
@@ -151,6 +151,7 @@ def main():
         if not fresh:todo.append(c)
     cursor=int(cache.get('cursor') or 0)
     if todo: todo=todo[cursor%len(todo):]+todo[:cursor%len(todo)]
+    import requests
     s=requests.Session();used=0;done=0
     for c in todo:
         if used>=budget:break
