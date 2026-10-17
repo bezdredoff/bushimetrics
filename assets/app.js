@@ -465,6 +465,7 @@ document.addEventListener('error', event => {
   // The viewer reuses this exact <img> for next/previous cards and zoom.
   // Do not replace its DOM node after all artwork fallbacks fail.
   if (img.id === 'viewerImage') {
+    img.dataset.artFallback = 'unavailable';
     img.style.display = 'none';
     const placeholder = $('#viewerPlaceholder');
     if (placeholder) {
@@ -667,13 +668,19 @@ function renderViewer() {
 
   const viewerImg = $('#viewerImage');
   const viewerPlaceholder = $('#viewerPlaceholder');
-  viewerImg.style.display = c.image ? 'block' : 'none';
+  const printingKey = c.id + '|' + (c.image || '');
+  // Avoid restarting a successful retry when the same card is rendered again
+  // (hydration, Watch, Compare, model updates); reset only on a different card.
+  if (viewerImg.dataset.viewerPrintingKey !== printingKey) {
+    viewerImg.dataset.viewerPrintingKey = printingKey;
+    viewerImg.dataset.artFallback = '';
+    if (c.image) viewerImg.src = c.image;
+    else viewerImg.removeAttribute('src');
+  }
+  const artworkUnavailable = viewerImg.dataset.artFallback === 'unavailable';
+  viewerImg.style.display = c.image && !artworkUnavailable ? 'block' : 'none';
   viewerPlaceholder.textContent = c.image ? 'Artwork unavailable' : 'Preview unavailable';
-  viewerPlaceholder.classList.toggle('hidden', !!c.image);
-  // Previous card's retry state must not carry into a newly opened printing.
-  viewerImg.dataset.artFallback = '';
-  if (c.image) viewerImg.src = c.image;
-  else viewerImg.removeAttribute('src');
+  viewerPlaceholder.classList.toggle('hidden', !!c.image && !artworkUnavailable);
 
   $('#viewerGame').textContent = gameLabel(c.game);
   $('#viewerName').textContent = c.name;
