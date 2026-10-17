@@ -211,7 +211,7 @@ def match_cardmarket(cards, products, guides, *, max_examples=40):
                 base={'C','U','R','RR','CC','CR','N','TD'}
                 raw_name=str(product.get('name') or '')
                 suspect=bool(VERSION_RE.search(raw_name)) or bool(
-                    re.search(r'\\b(foil|signed|serialized|parallel|alt[ -]?art)\\b',
+                    re.search(r'\b(foil|signed|serialized|parallel|alt[ -]?art)\b',
                               raw_name,re.I)
                 )
                 if len(matches)!=1 or str(matches[0].get('rarity') or '').upper() not in base or suspect:
