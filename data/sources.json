@@ -50,8 +50,8 @@
     }
   ],
   "methodology": {
-    "title": "Investment Quality + Peer Fair Value v0.7",
-    "description": "Transparent heuristic model with a data-driven peer-relative Character Premium layer; walk-forward calibration remains pending until enough immutable daily snapshots accumulate.",
+    "title": "Investment Quality + Peer Fair Value v0.8 (target-independent)",
+    "description": "Transparent heuristic model with a data-driven peer-relative Character Premium layer; walk-forward calibration remains pending until enough immutable daily snapshots accumulate. Peer Fair Value v0.8 prevents the target price from feeding back through other cards' subject normalizations. Its confidence bands are sample-size labels only.",
     "factors": [
       {
         "name": "Structural scarcity",
@@ -99,7 +99,7 @@
         "description": "First edition / distinguishable reprint structure, only when verified."
       }
     ],
-    "fairValue": "Peer Fair Value is a leave-one-out cross-sectional prediction: median observed price of other printings with the same set/rarity/currency × collector-subject premium estimated from other printings of that subject. The target card's own observed price is excluded. If peer support is insufficient, Fair Value is N/A rather than imputed.",
+    "fairValue": "Peer Fair Value v0.8 is a target-independent, cross-sectional cohort estimate. Same-set, same-rarity, same-currency peers exclude the target card. Subject-premium observations from another card in that rarity cohort re-normalize against a median excluding BOTH the subject observation and the target; this prevents target price from indirectly contaminating its own estimate. No observed peer group or subject support means Fair Value is unavailable. Confidence bands refer only to peer sample sizes, not fitted prediction accuracy; source prices may be market guides rather than completed sales. Walk-forward calibration remains pending.",
     "backtest": "Daily compact market snapshots are stored without future data. 30/90/180-day MAE and directional accuracy will only be shown after each horizon has genuinely elapsed.",
     "characterPremium": "Subject Premium controls for rarity before measuring demand. Palworld uses the Pal/subject before the subtitle; Weiss Character cards use a best-effort subject parser (for example, the name after a title/comma). Index 100 means in-line with same-set/same-rarity peers. This descriptive index may include the card's own market observation; Fair Value uses a separate leave-one-out subject ratio.",
     "demandPressure": "Current absorption proxy = completed sales / (completed sales + fresh asks) where both inputs exist. Market Heat is a cross-sectional percentile among cards with pressure data, not a historical HYPE score.",

@@ -112,3 +112,26 @@ observations recent.
 
 Data freshness is not proof of trading liquidity, authentic completed-sales
 provenance, validated grading results, or investment predictiveness.
+
+## Peer Fair Value v0.8: independent target holdout
+
+Previous code excluded the target market quote from the primary
+same-set/same-rarity median, **but the target could still leak back** through
+a second card's precomputed subject premium: that second card's relative
+rarity median had itself been calculated using the target card's price.
+
+v0.8 removes the held-out target from **every** same-rarity peer normalization
+used in its own forecast. When computing the premium of a different subject
+printing with the same rarity, both that peer and the held-out target are
+excluded from the comparison baseline. Ratios from different rarity cohorts
+are still safe because the held-out target was never in their denominators.
+This is tested by increasing a target's EUR quote 100-fold: its own Fair
+Value, peer median, subject premium and sample counts must remain identical.
+
+Confidence thresholds still describe only the number of usable peer
+observations and **do not indicate calibrated return prediction skill**.
+EUR peers are Cardmarket guide estimates, not necessarily actual completed
+sales; USD peer evidence varies by provider. Never interpret these estimates
+as tradeable bids or guaranteed realizable proceeds. Existing immutable daily
+snapshots retain their original model version; do not rewrite old forecasts
+when methodology changes.
