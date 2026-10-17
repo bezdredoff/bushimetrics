@@ -45,7 +45,7 @@ function checkedBackup(value) {
   };
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, marketAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, sources: {}, marketAudit: {}, marketFreshness: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(storedIds('bm-watch',10000)),
@@ -100,6 +100,9 @@ function expandBrowserCard(x) {
     marketKind:x.mk, marketConfidence:x.mc, confidence:x.cf,
     marketEvidenceStatus:x.es, marketObservationAgeDays:x.ea,
     marketStale:x.st, unverifiedMarketIndicationUSD:x.ui,
+    marketRetrievedAt:x.mt, marketSourceUrl:x.su,
+    marketEURAgeDays:x.eg, marketEURStale:x.et, marketEURDateStatus:x.ed,
+    cardmarketMatch:x.cm,
     fairValueConfidence:x.fc, change7d:x.d7, change30d:x.d30,
     demandPressure:x.dp, demandPressureSales:x.ds, demandPressureAsks:x.da,
     priceSource:x.ps, priceSourceEUR:x.pe, marketAsOf:x.ma, cardmarketAsOf:x.ca,
@@ -108,7 +111,7 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, sources, jpMeta, research, marketAudit, jpIdentityAudit, enIdentityAudit] = await Promise.all([
+  const [bootstrap, history, sources, jpMeta, research, marketAudit, marketFreshness, jpIdentityAudit, enIdentityAudit] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
@@ -118,6 +121,7 @@ async function load() {
     fetch('data/catalog-weiss-jp-meta.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/research_status.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {records:[]}).catch(() => ({records:[]})),
     fetch('data/market-source-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/market-freshness-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/jp-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch('data/en-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null)
   ]);
@@ -129,6 +133,7 @@ async function load() {
   state.history = history;
   state.sources = sources;
   state.marketAudit = marketAudit || {};
+  state.marketFreshness = marketFreshness || {};
   state.jpIdentityAudit = jpIdentityAudit;
   state.enIdentityAudit = enIdentityAudit;
   state.research = research || {records:[]};
@@ -691,7 +696,8 @@ function renderViewer() {
     !observed(c) ? '<span class="badge">Public market price unavailable</span>' : '',
     observed(c) ? `<span class="badge">Price source: ${esc(observed(c).source)}</span>` : '',
     !modelFair(c) ? '<span class="badge">Model fair value unavailable</span>' : '',
-    c.market != null && c.marketStale ? '<span class="badge badge-warn">USD price observation outdated or undated</span>' : '',
+    c.market != null && c.marketStale ? '<span class="badge badge-warn">USD price observation stale or undated</span>' : '',
+    c.marketEUR != null && c.marketEURStale ? '<span class="badge badge-warn">EUR Cardmarket guide stale or undated</span>' : '',
     c.unverifiedMarketIndicationUSD != null ? '<span class="badge badge-warn">Unverified quote excluded from market data</span>' : ''
   ].join('');
 
@@ -723,10 +729,14 @@ function renderViewer() {
     return [esc(label),esc(formatted)];
   });
   $('#viewerStats').innerHTML = [
-    ['Cardmarket trend (EUR)',euro(c.marketEUR)],['Cardmarket low (EUR)',euro(c.marketEURLow)],
+    ['Cardmarket guide (EUR, not a completed sale)',euro(c.marketEUR)],
+    ['Cardmarket price guide date',c.cardmarketAsOf?esc(String(c.cardmarketAsOf)):'Unknown — not the download date'],
+    ['EUR guide age',c.marketEUR!=null ? (c.marketEURAgeDays!=null ? `${c.marketEURAgeDays} days${c.marketEURStale?' · stale':''}` : 'Undated — cannot verify freshness') : 'Not available'],
+    ['Cardmarket match method',esc(c.cardmarketMatch||'Not shown in compact data')],
+    ['Cardmarket low (EUR)',euro(c.marketEURLow)],
     ['Cardmarket 7d avg',euro(c.marketEURAvg7)],['Cardmarket 30d avg',euro(c.marketEURAvg30)],
     ['USD market price / estimate',c.marketKind==='thin' ? '~'+money(c.market) : money(c.market)],['TCGPlayer low (USD)',money(c.marketLow)],['TCGPlayer median (USD)',money(c.marketMedian)],
-    ['USD evidence class',esc(c.marketEvidenceStatus||'Not available in this catalog view')],['USD observation age',c.marketObservationAgeDays!=null ? `${c.marketObservationAgeDays} days${c.marketStale ? ' · stale':''}` : 'Date unknown'],['Unverified research quote (not market)',c.unverifiedMarketIndicationUSD!=null ? `${money(c.unverifiedMarketIndicationUSD)} · not used in calculations` : '—'],['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
+    ['USD evidence class',esc(c.marketEvidenceStatus||'Not available in this catalog view')],['USD observation age',c.market!=null ? (c.marketObservationAgeDays!=null ? `${c.marketObservationAgeDays} days${c.marketStale ? ' · stale':''}` : 'Undated — cannot verify freshness') : 'Not available'],['Unverified research quote (not market)',c.unverifiedMarketIndicationUSD!=null ? `${money(c.unverifiedMarketIndicationUSD)} · not used in calculations` : '—'],['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
     ['Peer fair value',fairLabel(c)],['Fair-value gap',pct(c.gap)],['Fair confidence',c.fairValueConfidence||'None'],['Fair method',c.fairValueMethod||'Insufficient peers'],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
     ['Price-change momentum (heuristic)', c.change7d!=null || c.change30d!=null ? `${c.momentum}/100` : 'Unavailable — no measured price change'],['Observed demand / inventory proxy',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · cross-sectional P${c.marketHeatPercentile??'—'} (not historical HYPE)`:'Unavailable — no verified sales and inventory observations'],['Investment quality',`${c.investment}/100`],
     ['Character premium',c.characterPremiumIndex!=null ? `${c.characterPremiumIndex} index · ${c.characterPremiumObservations||0} obs · ${c.characterPremiumConfidence||'Low'}` : 'Not enough peer pricing'],['Fair peers',c.fairValuePeerCount!=null ? `${c.fairValuePeerCount} rarity peers · ${c.fairValueSubjectObservations||0} subject obs` : '—'],
@@ -1188,6 +1198,23 @@ function renderSources() {
       <div class="stat"><span>Missing independent source or card-level date</span><b>${Number(state.marketAudit.indicationOnly||0).toLocaleString()}</b></div>
       <div class="stat"><span>Linked and dated records</span><b>${Number(state.marketAudit.linkedDated||0).toLocaleString()}</b></div>
     </div>
+  </div>
+  <div class="panel"><h3>Market price-source freshness</h3><p>Each currency has its own source date. A successful download is not proof that price observations were published today. Price guides are not completed sales.</p>
+    ${state.marketFreshness.currencies ? '<div class="stat-list">'+
+      ['USD','EUR'].map(currency=>{
+        const counts=state.marketFreshness.currencies[currency]||{};
+        return '<div class="stat"><span>'+currency+' public price records</span><b>'+Number(counts.priced||0).toLocaleString()+
+          ' · '+Number(counts.fresh||0).toLocaleString()+' recent, '+
+          Number(counts.stale||0).toLocaleString()+' old, '+
+          (Number(counts.undated||0)+Number(counts['invalid-or-future-date']||0)).toLocaleString()+' undated/invalid</b></div>';
+      }).join('')+'</div>' :
+      '<p>Source freshness report pending next scheduled catalog refresh.</p>'}
+    ${(state.marketFreshness.providers||[]).length ?
+      '<p>Source breakdown:</p><div class="stat-list">'+
+      state.marketFreshness.providers.map(p=>'<div class="stat"><span>'+esc(p.name)+' ('+esc(p.currency)+')</span><b>'+
+        Number(p.priced||0).toLocaleString()+' priced · '+
+        Number(p.stale||0).toLocaleString()+' stale · '+
+        Number(p.undated||0).toLocaleString()+' undated</b></div>').join('')+'</div>' : ''}
   </div>
   <div class="panel"><h3>Artwork data limitations</h3><p>Coverage means a catalog record contains an artwork URL — not that the remote image exists or loads successfully. Broken sources may fall back to alternative paths or an unavailable placeholder. Japanese image links are not verified in bulk. A bounded weekly sample of 16 sets independently tests actual image responses, with HTTP blocks/timeout labelled inconclusive. <a href="https://github.com/bezdredoff/bushimetrics/actions/workflows/jp-artwork-health.yml" target="_blank" rel="noreferrer">View image-health sampling runs and evidence</a>.</p></div>
   <div class="panel"><h3>Model boundaries</h3><p>Observed market prices, retailer asks, catalog identity and model outputs remain separate. A missing price stays missing. Fair Value and Investment Quality are research estimates, not guaranteed returns.</p></div>`;

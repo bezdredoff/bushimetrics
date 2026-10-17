@@ -75,3 +75,40 @@ No watchlist, portfolio or comparison data is uploaded to a server by this featu
 - Sampling status never implies all Japanese card artwork is verified. Confidence in the catalog remains limited by independent proof of each remote image; separate source identity and pricing audits remain in place.
 
 [See sampled results in GitHub Actions](https://github.com/bezdredoff/bushimetrics/actions/workflows/jp-artwork-health.yml).
+
+## Market data dates vs download timestamps — USD & EUR
+
+The catalog differentiates three things that were previously conflated in some
+data sources: **provider price publication date**, **local cache fetch time**,
+and **sample confidence**. Fetching a provider file now does not make its market
+observations recent.
+
+- TCGCSV/TGCPlayer public market prices are price-guide figures, not
+  independently verified completed sales. The daily fetch time is now
+  `marketRetrievedAt`, **not** `marketAsOf`. When the mirror does not
+  identify a price-observation date, the price remains available but explicitly
+  **undated**.
+- The Cardmarket public EUR guide uses the upstream
+  `price_guide_10.json.createdAt` as `cardmarketAsOf`. If the provider does
+  not supply an interpretable publication date, the catalog never substitutes
+  its own `generatedAt`; it reports unknown source freshness.
+- Palworld Prices' completed-sale sample dates continue to use the actual
+  upstream `asOf`. Sample size, date age, and whether a price is a guide or
+  completed-sale median are separate.
+- Optional TCG API and linked manual USD observations retain their own
+  provider-specific dates; missing or future/invalid dates are flagged.
+- The catalog derives EUR `marketEURAgeDays`, `marketEURStale` and
+  `marketEURDateStatus`; existing USD `marketObservationAgeDays` and
+  `marketStale` remain independent. The current threshold is **older than
+  14 days**. Unknown dates are *not* assumed fresh.
+- The generated `data/market-freshness-audit.json` gives independent
+  price-record totals for both currencies and each provider, grouped into
+  recent, old, undated and invalid/future dates. **A printing priced in both
+  EUR and USD is counted in each currency; totals are not distinct cards.**
+- This summary is shown in Sources, with per-printing EUR information in the
+  viewer. Where a source date is absent, the viewer explicitly says it cannot
+  verify freshness. This does **not** change public prices or imply that
+  older observations have no value.
+
+Data freshness is not proof of trading liquidity, authentic completed-sales
+provenance, validated grading results, or investment predictiveness.

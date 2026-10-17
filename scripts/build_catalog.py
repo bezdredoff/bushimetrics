@@ -5,6 +5,7 @@ from collections import defaultdict
 from datetime import datetime,timezone
 from pathlib import Path
 from market_provenance import choose_usd_market, describe_usd_evidence, audit_manual_prices
+from market_freshness import eur_evidence, audit_market_freshness
 
 ROOT=Path(__file__).resolve().parents[1]
 DATA=ROOT/'data'; RAW=DATA/'raw'; MARKET=DATA/'market'
@@ -217,7 +218,8 @@ def apply_market(c,price_sources,palworldprices,manual_market,seed_market):
       'marketMethod':'marketMethod','salesInBasis':'salesInBasis','salesInWindow':'salesInWindow',
       'marketAskCount':'marketAskCount','marketAskLow':'marketAskLow','marketAskMedian':'marketAskMedian',
       'marketAskSpreadPct':'marketAskSpreadPct','marketAskAsOf':'marketAskAsOf','marketStale':'marketStale',
-      'palworldPricesCardId':'palworldPricesCardId'
+      'palworldPricesCardId':'palworldPricesCardId',
+      'marketRetrievedAt':'marketRetrievedAt','checkedAt':'marketRetrievedAt'
     }
     for a,b in mapping.items():
         if source.get(a) is not None:
@@ -301,7 +303,10 @@ def main():
     palworldprices=palworldprices_file.get('cards',{})
     cardmarket_file=read(MARKET/'cardmarket.json',{'cards':{}})
     cardmarket=cardmarket_file.get('cards',{})
-    cardmarket_asof=cardmarket_file.get('cardmarketCreatedAt') or cardmarket_file.get('generatedAt')
+    # Only the provider's guide publication date can be treated as the date
+    # of its market price. generatedAt is our cache-fetch time, not a price date.
+    cardmarket_asof=cardmarket_file.get('cardmarketCreatedAt')
+    cardmarket_retrieved_at=cardmarket_file.get('generatedAt')
     set_priors=manual.get('setPriors',{}); game_priors=manual.get('gamePriors',{})
     scarcity_evidence=read(DATA/'scarcity.json',{'evidence':[]}).get('evidence',[])
 
@@ -336,8 +341,10 @@ def main():
         if cm:
             for k,v in cm.items():
                 if v is not None:c[k]=v
-            c['cardmarketAsOf']=cardmarket_asof
-            c['priceSourceEUR']='Cardmarket public daily price guide'
+            if cm.get('marketEUR') is not None:
+                c['cardmarketAsOf']=cardmarket_asof
+                c['priceSourceEUR']='Cardmarket public daily price guide'
+                c.update(eur_evidence(cardmarket_asof, cardmarket_retrieved_at))
         c['priceSource']=c.get('priceSource') or 'Market enrichment pending'
         c['id']=stable(c)
         if c['id'] in seen:continue
@@ -400,6 +407,11 @@ def main():
     source_audit=audit_manual_prices(market_overrides)
     source_audit['generatedAt']=payload['generatedAt']
     (DATA/'market-source-audit.json').write_text(json.dumps(source_audit,indent=2),encoding='utf-8')
+    freshness=audit_market_freshness(out, generated_at=payload['generatedAt'])
+    (DATA/'market-freshness-audit.json').write_text(
+        json.dumps(freshness,indent=2,ensure_ascii=False),encoding='utf-8'
+    )
+    print('market freshness audit',freshness['currencies'])
     print('market source audit',source_audit)
     print(counts)
 

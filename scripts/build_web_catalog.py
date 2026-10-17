@@ -27,10 +27,13 @@ SEARCH_FIELDS={
     'characterPremiumObservations':'co','marketKind':'mk','marketConfidence':'mc',
     'marketEvidenceStatus':'es','marketObservationAgeDays':'ea',
     'marketStale':'st','unverifiedMarketIndicationUSD':'ui',
+    'marketAsOf':'ma','cardmarketAsOf':'ca',
+    'marketEURAgeDays':'eg','marketEURStale':'et',
+    'marketEURDateStatus':'ed','cardmarketMatch':'cm',
     'confidence':'cf','fairValueConfidence':'fc','change7d':'d7','change30d':'d30',
     'demandPressure':'dp','cardType':'ct','color':'cl'
 }
-BOOT_EXTRA={'image':'im','priceSource':'ps','priceSourceEUR':'pe','marketAsOf':'ma','cardmarketAsOf':'ca'}
+BOOT_EXTRA={'image':'im','priceSource':'ps','priceSourceEUR':'pe','marketSourceUrl':'su','marketRetrievedAt':'mt'}
 
 def slug(s):
     base=re.sub(r'[^a-z0-9]+','-',str(s or 'set').lower()).strip('-')[:72] or 'set'
