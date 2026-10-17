@@ -198,7 +198,7 @@ def build_report(snapshots,versions,*,generated_at=None,
                             current,later,market_key,fair_key,
                             start_day,end_day,horizon
                         )
-                         if reason is not None:
+                        if reason is not None:
                             excluded[reason]+=1
                             continue
                         first[cid]=current
