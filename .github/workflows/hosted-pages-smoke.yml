@@ -1,0 +1,70 @@
+name: Hosted GitHub Pages acceptance
+
+on:
+  pull_request:
+    paths:
+      - tests/hosted_pages_smoke.py
+      - tests/test_hosted_pages.py
+      - .github/workflows/hosted-pages-smoke.yml
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - assets/app.js
+      - .github/workflows/hosted-pages-smoke.yml
+  schedule:
+    - cron: '37 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hosted-pages-smoke
+  cancel-in-progress: false
+
+jobs:
+  published-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PAGES_BASE_URL: https://bezdredoff.github.io/bushimetrics/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'push' && 'main' || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test publication-probe rules
+        run: python -m unittest discover -s tests -p 'test_hosted_pages.py' -v
+      - name: Install Chromium
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Wait briefly for Pages publication after a main push
+        if: github.event_name == 'push'
+        run: |
+          for attempt in 1 2 3 4; do
+            if python tests/hosted_pages_smoke.py --skip-browser --output artifacts/pages-smoke-probe.json; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 4 ]; then
+              echo "Waiting for Pages to publish the newest main data (attempt $attempt)"
+              sleep 45
+            fi
+          done
+          echo "Pages is still stale, missing or unreachable"
+          exit 1
+      - name: Hosted Chromium acceptance (desktop and mobile)
+        # Always run diagnostics even if the source-vs-deployment probe failed.
+        if: always()
+        run: python tests/hosted_pages_smoke.py --output artifacts/hosted-pages-smoke.json
+      - name: Upload hosted publication evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-pages-acceptance
+          path: artifacts/
+          retention-days: 14
+          if-no-files-found: warn
