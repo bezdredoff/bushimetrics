@@ -273,3 +273,43 @@ Tests use fabricated fixtures for legacy/undated quotes, repeated old prices,
 future-dated source updates, changed product IDs, mismatched treatments,
 and distinct valid publications. These synthetic tests validate guardrails;
 they do NOT constitute market evidence.
+
+## Exact Palworld printing identity and sold-price precedence (2026-10-17)
+
+Palworld Prices publishes a **stable source `cardId`** plus separate
+`code` and `variant` fields. Its documentation explicitly distinguishes
+the unsuffixed `pal-BP01-001` base printing from a separately listed
+`pal-BP01-001-RR` printing: both can have printed rarity RR but are
+*different collectibles* with independent completed-sale prices. OSR,
+SP and SSP likewise have different physical identities.
+
+The importer now requires that all three source fields agree:
+`cardId == pal-{code}[-{explicit variant}]`. An explicitly suffixed
+variant must map to that **exact suffixed English printing**, never back
+to `EBP01-001` if `EBP01-001RR` (or another suffix) does not exist in
+our catalog. Unknown variants, contradictory source IDs and duplicates
+are quarantined with machine-readable reasons and limited examples.
+
+Only positive numerical `bare` or properly labelled `thin`
+**completed-sale sample estimates** populate USD market prices.
+Asking prices remain separate; provider publication date and stale flag
+are preserved. The next refresh publishes
+`data/palworld-identity-audit.json` with the unambiguous source
+printing counts, priced observations and excluded source variants.
+Older cache rows are explicitly *not* retroactively certified.
+
+USD market source choice is also provenance-aware: a traceable Palworld
+Prices completed-sale sample takes precedence over a TCGCSV or TCG API
+**price guide** on the same exact collector code, even if both records
+exist. That sample retains its actual age and confidence; the decision
+does not imply it is fresh or investment-grade. A market guide can fill
+a genuinely unpriced printing but cannot silently replace a measured
+sold-price sample. An explicitly linked, dated manual override is still
+separate and labelled as such rather than borrowing sales metadata.
+
+Source documentation: https://palworldprices.com/docs/api/
+Source attribution: Data: Palworld Prices (palworldprices.com).
+The API's public terms permit reuse with attribution and a link;
+we do not redistribute card images from this price API. Independent
+ownership/printing audits for Japan and other external sources remain
+separate tasks.
