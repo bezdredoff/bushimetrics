@@ -45,7 +45,7 @@ function checkedBackup(value) {
   };
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, backtestStatus: {}, sources: {}, marketAudit: {}, marketFreshness: {}, cardmarketAudit: {}, tcgcsvAudit: {}, palworldIdentityAudit: {}, tcgapiAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, backtestStatus: {}, sources: {}, marketAudit: {}, marketFreshness: {}, cardmarketAudit: {}, tcgcsvAudit: {}, palworldIdentityAudit: {}, tcgapiAudit: {}, currentDemandAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(storedIds('bm-watch',10000)),
@@ -114,7 +114,7 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, backtestStatus, sources, jpMeta, research, marketAudit, marketFreshness, cardmarketAudit, tcgcsvAudit, palworldIdentityAudit, tcgapiAudit, jpIdentityAudit, enIdentityAudit] = await Promise.all([
+  const [bootstrap, history, backtestStatus, sources, jpMeta, research, marketAudit, marketFreshness, cardmarketAudit, tcgcsvAudit, palworldIdentityAudit, tcgapiAudit, currentDemandAudit, jpIdentityAudit, enIdentityAudit] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
@@ -130,6 +130,7 @@ async function load() {
     fetch('data/tcgcsv-subtype-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/palworld-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/tcgapi-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/current-demand-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/jp-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch('data/en-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null)
   ]);
@@ -147,6 +148,7 @@ async function load() {
   state.tcgcsvAudit = tcgcsvAudit || {};
   state.palworldIdentityAudit = palworldIdentityAudit || {};
   state.tcgapiAudit = tcgapiAudit || {};
+  state.currentDemandAudit = currentDemandAudit || {};
   state.jpIdentityAudit = jpIdentityAudit;
   state.enIdentityAudit = enIdentityAudit;
   state.research = research || {records:[]};
@@ -357,7 +359,7 @@ function renderMarket() {
   hydrateSetKeys([...opportunities,...conviction].map(c=>c._setKey)).then(changed=>{if(changed) renderMarket();});
 
   const pressure = cards.filter(c => c.demandPressure != null).sort((a,b)=>(b.marketHeatPercentile??-1)-(a.marketHeatPercentile??-1)).slice(0,15);
-  $('#pressureTable').innerHTML = pressure.length ? `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Rarity</th><th>Sales</th><th>Fresh asks</th><th>Pressure</th><th>Heat</th></tr></thead><tbody>${pressure.map(c=>`<tr class="click-row" data-id="${esc(c.id)}"><td><div class="mini-card">${c.image?`<img src="${esc(c.image)}" loading="lazy">`:''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set||'')}</small></div></div></td><td><span class="badge">${esc(c.rarity||'—')}</span></td><td>${c.demandPressureSales??'—'}</td><td>${c.demandPressureAsks??'—'}</td><td><b>${c.demandPressure.toFixed(1)}%</b></td><td><span class="badge">${esc(c.marketHeatLabel||'—')} · P${c.marketHeatPercentile??'—'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No sales + asks pressure data for this game yet.</div>';
+  $('#pressureTable').innerHTML = pressure.length ? `<div class="table-scroll"><table><thead><tr><th>Card</th><th>Rarity</th><th>Sales</th><th>Fresh asks</th><th>Pressure</th><th>Heat</th></tr></thead><tbody>${pressure.map(c=>`<tr class="click-row" data-id="${esc(c.id)}"><td><div class="mini-card">${c.image?`<img src="${esc(c.image)}" loading="lazy">`:''}<div><b>${esc(c.name)}</b><br><small>${esc(c.set||'')}</small></div></div></td><td><span class="badge">${esc(c.rarity||'—')}</span></td><td>${c.demandPressureSales??'—'}</td><td>${c.demandPressureAsks??'—'}</td><td><b>${c.demandPressure.toFixed(1)}%</b></td><td><span class="badge">${esc(c.marketHeatLabel||'—')} · P${c.marketHeatPercentile??'—'}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="empty-state">No CURRENT pressure evidence: both completed sales and live asking-inventory counts must have independently published recent timestamps. Old provider samples are visible on cards but never ranked as today\'s Market Heat. See Sources for missing-data reasons.</div>';
   bindRows('#pressureTable');
 
   const announced = state.cards.filter(c => c.game === state.game && (c.language||'EN') === state.marketLanguage && c.availability !== 'released').length;
@@ -771,7 +773,16 @@ function renderViewer() {
     ['Premium API source card ID',esc(String(c.tcgapiCardId||'Not supplied'))],
     ['USD evidence class',esc(c.marketEvidenceStatus||'Not available in this catalog view')],['USD observation age',c.market!=null ? (c.marketObservationAgeDays!=null ? `${c.marketObservationAgeDays} days${c.marketStale ? ' · stale':''}` : 'Undated — cannot verify freshness') : 'Not available'],['Unverified research quote (not market)',c.unverifiedMarketIndicationUSD!=null ? `${money(c.unverifiedMarketIndicationUSD)} · not used in calculations` : '—'],['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
     ['Peer fair value',fairLabel(c)],['Fair-value gap',pct(c.gap)],['Fair confidence (cohort size only)',c.fairValueConfidence||'None'],['Fair method',c.fairValueMethod||'Insufficient peers'],['Peer price evidence',c.fairValueDataBasis||'Unavailable — insufficient comparable prices'],['Fair confidence measures',c.fairValueConfidenceBasis||'No calibrated predictive-accuracy estimate'],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
-    ['Price-change momentum (heuristic)', c.change7d!=null || c.change30d!=null ? `${c.momentum}/100` : 'Unavailable — no measured price change'],['Observed demand / inventory proxy',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · cross-sectional P${c.marketHeatPercentile??'—'} (not historical HYPE)`:'Unavailable — no verified sales and inventory observations'],['Investment quality',`${c.investment}/100`],
+    ['Momentum (heuristic)',c.momentumEvidenceStatus==='source-qualified-provider-price-movement'
+      ? `${c.momentum}/100 · recent source-qualified guide movement`
+      : 'Unavailable — neutral 50-point prior (not current price movement)'],
+    ['Demand / listing pressure',c.demandPressure!=null
+      ? `${c.demandPressure.toFixed(1)}% · cross-sectional P${c.marketHeatPercentile??'—'} (not historical HYPE)`
+      : 'Unavailable — '+esc(c.demandPressureStatus||'no concurrent dated sale/listing evidence')],
+    ['Liquidity evidence',c.liquidityEvidenceStatus==='fresh-dated-sales-and-inventory'
+      ? 'Recent source-dated sales and asks'
+      : 'Unavailable — heuristic neutral liquidity prior (25/100)'],
+    ['Investment quality',`${c.investment}/100 · heuristic with prior factors; not calibrated financial returns`],
     ['Character premium',c.characterPremiumIndex!=null ? `${c.characterPremiumIndex} index · ${c.characterPremiumObservations||0} obs · ${c.characterPremiumConfidence||'Low'}` : 'Not enough peer pricing'],['Fair peers',c.fairValuePeerCount!=null ? `${c.fairValuePeerCount} rarity peers · ${c.fairValueSubjectObservations||0} subject obs` : '—'],
     ['Confidence',c.confidence || 'Low'],
     ['EUR source',c.priceSourceEUR || 'Pending'],['USD source',c.priceSource || 'Pending'],['Price qualifier',c.marketQualifier || (c.marketKind==='bare' ? 'Completed-sale estimate' : '—')],
@@ -1322,6 +1333,21 @@ function renderSources() {
         '</b></div></div>' :
         '<p>No qualifying premium API overrides currently available. Existing public USD sources remain in use; a configured and appropriately licensed provider account is required for new authenticated records.</p>'}
     <p><a target="_blank" rel="noreferrer" href="data/tcgapi-identity-audit.json">Inspect optional premium-source decisions</a></p>
+  </div>
+  <div class="panel"><h3>Current demand / listing evidence audit</h3>
+    <p>Recent price guides and cached sales figures are not proof of CURRENT demand. Demand Pressure needs one independently dated completed-sale sample and a separately timestamped current asking-inventory count for the same printing, published within 14 days and within 7 days of each other. Heat is computed only among 10 or more eligible printings; tied ratios receive the same rank.</p>
+    ${state.currentDemandAudit.cardsAssessed!=null ?
+      '<div class="stat-list"><div class="stat"><span>Printings with qualified current sales + dated asks</span><b>'+
+      Number(state.currentDemandAudit.eligibleDemandRatios||0).toLocaleString()+'</b></div>'+
+      '<div class="stat"><span>Eligible cross-sectional Market Heat ranks</span><b>'+
+      Number(state.currentDemandAudit.eligibleCrossSectionalHeat||0).toLocaleString()+'</b></div>'+
+      Object.entries(state.currentDemandAudit.exclusionReasons||{})
+        .filter(([reason])=>reason!=='qualified-current-sales-and-asks')
+        .map(([reason,count])=>'<div class="stat"><span>'+esc(reason)+'</span><b>'+
+          Number(count||0).toLocaleString()+'</b></div>').join('')+'</div>'
+      : '<p>The current evidence eligibility audit is awaiting the next full refresh; previous Heat rankings are not proof of current trading activity.</p>'}
+    <p>Investment Quality v0.9 uses neutral liquidity (25/100) and momentum (50/100) priors when there is no independently current supporting activity. This is a conservative heuristic, not a verified current opportunity.</p>
+    <p><a target="_blank" rel="noreferrer" href="data/current-demand-audit.json">Inspect independent sales/listings and exclusion report</a></p>
   </div>
   <div class="panel"><h3>Market price-source freshness</h3><p>Each currency has its own source date. A successful download is not proof that price observations were published today. Price guides are not completed sales.</p>
     ${state.marketFreshness.currencies ? '<div class="stat-list">'+
