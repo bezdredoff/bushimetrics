@@ -128,7 +128,7 @@ Open <http://localhost:8080>.
 - `data/history.json` — historical set-level validation notes.
 - `data/snapshots/` — compact walk-forward market snapshots.
 
-## Investment heuristic + peer Fair Value v0.8
+## Investment Quality heuristic v0.9 + peer Fair Value v0.8
 
 Current Investment Quality weights:
 
@@ -144,6 +144,8 @@ Current Investment Quality weights:
 | Edition durability | 5% |
 
 This is intentionally a transparent heuristic. It is **not** labelled a fitted predictive model until accumulated snapshots permit a real walk-forward calibration.
+
+**Investment Quality v0.9:** current Momentum/Liquidity and cross-sectional Market Heat now require independently dated and attributable provider evidence. Old Palworld completed-sale samples and undated listing inventory cannot be ranked as current demand; their raw market data remain visible, but unsupported dynamic factors use clearly disclosed neutral priors (25 liquidity / 50 momentum). `data/current-demand-audit.json` publishes exact eligibility and exclusion counts. This changes IQ methodology, not Fair Value's separate v0.8 formula. See [source and model methodology](docs/research-data.md).
 
 Fair Value v0.8 excludes the target card's own market price **both directly and indirectly through the subject-premium peers**. It is a cross-sectional peer estimate, not a trained investment-return forecast. Its High/Medium/Low confidence labels refer only to **sample sizes**, not proven predictive accuracy, liquidity or verified completed sales. The interface only compares Fair Value to a target market price where that target has an observed price.
 
