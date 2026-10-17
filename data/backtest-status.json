@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-10-17T11:35:17.241032+00:00",
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-17T15:35:59.123575+00:00",
   "snapshots": 2,
   "earliestSnapshot": "2026-10-16",
   "latestSnapshot": "2026-10-17",
@@ -16,20 +16,24 @@
           "candidateDatePairs": 0,
           "currencies": {
             "EUR": {
-              "status": "pending",
               "observations": 0,
               "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
               "mae": null,
               "directional": null,
-              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
             },
             "USD": {
-              "status": "pending",
               "observations": 0,
               "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
               "mae": null,
               "directional": null,
-              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
             }
           }
         }
@@ -43,20 +47,24 @@
           "candidateDatePairs": 0,
           "currencies": {
             "EUR": {
-              "status": "pending",
               "observations": 0,
               "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
               "mae": null,
               "directional": null,
-              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
             },
             "USD": {
-              "status": "pending",
               "observations": 0,
               "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
               "mae": null,
               "directional": null,
-              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
             }
           }
         }
@@ -70,20 +78,24 @@
           "candidateDatePairs": 0,
           "currencies": {
             "EUR": {
-              "status": "pending",
               "observations": 0,
               "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
               "mae": null,
               "directional": null,
-              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
             },
             "USD": {
-              "status": "pending",
               "observations": 0,
               "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
               "mae": null,
               "directional": null,
-              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
             }
           }
         }
@@ -94,7 +106,11 @@
     "Results are isolated by the originating snapshot modelVersion.",
     "No future snapshot before the requested calendar horizon is used.",
     "A changed modelVersion never rewrites past forecast snapshots.",
-    "At least three different start dates and 30 matched observations are required before any exploratory score appears.",
-    "EUR and USD never mix; guide price changes are not verified completed sales or realizable investment returns."
+    "A captured copy of an older provider quote is not a fresh price observation.",
+    "Both source dates must be present, within 14 days of their snapshots, non-future, and the later one must pass the requested calendar horizon.",
+    "Both quotes must identify the same independently qualified provider product/physical printing.",
+    "Legacy snapshots without the source identity/date remain immutable but are ineligible for future model-accuracy scoring.",
+    "At least three independently dated start snapshots and 30 matched observations are required before exploratory scores appear.",
+    "EUR and USD never mix; guide-price and rolling-sale estimates are not realized investment returns."
   ]
 }
