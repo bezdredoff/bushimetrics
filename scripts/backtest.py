@@ -243,7 +243,7 @@ def build_report(snapshots,versions,*,generated_at=None,
         reports.append({'horizonDays':horizon,'byModel':by_model})
     days=sorted(snapshots)
     return {
-        'schemaVersion':1,
+        'schemaVersion':2,
         'generatedAt':generated_at or datetime.now(timezone.utc).isoformat(),
         'snapshots':len(days),
         'earliestSnapshot':days[0].isoformat() if days else None,
