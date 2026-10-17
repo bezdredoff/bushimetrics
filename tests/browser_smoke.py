@@ -73,6 +73,11 @@ def main():
             assert page.locator("#jpIdentityAudit").inner_text().strip()
             assert "English source identity audit" in page.locator("#coverage").inner_text()
             assert page.locator("#enIdentityAudit").inner_text().strip()
+            page.locator('[data-tab="backtest"]').click()
+            backtest_text=page.locator("#backtestContent").inner_text()
+            assert "Versioned 30 / 90 / 180-day holdouts" in backtest_text
+            assert "Previous unsourced example values have been withheld" in backtest_text
+            assert "No predictive accuracy has been established" in backtest_text or "pending" in backtest_text.lower()
             page.locator('[data-tab="sources"]').click()
             assert "Research model availability" in page.locator("#sourcesContent").inner_text()
             assert "Market source audit" in page.locator("#sourcesContent").inner_text()
