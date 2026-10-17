@@ -8,7 +8,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from market_freshness import (
     audit_market_freshness, eur_evidence, freshness_status, source_group
 )
-from build_web_catalog import SEARCH_FIELDS
+from build_web_catalog import SEARCH_FIELDS, BOOT_EXTRA
 
 
 class MarketFreshnessTests(unittest.TestCase):
@@ -59,8 +59,10 @@ class MarketFreshnessTests(unittest.TestCase):
 
     def test_full_browser_index_preserves_actual_price_provenance(self):
         for f in ('marketAsOf','cardmarketAsOf','marketEURAgeDays','marketEURStale',
-                  'marketSourceUrl','priceSourceEUR','marketEvidenceStatus'):
+                  'marketEURDateStatus','marketEvidenceStatus'):
             self.assertIn(f,SEARCH_FIELDS)
+        for f in ('priceSource','priceSourceEUR','marketSourceUrl','marketRetrievedAt'):
+            self.assertIn(f,BOOT_EXTRA)
 
 
 if __name__=='__main__':
