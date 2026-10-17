@@ -80,12 +80,16 @@ def choose_price(rows, rarity):
     if len(preferred)>1:
         return None,'ambiguous-'+expected+'-rows'
 
-    # Unknown subtype can be accepted only when it is the sole quoted price.
-    # Never substitute a foil-only quote for a known regular printing or vice versa.
-    if len(good)==1 and subtype_kind(good[0])=='unknown':
-        return good[0],'single-unspecified-subtype'
+    # The platform's subtype names are not guaranteed to represent the
+    # collectible treatment of a separately numbered Weiss rarity. If this
+    # exact collector-number product offers exactly ONE guide quote, retain it
+    # as provisional even when the subtype is surprising, but do NOT claim
+    # the physical Normal/Foil treatment is verified.
     if len(good)==1:
-        return None,'opposite-only-subtype'
+        kind=subtype_kind(good[0])
+        if kind=='unknown':
+            return good[0],'single-unspecified-subtype'
+        return good[0],'single-opposite-subtype-unverified-treatment'
     return None,'ambiguous-unverified-subtypes'
 
 
