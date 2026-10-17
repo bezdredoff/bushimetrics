@@ -110,7 +110,8 @@ class CurrentMarketEvidenceTests(unittest.TestCase):
             with self.subTest(sales=sales,asks=asks):
                 self.assertIn(observed_activity_inputs(c,TODAY)[1],
                               ('missing-or-invalid-sales-asks',
-                               'zero-sales-or-available-asks'))
+                               'zero-sales-or-available-asks',
+                               'no-attributed-completed-sale-sample'))
         c=card()
         c['marketBasisWindow']='unknown'
         self.assertEqual(observed_activity_inputs(c,TODAY)[1],
