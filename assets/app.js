@@ -702,6 +702,10 @@ function renderViewer() {
     !modelFair(c) ? '<span class="badge">Model fair value unavailable</span>' : '',
     c.market != null && c.marketStale ? '<span class="badge badge-warn">USD price observation stale or undated</span>' : '',
     c.marketEUR != null && c.marketEURStale ? '<span class="badge badge-warn">EUR Cardmarket guide stale or undated</span>' : '',
+    c.marketEUR != null && c.cardmarketMatch==='unique-normal-name-unverified-source-treatment'
+      ? '<span class="badge badge-warn">EUR guide matched by title only — treatment unverified</span>' : '',
+    c.marketEUR != null && state.cardmarketAudit.status!=='vetted-identity-matching-v1'
+      ? '<span class="badge badge-warn">EUR catalog mapping audit pending refresh</span>' : '',
     c.unverifiedMarketIndicationUSD != null ? '<span class="badge badge-warn">Unverified quote excluded from market data</span>' : ''
   ].join('');
 
