@@ -160,6 +160,27 @@ def main():
             page.locator("#viewer.open").wait_for(timeout=10000)
             assert "GZL/SE33-12" in page.locator("#viewerMeta").inner_text()
             assert "SEC" in page.locator("#viewerMeta").inner_text()
+
+            # Simulate final image failure without relying on official/CDN uptime.
+            # The reusable viewer <img> must remain mounted for the next card.
+            previous_meta=page.locator("#viewerMeta").inner_text()
+            page.route("https://bushimetrics-art-test.invalid/**",
+                       lambda route: route.fulfill(status=404,body="missing"))
+            page.evaluate("""() => {
+                const img=document.querySelector('#viewerImage');
+                const placeholder=document.querySelector('#viewerPlaceholder');
+                img.dataset.artFallback='';
+                img.style.display='block';
+                placeholder.classList.add('hidden');
+                img.src='https://bushimetrics-art-test.invalid/intentional-404.png';
+            }""")
+            page.wait_for_function(
+                "() => document.querySelector('#viewerImage')?.style.display === 'none' && !document.querySelector('#viewerPlaceholder').classList.contains('hidden')",
+                timeout=15000)
+            assert page.locator("#viewerImage").count()==1
+            page.locator("#viewerNext").click()
+            assert page.locator("#viewerImage").count()==1
+            assert page.locator("#viewerMeta").inner_text()!=previous_meta
             assert not errors, "Browser JavaScript errors: "+"; ".join(errors[:6])
             browser.close()
         print("Chromium acceptance smoke passed")
