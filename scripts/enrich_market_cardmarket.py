@@ -23,7 +23,6 @@ import json,math,re,unicodedata
 from collections import defaultdict
 from datetime import datetime,timezone
 from pathlib import Path
-import requests
 
 ROOT=Path(__file__).resolve().parents[1]
 WEISS=ROOT/'data/raw/weiss.json'
@@ -284,6 +283,7 @@ def main():
         return
     source=json.loads(WEISS.read_text(encoding='utf-8'))
     cards=source.get('cards',[])
+    import requests
     session=requests.Session()
     try:
         products_file=get_json(session,PRODUCTS_URL)
