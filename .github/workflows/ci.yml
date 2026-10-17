@@ -67,6 +67,19 @@ jobs:
           import json
           d=json.load(open('data/catalog.json',encoding='utf-8'))
           c=d['counts']
+          freshness=json.load(open('data/market-freshness-audit.json',encoding='utf-8'))
+          for currency,field in (('USD','market'),('EUR','marketEUR')):
+              expected=sum(
+                  card.get('availability')=='released'
+                  and isinstance(card.get(field),(int,float))
+                  and card.get(field)>0
+                  for card in d['cards']
+              )
+              counts=freshness['currencies'][currency]
+              assert counts['priced']==expected,(currency,expected,counts)
+              assert sum(counts[key] for key in
+                  ('fresh','stale','undated','invalid-or-future-date'))==expected,counts
+          print('Market freshness coverage',freshness['currencies'])
           print(c)
           assert c['weiss'] >= 20000, c
           en_audit=json.load(open('data/en-identity-audit.json',encoding='utf-8'))
