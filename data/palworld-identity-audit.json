@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "status": "pending-exact-printing-refresh",
+  "cacheRetrievedAt": null,
+  "priceSourceAsOf": null,
+  "sourceStale": null,
+  "matchedPrintings": null,
+  "pricedPrintings": null,
+  "sourceStats": {},
+  "notice": "Prior Palworld prices were not independently audited against the API cardId and explicit variant. The next successful full catalog refresh must generate the exact-printing source identity report."
+}
