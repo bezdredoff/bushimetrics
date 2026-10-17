@@ -31,11 +31,13 @@ class TcgcsvSubtypeIntegrityTests(unittest.TestCase):
                 self.assertEqual(selected['marketPrice'],199)
                 self.assertEqual(reason,'preferred-foil')
 
-    def test_no_substitution_from_opposite_only_subtype(self):
-        self.assertEqual(choose_price([row('Foil',50)],'C'),
-                         (None,'opposite-only-subtype'))
-        self.assertEqual(choose_price([row('Normal',8)],'SP'),
-                         (None,'opposite-only-subtype'))
+    def test_only_exact_code_subtype_kept_but_treatment_marked_unverified(self):
+        regular,rbasis=choose_price([row('Foil',50)],'C')
+        premium,pbasis=choose_price([row('Normal',8)],'SP')
+        self.assertEqual(regular['marketPrice'],50)
+        self.assertEqual(premium['marketPrice'],8)
+        self.assertEqual(rbasis,'single-opposite-subtype-unverified-treatment')
+        self.assertEqual(pbasis,'single-opposite-subtype-unverified-treatment')
 
     def test_unspecified_subtype_may_be_used_only_if_sole_price(self):
         chosen,why=choose_price([row('Unspecified',33)],'R')
@@ -53,7 +55,9 @@ class TcgcsvSubtypeIntegrityTests(unittest.TestCase):
     def test_nonfinite_zero_or_missing_market_price_is_not_market(self):
         prices=[row('Normal',0),row('Normal',float('nan')),
                 row('Normal',float('inf')),row('Foil',12)]
-        self.assertEqual(choose_price(prices,'R'),(None,'opposite-only-subtype'))
+        selected,reason=choose_price(prices,'R')
+        self.assertEqual(selected['marketPrice'],12)
+        self.assertEqual(reason,'single-opposite-subtype-unverified-treatment')
         self.assertEqual(choose_price([row('Normal','')],'R'),(None,'missing-price'))
 
     def test_collector_code_collision_quarantines_both_product_ids(self):
