@@ -268,6 +268,9 @@ def apply_market(c,price_sources,palworldprices,manual_market,seed_market):
       'marketAskCount':'marketAskCount','marketAskLow':'marketAskLow','marketAskMedian':'marketAskMedian',
       'marketAskSpreadPct':'marketAskSpreadPct','marketAskAsOf':'marketAskAsOf','marketStale':'marketStale',
       'palworldPricesCardId':'palworldPricesCardId',
+      'palworldSourceVariant':'palworldSourceVariant',
+      'palworldMatch':'palworldMatch',
+      'marketSelectionReason':'marketSelectionReason',
       'marketRetrievedAt':'marketRetrievedAt','checkedAt':'marketRetrievedAt',
       'marketSubtype':'marketSubtype','marketSubtypeSelection':'marketSubtypeSelection',
       'tcgcsvMatch':'tcgcsvMatch','tcgplayerProductId':'tcgplayerProductId'
@@ -507,6 +510,36 @@ def main():
     )
     print('TCGCSV subtype integrity audit',tcg_audit['status'],
           'matched',tcg_audit['matchedPrintings'])
+    palworld_source_stats=palworldprices_file.get('stats',{})
+    palworld_audit={
+        'schemaVersion':1,
+        'status':(
+            'exact-printing-cardid-v1'
+            if palworld_source_stats.get('identityMethod')==
+               'exact-source-cardId-and-explicit-variant'
+            else 'legacy-provider-cache-not-variant-audited'
+        ),
+        'cacheRetrievedAt':palworldprices_file.get('generatedAt'),
+        'priceSourceAsOf':palworldprices_file.get('asOf'),
+        'sourceStale':palworldprices_file.get('stale'),
+        'matchedPrintings':len(palworldprices),
+        'pricedPrintings':sum(
+            isinstance(v,dict) and isinstance(v.get('market'),(int,float))
+            and v['market']>0
+            for v in palworldprices.values()
+        ),
+        'sourceStats':palworld_source_stats,
+        'notice':(
+            'Palworld Prices completed-sale estimates are only assigned to '
+            'printings with an exact API cardId/code/explicit variant match. '
+            'Older provider caches cannot be retroactively certified.'
+        ),
+    }
+    (DATA/'palworld-identity-audit.json').write_text(
+        json.dumps(palworld_audit,ensure_ascii=False,indent=2),encoding='utf-8'
+    )
+    print('Palworld source-identity audit',palworld_audit['status'],
+          'priced',palworld_audit['pricedPrintings'])
     source_audit=audit_manual_prices(market_overrides)
     source_audit['generatedAt']=payload['generatedAt']
     (DATA/'market-source-audit.json').write_text(json.dumps(source_audit,indent=2),encoding='utf-8')
