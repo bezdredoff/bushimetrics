@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
-  "status": "pending-next-build",
-  "tcgcsvGuideCandidates": null,
-  "tcgapiCacheRows": null,
-  "tcgapiQualifiedSelections": null,
+  "tcgcsvGuideCandidates": 2040,
+  "tcgapiCacheRows": 0,
+  "tcgapiQualifiedSelections": 0,
   "tcgapiRejectedReasons": {},
-  "notes": "Catalog refresh produces provider identity audit. TCG API is optional, access requires a valid licensed account. Old quotes are not retroactively validated."
+  "notes": "Only exact-card and rarity identified, dated premium Foil quotes from an authorized TCG API source may override TCGCSV. Price guides are not completed-sale observations.",
+  "status": "not-configured-no-price-cache",
+  "cacheGeneratedAt": null
 }
