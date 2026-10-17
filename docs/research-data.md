@@ -54,3 +54,11 @@ The upstream Akenaide source includes two confirmed **RR versus SEC** collector 
 Documented external verification and permitted rarity pairs are stored in `data/verified-jp-variants.json`, including official/retailer URLs. The importer now retains **only those explicitly verified pairs** as distinct rarities. This adds two JP printings while preserving all existing identities and leaving other codes unchanged. No unrelated first-edition or reprint labels are inferred.
 
 Retail **asking prices** used to verify that these distinct products exist are not converted into observed market prices or Fair Value. Confirmed printing identity does not imply verified completed-sale economics.
+
+## Collector data backup acceptance (2026-10-17)
+
+The local JSON exporter uses `version: 1` and includes watchlist IDs, at most four compare IDs, and portfolio positions with positive integer quantity, nonnegative finite numeric cost and explicit EUR/USD currency. Imports validate the complete backup first and reject invalid/unsupported payloads **without changing the existing local collection**. Unknown but syntactically valid printing IDs remain stored so lazily loaded JP records can resolve later.
+
+The browser acceptance test now checks a real export/import round trip, rejects a malformed portfolio, checks persistence after reload, verifies CSV output and catalog pagination, and confirms both distinct Godzilla RR/SEC variants are searchable in Japanese Weiss.
+
+No watchlist, portfolio or comparison data is uploaded to a server by this feature; only user-triggered downloads and local browser storage are used.
