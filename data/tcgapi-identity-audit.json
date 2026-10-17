@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "status": "pending-next-build",
+  "tcgcsvGuideCandidates": null,
+  "tcgapiCacheRows": null,
+  "tcgapiQualifiedSelections": null,
+  "tcgapiRejectedReasons": {},
+  "notes": "Catalog refresh produces provider identity audit. TCG API is optional, access requires a valid licensed account. Old quotes are not retroactively validated."
+}

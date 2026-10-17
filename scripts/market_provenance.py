@@ -68,6 +68,56 @@ def is_completed_sale_sample(row):
     )
 
 
+def combine_usd_guide_sources(tcgcsv,tcgapi,today=None):
+    """A speculative or stale optional quote must not replace public TCGCSV.
+
+    The authenticated TCG API importer can produce a stronger identity
+    match, but only after its exact collector number, rarity, premium foil
+    and actual upstream price publication timestamp were independently checked.
+    Old/pre-vetted cache rows are NOT silently upgraded to that status.
+    """
+    base={code:dict(row) for code,row in tcgcsv.items()
+          if isinstance(row,dict) and positive_market(row.get('market'))}
+    selected=0
+    rejected={}
+    for code,row in sorted(tcgapi.items()):
+        reason=None
+        if not isinstance(row,dict) or not positive_market(row.get('market')):
+            reason='no-valid-price'
+        elif (
+            row.get('marketIdentityStatus')!='exact-code-rarity-foil-dated'
+            or row.get('targetCode')!=code
+            or str(row.get('targetRarity') or '').upper() not in (
+                'SP','SSP','SEC','SEC+','SIR','AGR','OFR','RRR+','SR'
+            )
+            or str(row.get('printing') or '').lower() not in ('foil','holofoil')
+            or row.get('tcgapiCardId') is None
+            or not str(row.get('priceSource') or '').startswith('TCG API / TCGPlayer')
+        ):
+            reason='unverified-source-card-or-physical-treatment'
+        elif observation_age_days(row.get('marketAsOf'),today) is None:
+            reason='undated-or-future-source-guide'
+        elif observation_age_days(row.get('marketAsOf'),today)>OUTDATED_AFTER_DAYS:
+            reason='stale-source-guide'
+        else:
+            base[code]=dict(row)
+            selected+=1
+        if reason:
+            rejected[reason]=rejected.get(reason,0)+1
+    return base,{
+        'schemaVersion':1,
+        'tcgcsvGuideCandidates':len(tcgcsv),
+        'tcgapiCacheRows':len(tcgapi),
+        'tcgapiQualifiedSelections':selected,
+        'tcgapiRejectedReasons':rejected,
+        'notes':(
+            'Only exact-card and rarity identified, dated premium Foil quotes '
+            'from an authorized TCG API source may override TCGCSV. '
+            'Price guides are not completed-sale observations.'
+        ),
+    }
+
+
 def choose_usd_market(code, provider_prices, palworld_prices,
                       manual_overrides, seed_prices):
     """Return one atomic source record and a separate unsourced indication.

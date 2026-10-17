@@ -313,3 +313,40 @@ The API's public terms permit reuse with attribution and a link;
 we do not redistribute card images from this price API. Independent
 ownership/printing audits for Japan and other external sources remain
 separate tasks.
+
+## Optional Weiss premium TCG API safety and provider licensing (2026-10-17)
+
+The optional `scripts/enrich_market_tcgapi.py` is disabled without
+`TCGAPI_KEY`. It previously accepted the first **partial or title-string
+match** returned by search and could choose the highest Foil guide price
+without checking which physical printing or date it represented.
+
+The premium importer now requires a unique provider card with:
+(1) exact complete collector code, (2) explicitly compatible premium rarity,
+(3) the Weiss Schwarz game identity when provided, and (4) a unique
+market-price row for its **Foil/Holofoil** treatment with a nonzero finite
+guide amount and an actual `market_price_as_of` within 14 days. A
+different provider product ID, different printing subtype, ambiguous
+same-rarity results, future date, stale guide or missing source publication
+date is unavailable rather than a plausible price.
+
+The last-stage source merger separately verifies these fields. **Cached
+records written by an older unverified importer can never replace TCGCSV**
+merely by containing a numerical `market` price. New approved selections,
+rejections and source cache date appear in
+`data/tcgapi-identity-audit.json`; the user interface labels the
+unavailable/optional state. No TCG API provider pricing is fetched or
+claimed when an authenticated key is absent.
+
+As publicly described at
+https://tcgapi.dev/, the provider restricts Free, Hobby and Starter
+tiers to personal/non-commercial use; Pro/Business list commercial licenses.
+Any deployment using this optional source must satisfy the account's
+licensing and attribution obligations. This implementation does **not**
+enable an account, purchase a tier or claim permission to redistribute
+restricted datasets. Cardmarket and TCGCSV remain separate price
+**guides**, not independently verified completed sales.
+
+These fixture tests secure data-processing contracts; **the live TCG API
+premium importer has not been verified with a real authenticated key in
+this PR**.

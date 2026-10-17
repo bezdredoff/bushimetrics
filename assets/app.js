@@ -45,7 +45,7 @@ function checkedBackup(value) {
   };
 }
 const state = {
-  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, backtestStatus: {}, sources: {}, marketAudit: {}, marketFreshness: {}, cardmarketAudit: {}, tcgcsvAudit: {}, palworldIdentityAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
+  cards: [], byId: new Map(), printingFamilies: new Map(), sets: [], historyCache: new Map(), historyCurrency: 'EUR', history: {}, backtestStatus: {}, sources: {}, marketAudit: {}, marketFreshness: {}, cardmarketAudit: {}, tcgcsvAudit: {}, palworldIdentityAudit: {}, tcgapiAudit: {}, research: {records: []}, researchById: new Map(), jpMeta: {}, jpIdentityAudit: null, enIdentityAudit: null, jpLoaded: false, jpLoading: null,
   game: 'weiss', marketLanguage: 'EN', tab: 'market', page: 1, pageSize: 60, filtered: [],
   viewerIndex: 0, viewerList: [], zoom: 1, cardView: localStorage.getItem('bm-card-view') || 'grid',
   watch: new Set(storedIds('bm-watch',10000)),
@@ -99,6 +99,7 @@ function expandBrowserCard(x) {
     characterPremiumIndex:x.cp, characterPremiumObservations:x.co,
     marketKind:x.mk, marketConfidence:x.mc, confidence:x.cf,
     marketEvidenceStatus:x.es, marketObservationAgeDays:x.ea,
+    marketIdentityStatus:x.ms, tcgapiCardId:x.ti,
     palworldMatch:x.pm, palworldPricesCardId:x.pi,
     palworldSourceVariant:x.pv, marketSelectionReason:x.mr,
     marketStale:x.st, unverifiedMarketIndicationUSD:x.ui,
@@ -113,7 +114,7 @@ function expandBrowserCard(x) {
 }
 
 async function load() {
-  const [bootstrap, history, backtestStatus, sources, jpMeta, research, marketAudit, marketFreshness, cardmarketAudit, tcgcsvAudit, palworldIdentityAudit, jpIdentityAudit, enIdentityAudit] = await Promise.all([
+  const [bootstrap, history, backtestStatus, sources, jpMeta, research, marketAudit, marketFreshness, cardmarketAudit, tcgcsvAudit, palworldIdentityAudit, tcgapiAudit, jpIdentityAudit, enIdentityAudit] = await Promise.all([
     fetch('data/web/bootstrap.json', {cache:'no-cache'}).then(r => {
       if (!r.ok) throw new Error('web/bootstrap.json ' + r.status);
       return r.json();
@@ -128,6 +129,7 @@ async function load() {
     fetch('data/cardmarket-match-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/tcgcsv-subtype-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/palworld-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('data/tcgapi-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : {}).catch(() => ({})),
     fetch('data/jp-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null),
     fetch('data/en-identity-audit.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null)
   ]);
@@ -144,6 +146,7 @@ async function load() {
   state.cardmarketAudit = cardmarketAudit || {};
   state.tcgcsvAudit = tcgcsvAudit || {};
   state.palworldIdentityAudit = palworldIdentityAudit || {};
+  state.tcgapiAudit = tcgapiAudit || {};
   state.jpIdentityAudit = jpIdentityAudit;
   state.enIdentityAudit = enIdentityAudit;
   state.research = research || {records:[]};
@@ -764,6 +767,8 @@ function renderViewer() {
     ['Palworld source printing',esc(c.palworldPricesCardId||'Not available')],
     ['Palworld physical match',esc(c.palworldMatch||'Not independently audited')],
     ['USD source selection',esc(c.marketSelectionReason||'Not supplied')],
+    ['Premium API printing check',esc(c.marketIdentityStatus||'No separately verified API pricing')],
+    ['Premium API source card ID',esc(String(c.tcgapiCardId||'Not supplied'))],
     ['USD evidence class',esc(c.marketEvidenceStatus||'Not available in this catalog view')],['USD observation age',c.market!=null ? (c.marketObservationAgeDays!=null ? `${c.marketObservationAgeDays} days${c.marketStale ? ' · stale':''}` : 'Undated — cannot verify freshness') : 'Not available'],['Unverified research quote (not market)',c.unverifiedMarketIndicationUSD!=null ? `${money(c.unverifiedMarketIndicationUSD)} · not used in calculations` : '—'],['Completed-sale sample',c.salesInBasis!=null ? `${c.salesInBasis} sales · ${c.marketBasisWindow||'basis'}` : '—'],['Fresh asks',c.marketAskCount!=null ? `${c.marketAskCount} · low ${money(c.marketAskLow)}${c.marketAskMedian!=null ? ` · median ${money(c.marketAskMedian)}`:''}` : '—'],
     ['Peer fair value',fairLabel(c)],['Fair-value gap',pct(c.gap)],['Fair confidence (cohort size only)',c.fairValueConfidence||'None'],['Fair method',c.fairValueMethod||'Insufficient peers'],['Peer price evidence',c.fairValueDataBasis||'Unavailable — insufficient comparable prices'],['Fair confidence measures',c.fairValueConfidenceBasis||'No calibrated predictive-accuracy estimate'],['7d',pct(c.change7d)],['30d',pct(c.change30d)],
     ['Price-change momentum (heuristic)', c.change7d!=null || c.change30d!=null ? `${c.momentum}/100` : 'Unavailable — no measured price change'],['Observed demand / inventory proxy',c.demandPressure!=null?`${c.demandPressure.toFixed(1)}% · cross-sectional P${c.marketHeatPercentile??'—'} (not historical HYPE)`:'Unavailable — no verified sales and inventory observations'],['Investment quality',`${c.investment}/100`],
@@ -1306,6 +1311,17 @@ function renderSources() {
         Object.values(state.tcgcsvAudit.sourceStats?.subtypeRejections||{}).reduce((sum,v)=>sum+Number(v||0),0).toLocaleString()+'</b></div></div>' :
       '<p>Source subtype verification pending first full refresh. Previously cached TCGCSV quotes are not retroactively certified.</p>'}
     <p><a target="_blank" rel="noreferrer" href="data/tcgcsv-subtype-audit.json">Inspect source subtype report</a></p>
+  </div>
+  <div class="panel"><h3>Optional premium Weiss TCG API source validation</h3>
+    <p>The authenticated provider is optional. No fuzzy name or substring match may replace a card's USD guide: a complete collector number, premium rarity, dated foil quote and matching provider ID must all agree. Older caches remain unverified; pricing API usage is subject to the provider's license.</p>
+    ${state.tcgapiAudit.status==='source-qualified-selections' ?
+      '<div class="stat-list"><div class="stat"><span>Qualified premium API guide selections</span><b>'+
+        Number(state.tcgapiAudit.tcgapiQualifiedSelections||0).toLocaleString()+'</b></div>'+
+        '<div class="stat"><span>Unqualified source records</span><b>'+
+        Object.values(state.tcgapiAudit.tcgapiRejectedReasons||{}).reduce((sum,v)=>sum+Number(v||0),0).toLocaleString()+
+        '</b></div></div>' :
+        '<p>No qualifying premium API overrides currently available. Existing public USD sources remain in use; a configured and appropriately licensed provider account is required for new authenticated records.</p>'}
+    <p><a target="_blank" rel="noreferrer" href="data/tcgapi-identity-audit.json">Inspect optional premium-source decisions</a></p>
   </div>
   <div class="panel"><h3>Market price-source freshness</h3><p>Each currency has its own source date. A successful download is not proof that price observations were published today. Price guides are not completed sales.</p>
     ${state.marketFreshness.currencies ? '<div class="stat-list">'+
