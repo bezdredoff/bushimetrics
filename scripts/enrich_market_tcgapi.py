@@ -158,28 +158,44 @@ def main():
         try:
             q=quote(code,safe='')
             payload=get_json(s,f'{BASE}/search?q={q}&game=weiss-schwarz',key);used+=1
-            cand=pick_candidate(payload,code)
-            row=price_row(cand) if cand else None
-            if not row and cand and cand.get('id') is not None and used<budget:
-                pp=get_json(s,f"{BASE}/cards/{cand['id']}/prices",key);used+=1;row=price_row(pp)
-            rec={'checkedAt':now.isoformat(),'found':bool(cand)}
+            cand=pick_candidate(payload,code,c.get('rarity'))
+            row=price_row(cand,card_id=cand.get('id'),
+                          rarity=c.get('rarity')) if cand else None
+            if not row and cand and used<budget:
+                pp=get_json(s,f"{BASE}/cards/{cand['id']}/prices",key)
+                used+=1
+                row=price_row(pp,card_id=cand['id'],rarity=c.get('rarity'))
+            rec={
+                'checkedAt':now.isoformat(),
+                'found':bool(cand),
+                'targetCode':code,
+                'targetRarity':c.get('rarity'),
+            }
             if cand:
                 rec['tcgapiCardId']=cand.get('id')
                 rec['tcgplayerId']=cand.get('tcgplayer_id') or cand.get('tcgplayerId')
             if row:
                 rec.update({
-                    'market':row.get('market_price') if row.get('market_price') is not None else row.get('marketPrice'),
+                    'market':positive_price(
+                        row.get('market_price') if row.get('market_price') is not None
+                        else row.get('marketPrice')
+                    ),
                     'low':row.get('low_price'),
                     'median':row.get('median_price'),
                     'change24h':row.get('price_change_24h'),
                     'change7d':row.get('price_change_7d'),
                     'change30d':row.get('price_change_30d'),
-                    'marketAsOf':row.get('market_price_as_of'),
+                    'marketAsOf':row.get('market_price_as_of') or row.get('marketPriceAsOf'),
                     'salesVolume':row.get('sales_volume'),
                     'avgSalesPrice':row.get('avg_sales_price'),
                     'printing':row.get('printing'),
-                    'priceSource':'TCG API / TCGPlayer'
+                    'tcgapiIdentityStatus':'exact-code-rarity-foil-dated',
+                    'marketIdentityStatus':'exact-code-rarity-foil-dated',
+                    'marketSourceUrl':cand.get('tcgplayer_url'),
+                    'priceSource':'TCG API / TCGPlayer price guide'
                 })
+            else:
+                rec['marketIdentityStatus']='unverified-or-undated-no-market'
             cardcache[code]=rec;done+=1
             time.sleep(.08)
         except RuntimeError as e:
@@ -190,6 +206,24 @@ def main():
             cardcache[code]={'checkedAt':now.isoformat(),'error':str(e)[:250]}
             print('WARN',code,e)
     cache['generatedAt']=now.isoformat();cache['cursor']=(cursor+done)%max(1,len(todo) or 1);cache['requestsUsed']=used
+    cache['identityAudit']={
+        'status':'exact-code-rarity-foil-dated',
+        'pricedValidated':sum(
+            1 for rec in cardcache.values()
+            if isinstance(rec,dict) and rec.get('marketIdentityStatus')==
+              'exact-code-rarity-foil-dated' and positive_price(rec.get('market'))
+        ),
+        'unverifiedRows':sum(
+            1 for rec in cardcache.values()
+            if not isinstance(rec,dict) or rec.get('marketIdentityStatus')!=
+              'exact-code-rarity-foil-dated'
+        ),
+        'notes':(
+            'TCG API is optional and requires valid source API licensing. '
+            'Fuzzy titles and undated or different foil printings never '
+            'override independently observed USD guide prices.'
+        ),
+    }
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(cache,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
     print('market enrichment cards checked',done,'requests',used,'cached',len(cardcache))
