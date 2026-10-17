@@ -1233,10 +1233,12 @@ function renderSources() {
     </div>
   </div>
   <div class="panel"><h3>Cardmarket printing identity audit</h3>
-    <p>Matching the price of the right physical printing is separate from the guide's age. The vetted importer rejects conflicting collector numbers and rarities, respects the source expansion, and withholds every duplicate product-to-printing collision.</p>
+    <p>Matching the right printing is separate from guide freshness. The importer rejects conflicting collector numbers and rarities and quarantines duplicate product-to-printing collisions. Most public Cardmarket Weiss rows contain only a title: a globally unique ordinary printing may receive a provisional guide, explicitly <b>not</b> verified treatment identity.</p>
     ${state.cardmarketAudit.status==='vetted-identity-matching-v1' ?
-      '<div class="stat-list"><div class="stat"><span>Confirmed unique product matches</span><b>'+
+      '<div class="stat-list"><div class="stat"><span>Non-colliding guide mappings (not necessarily verified treatment)</span><b>'+
         Number(state.cardmarketAudit.matchedPrintings||0).toLocaleString()+'</b></div>'+
+      '<div class="stat"><span>Provisional title-only base printings</span><b>'+
+        Number(state.cardmarketAudit.sourceStats?.titleOnlyProvisional||0).toLocaleString()+'</b></div>'+
       '<div class="stat"><span>Quarantined code collisions</span><b>'+
         Number(state.cardmarketAudit.sourceStats?.collisionCodeGroups||0).toLocaleString()+'</b></div>'+
       '<div class="stat"><span>Rejected number/rarity disagreements</span><b>'+
