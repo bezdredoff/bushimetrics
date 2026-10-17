@@ -1,12 +1,100 @@
 {
   "schemaVersion": 1,
-  "status": "awaiting-first-versioned-refresh",
-  "generatedAt": null,
-  "snapshots": null,
-  "modelVersions": [],
-  "horizons": [],
+  "generatedAt": "2026-10-17T11:07:37.485422+00:00",
+  "snapshots": 2,
+  "earliestSnapshot": "2026-10-16",
+  "latestSnapshot": "2026-10-17",
+  "modelVersions": [
+    "0.7-peer-fair-value"
+  ],
+  "horizons": [
+    {
+      "horizonDays": 30,
+      "byModel": [
+        {
+          "modelVersion": "0.7-peer-fair-value",
+          "candidateDatePairs": 0,
+          "currencies": {
+            "EUR": {
+              "status": "pending",
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+            },
+            "USD": {
+              "status": "pending",
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "horizonDays": 90,
+      "byModel": [
+        {
+          "modelVersion": "0.7-peer-fair-value",
+          "candidateDatePairs": 0,
+          "currencies": {
+            "EUR": {
+              "status": "pending",
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+            },
+            "USD": {
+              "status": "pending",
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "horizonDays": 180,
+      "byModel": [
+        {
+          "modelVersion": "0.7-peer-fair-value",
+          "candidateDatePairs": 0,
+          "currencies": {
+            "EUR": {
+              "status": "pending",
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+            },
+            "USD": {
+              "status": "pending",
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 distinct independent dated start snapshots and >= 30 matched forecast/outcome observations"
+            }
+          }
+        }
+      ]
+    }
+  ],
   "notes": [
-    "The next scheduled catalog refresh will generate a version-stratified backtest report from immutable snapshots.",
-    "No prediction accuracy is reported without sufficient verified dated samples."
+    "Results are isolated by the originating snapshot modelVersion.",
+    "No future snapshot before the requested calendar horizon is used.",
+    "A changed modelVersion never rewrites past forecast snapshots.",
+    "At least three different start dates and 30 matched observations are required before any exploratory score appears.",
+    "EUR and USD never mix; guide price changes are not verified completed sales or realizable investment returns."
   ]
 }
