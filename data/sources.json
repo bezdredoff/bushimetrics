@@ -50,8 +50,8 @@
     }
   ],
   "methodology": {
-    "title": "Investment Quality + Peer Fair Value v0.8 (target-independent)",
-    "description": "Transparent heuristic model with a data-driven peer-relative Character Premium layer; walk-forward calibration remains pending until enough immutable daily snapshots accumulate. Peer Fair Value v0.8 prevents the target price from feeding back through other cards' subject normalizations. Its confidence bands are sample-size labels only.",
+    "title": "Investment Quality v0.9 (fresh activity gate) + Peer Fair Value v0.8",
+    "description": "Transparent heuristic model, NOT calibrated returns. Fair Value v0.8 is a target-independent cross-sectional peer guide. Investment Quality v0.9 never scores stale completed sales or undated asks as CURRENT market liquidity or demand. Without independent dated sales/inventory data, liquidity is a neutral/unavailable-evidence prior of 25 and momentum is a neutral prior of 50; both still occupy their fixed heuristic weights. The 2026-10-17 source coverage audit found zero qualifying live ask-inventory observations, so real demand heat is unavailable. Prospective holdout validation remains pending.",
     "factors": [
       {
         "name": "Structural scarcity",
@@ -86,12 +86,12 @@
       {
         "name": "Momentum",
         "weight": 10,
-        "description": "Observed 7d/30d price movement where available."
+        "description": "Source-qualified current provider movement when available, otherwise neutral prior=50 (not a measured 0% return)."
       },
       {
         "name": "Liquidity",
         "weight": 7,
-        "description": "Completed-sale/listing sample counts where available; otherwise a conservative price proxy."
+        "description": "Fresh dated Palworld Prices completed-sale samples AND fresh independently dated live listings only. Otherwise conservative neutral prior=25. Old sampled sales volume and old asking prices are excluded."
       },
       {
         "name": "Edition durability",
@@ -102,8 +102,8 @@
     "fairValue": "Peer Fair Value v0.8 is a target-independent, cross-sectional cohort estimate. Same-set, same-rarity, same-currency peers exclude the target card. Subject-premium observations from another card in that rarity cohort re-normalize against a median excluding BOTH the subject observation and the target; this prevents target price from indirectly contaminating its own estimate. No observed peer group or subject support means Fair Value is unavailable. Confidence bands refer only to peer sample sizes, not fitted prediction accuracy; source prices may be market guides rather than completed sales. Walk-forward calibration remains pending.",
     "backtest": "Daily compact market snapshots are stored without future data. 30/90/180-day MAE and directional accuracy will only be shown after each horizon has genuinely elapsed.",
     "characterPremium": "Subject Premium controls for rarity before measuring demand. Palworld uses the Pal/subject before the subtitle; Weiss Character cards use a best-effort subject parser (for example, the name after a title/comma). Index 100 means in-line with same-set/same-rarity peers. This descriptive index may include the card's own market observation; Fair Value uses a separate leave-one-out subject ratio.",
-    "demandPressure": "Current absorption proxy = completed sales / (completed sales + fresh asks) where both inputs exist. Market Heat is a cross-sectional percentile among cards with pressure data, not a historical HYPE score.",
-    "hype": "True HYPE requires comparing a card's current demand pressure with its own historical baseline. Daily snapshots now retain demandPressure so 30/60-day HYPE can be activated only after sufficient history exists.",
+    "demandPressure": "Demand Pressure = 100 × recent source-attributed completed sales / (recent completed sales + available listings) ONLY when both sources have independently published dates within 14 days of today and within 7 days of each other, the sales window is known, and both counts are >0. No dated inventory = unavailable, not zero. Heat is a tied mid-rank percentile only with 10+ qualifying physical printings; it is never historical HYPE.",
+    "hype": "True HYPE needs a same-printing historical demand baseline, independent real source dates and sufficient observations; repeated API downloads never create movement.",
     "fairValueConfidence": "High requires at least 8 other rarity peers and 3 other subject observations; Medium requires at least 4 peers and 2 subject observations; otherwise Low/None. The Undervalued screener only accepts High/Medium Fair Value."
   },
   "model": "English and Japanese Weiss are separate language layers. JP identity is lazy-loaded and is not silently mixed into EN pricing or peer comparisons."

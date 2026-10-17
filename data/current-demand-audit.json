@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "status": "awaiting-evidence-gated-refresh",
+  "generatedAt": null,
+  "cardsAssessed": null,
+  "eligibleDemandRatios": null,
+  "eligibleCrossSectionalHeat": null,
+  "exclusionReasons": {},
+  "notes": [
+    "Demand, liquidity and heat can only use independent fresh completed-sale and ask-inventory observations.",
+    "The next full catalog refresh will generate real eligibility counts; no eligibility is inferred from cache downloads."
+  ]
+}
