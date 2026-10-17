@@ -104,51 +104,100 @@ def attach_character_premium(cards):
     return cards
 
 def attach_peer_fair_value(cards):
-    """Predict price from peers without using the target card's own market price."""
+    """Leave-target-out peer estimate, including every subject-ratio denominator.
+
+    Previously the target was excluded from the *direct* rarity median but
+    still entered the precomputed subject-ratio denominator of other cards
+    in the same rarity cohort. This indirectly leaked the target's observed
+    price into its own forecast and inflated retrospective skill.
+    """
     peers=defaultdict(list)
-    subject_ratios=defaultdict(list)
+    subject_rows=defaultdict(list)
     for c in cards:
+        if c.get('availability')!='released':
+            continue
         value,currency=observed_basis(c)
         rarity=str(c.get('rarity') or '').upper()
-        if value and rarity:
-            peers[(c.get('game'),c.get('set') or '',rarity,currency)].append((c.get('id'),value))
-        if c.get('_marketPeerRatio') is not None and c.get('_marketPeerCurrency'):
-            key=(c.get('game'),c.get('set') or '',c.get('collectorSubject') or '',c['_marketPeerCurrency'])
-            subject_ratios[key].append((c.get('id'),float(c['_marketPeerRatio'])))
+        if value is None or not currency or not rarity:
+            continue
+        cohort=(c.get('game'),c.get('set') or '',rarity,currency)
+        peers[cohort].append((c.get('id'),value))
+        # Keep source price for re-normalizing the *other* subject cards with
+        # both target and subject card held out of the rarity baseline.
+        subject=(c.get('game'),c.get('set') or '',
+                 c.get('collectorSubject') or '',currency)
+        subject_rows[subject].append((c.get('id'),rarity,value,
+                                      c.get('_marketPeerRatio')))
 
     for c in cards:
         if c.get('availability')!='released':
-            c['fairValueConfidence']='None';continue
-        current_value,current_currency=observed_basis(c)
-        candidate_currencies=[current_currency] if current_currency else (['EUR','USD'] if c.get('game')=='weiss' else ['USD','EUR'])
+            c['fairValueConfidence']='None'
+            continue
+        _,current_currency=observed_basis(c)
+        candidate_currencies=[current_currency] if current_currency else (
+            ['EUR','USD'] if c.get('game')=='weiss' else ['USD','EUR'])
         predicted=None
         for currency in candidate_currencies:
-            if not currency:continue
+            if not currency:
+                continue
             rarity=str(c.get('rarity') or '').upper()
-            rows=peers.get((c.get('game'),c.get('set') or '',rarity,currency),[])
+            cohort=(c.get('game'),c.get('set') or '',rarity,currency)
+            rows=peers.get(cohort,[])
             peer_values=[v for cid,v in rows if cid!=c.get('id')]
             peer_med=median(peer_values)
-            if peer_med is None or len(peer_values)<3:continue
-            skey=(c.get('game'),c.get('set') or '',c.get('collectorSubject') or '',currency)
-            rrows=subject_ratios.get(skey,[])
-            family_ratios=[v for cid,v in rrows if cid!=c.get('id')]
+            if peer_med is None or len(peer_values)<3:
+                continue
+            subject=(c.get('game'),c.get('set') or '',
+                     c.get('collectorSubject') or '',currency)
+            family_ratios=[]
+            for peer_id,peer_rarity,peer_price,existing_ratio in subject_rows.get(subject,[]):
+                if peer_id==c.get('id'):
+                    continue
+                if peer_rarity==rarity:
+                    # The other card's precomputed ratio used the target in its
+                    # denominator. Recompute excluding BOTH card IDs, so the
+                    # target price cannot change its own prediction indirectly.
+                    independent=[v for cid,v in rows
+                                 if cid!=c.get('id') and cid!=peer_id]
+                    independent_med=median(independent)
+                    if independent_med is None or len(independent)<2:
+                        continue
+                    ratio=max(.20,min(5.0,peer_price/independent_med))
+                else:
+                    # This peer uses a different rarity cohort; target never
+                    # occurred in its precomputed denominator.
+                    if existing_ratio is None:
+                        continue
+                    ratio=existing_ratio
+                family_ratios.append(ratio)
             subject_ratio=median(family_ratios)
-            if subject_ratio is None:continue
+            if subject_ratio is None:
+                continue
             predicted=peer_med*subject_ratio
-            c['fairValueMethod']='leave-one-out rarity peer × subject premium'
+            c['fairValueMethod']='target-independent rarity peer × subject premium'
             c['fairValueCurrency']=currency
             c['fairValuePeerMedian']=round(peer_med,2)
             c['fairValuePeerCount']=len(peer_values)
             c['fairValueSubjectRatio']=round(subject_ratio,3)
             c['fairValueSubjectObservations']=len(family_ratios)
+            # These bands only describe sample sizes; they do NOT assert
+            # prediction accuracy or reliable completed-sale observations.
+            c['fairValueConfidenceBasis']='peer sample size, not predictive accuracy'
+            c['fairValueDataBasis']=(
+                'EUR provider price guides (not completed sales)'
+                if currency=='EUR' else
+                'USD mixed provider prices (sale provenance varies)'
+            )
             if len(peer_values)>=8 and len(family_ratios)>=3:
                 c['fairValueConfidence']='High'
             elif len(peer_values)>=4 and len(family_ratios)>=2:
                 c['fairValueConfidence']='Medium'
             else:
                 c['fairValueConfidence']='Low'
-            if currency=='EUR':c['peerFairEUR']=round(predicted,2)
-            else:c['peerFairUSD']=round(predicted,2)
+            if currency=='EUR':
+                c['peerFairEUR']=round(predicted,2)
+            else:
+                c['peerFairUSD']=round(predicted,2)
             break
         if predicted is None:
             c['fairValueConfidence']='None'
@@ -282,7 +331,7 @@ def score(c,set_priors,game_priors,scarcity_evidence):
             'historicalSignificance':round(historical),'treatment':round(treatment),
             'liquidity':round(liquidity),'editionDurability':round(edition_bonus)
         },
-        'modelStatus':'peer-fair-v0.7'
+        'modelStatus':'peer-fair-v0.8-true-loo'
     })
     return c
 
@@ -397,7 +446,7 @@ def main():
     }
     payload={
         'generatedAt':datetime.now(timezone.utc).isoformat(),
-        'modelVersion':'0.7-peer-fair-value',
+        'modelVersion':'0.8-peer-fair-true-leave-one-out',
         'counts':counts,
         'sets':set_rows,
         'cards':out
