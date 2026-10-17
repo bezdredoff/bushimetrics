@@ -391,15 +391,16 @@ def score(c,set_priors,game_priors,scarcity_evidence):
     market=float(c.get('market') or 0)
     market_eur=float(c.get('marketEUR') or 0)
     d7=c.get('change7d');d30=c.get('change30d')
-    # No fabricated momentum from an undated guide or merely a downloaded
-    # stale sales sample. No data = neutral heuristic prior, NOT 0% change.
+    # No fabricated momentum from undated quotes or re-downloaded stale
+    # guides. A missing observation means neutral PRIOR, not a measured 0%.
+    valid7=type(d7) in (int,float) and math.isfinite(d7)
+    valid30=type(d30) in (int,float) and math.isfinite(d30)
+    age=observation_age_days(c.get('marketAsOf'))
     moving=(c.get('marketIdentityStatus')=='exact-code-rarity-foil-dated'
-            and observation_age_days(c.get('marketAsOf')) is not None
-            and observation_age_days(c.get('marketAsOf'))<=OUTDATED_AFTER_DAYS
-            and not c.get('marketStale')
-            and any(isinstance(v,(int,float)) and math.isfinite(v)
-                    for v in (d7,d30)))
-    momentum=(clamp(50+(float(d7 or 0)*1.6)+(float(d30 or 0)*.45))
+            and age is not None and age<=OUTDATED_AFTER_DAYS
+            and not c.get('marketStale') and (valid7 or valid30))
+    momentum=(clamp(50+(d7 if valid7 else 0)*1.6+
+                    (d30 if valid30 else 0)*.45)
               if moving else 50)
     c['momentumEvidenceStatus']=(
         'source-qualified-provider-price-movement' if moving else
