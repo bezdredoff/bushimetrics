@@ -155,8 +155,13 @@ jobs:
           print('Character premium observations on',len(char),'printings')
           assert len(char) >= 1000, f'character premium coverage too low: {len(char)}'
           pressure=[x for x in pal if x.get('demandPressure') is not None]
-          print('Demand pressure observations on',len(pressure),'Palworld printings')
-          assert len(pressure) >= 100, f'demand pressure coverage too low: {len(pressure)}'
+          pressure_audit=json.load(open('data/current-demand-audit.json',encoding='utf-8'))
+          print('Source-qualified CURRENT demand pressure on',len(pressure),'Palworld printings; missing-data breakdown',pressure_audit['exclusionReasons'])
+          # A fabricated "at least 100 pressure cards" requirement previously
+          # forced stale September provider samples to look like October
+          # live demand. Zero is valid when there are no dated live asks.
+          assert len(pressure)==pressure_audit['eligibleDemandRatios']
+          assert pressure_audit['eligibleCrossSectionalHeat']<=len(pressure)
           web=json.load(open('data/web/meta.json',encoding='utf-8'))
           print('Web payload',web)
           assert web['searchENCards'] >= 30000, web
