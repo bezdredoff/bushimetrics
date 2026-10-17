@@ -350,3 +350,55 @@ restricted datasets. Cardmarket and TCGCSV remain separate price
 These fixture tests secure data-processing contracts; **the live TCG API
 premium importer has not been verified with a real authenticated key in
 this PR**.
+
+## Current demand, market heat and liquidity evidence gate (IQ v0.9)
+
+A price quote downloaded today is not an independently published new price,
+and a sale count in a **30-day window from September 2026** is not current
+October 2026 trading activity. In earlier IQ v0.8, the Liquidity factor
+accepted such old `salesInBasis` counts even when `marketStale` was true.
+Likewise, cross-sectional Market Heat ranked `salesInWindow / (sales + asks)`
+without checking that the quoted listings had their own date. These
+numbers could have been **physically valid historical records**, but were
+not defensible *current* demand signals.
+
+IQ v0.9 preserves underlying provider quotes, sale counts, ask counts,
+source IDs and historical snapshots for inspection, but computes
+`demandPressure` only if ALL are true:
+- Released printing with a traceable Palworld Prices completed-sale-sample
+  estimate (not a retailer asking-price guide, an unsupported manual number,
+  or another provider's copied sales metadata).
+- `marketAsOf` is the independent source observation date and is no more
+  than 14 days old; the provider has not marked the record stale.
+- `marketAskAsOf` is **independently supplied by the listing provider**
+  and no more than 14 days old. The sale and inventory publication days
+  are within 7 days of each other, so the two inputs describe comparable
+  market conditions.
+- Valid 7/14/30/60/90-day source sale window, finite positive sold and
+  available-listing counts, and no missing data. Zero live listings does
+  not automatically imply infinite liquidity or a 100% demand score.
+
+Eligible `demandPressure` remains a **cross-sectional sales/listings
+absorption proxy**, not realized investment return. A Market Heat
+percentile appears only when at least 10 different physical printings
+have qualifying simultaneous observations. Equal sales/listing ratios
+receive the same tied mid-rank percentile independent of input order.
+**Neither is historical HYPE**, which requires independent longitudinal
+time-series data on the SAME printing.
+
+The 7% IQ Liquidity factor now uses fresh, dated sale counts only when
+the above activity gate passes. Otherwise it uses a disclosed neutral
+prior (25/100), independent of a stale/undated quoted price. The 10%
+Momentum factor only uses independently dated, correctly identified
+premium provider market changes; otherwise it stays at a **neutral
+heuristic prior (50/100)** rather than claiming a recent observed change.
+These prior factor weights remain part of the heuristic IQ score,
+so **IQ does not become a fitted, verified financial return model**.
+
+The build emits `data/current-demand-audit.json` containing the eligible
+pressure count, heat-cohort count, and reasons unavailable entries were
+excluded. No invented request timestamps or interpolated ask dates are used.
+Initial provider coverage may legitimately contain **zero qualifying
+current demand signals**; that is preferable to ranking stale price
+samples as live buying demand. IQ v0.9 is a new model version in immutable
+future snapshots; earlier v0.8 snapshots keep their original version.
