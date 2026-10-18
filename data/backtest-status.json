@@ -1,11 +1,12 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-17T18:05:11.322035+00:00",
-  "snapshots": 2,
+  "generatedAt": "2026-10-18T08:05:30.548785+00:00",
+  "snapshots": 3,
   "earliestSnapshot": "2026-10-16",
-  "latestSnapshot": "2026-10-17",
+  "latestSnapshot": "2026-10-18",
   "modelVersions": [
-    "0.7-peer-fair-value"
+    "0.7-peer-fair-value",
+    "0.9-evidence-gated-iq-peer-fair-v0.8"
   ],
   "horizons": [
     {
@@ -13,6 +14,32 @@
       "byModel": [
         {
           "modelVersion": "0.7-peer-fair-value",
+          "candidateDatePairs": 0,
+          "currencies": {
+            "EUR": {
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
+            },
+            "USD": {
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
+            }
+          }
+        },
+        {
+          "modelVersion": "0.9-evidence-gated-iq-peer-fair-v0.8",
           "candidateDatePairs": 0,
           "currencies": {
             "EUR": {
@@ -67,6 +94,32 @@
               "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
             }
           }
+        },
+        {
+          "modelVersion": "0.9-evidence-gated-iq-peer-fair-v0.8",
+          "candidateDatePairs": 0,
+          "currencies": {
+            "EUR": {
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
+            },
+            "USD": {
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
+            }
+          }
         }
       ]
     },
@@ -75,6 +128,32 @@
       "byModel": [
         {
           "modelVersion": "0.7-peer-fair-value",
+          "candidateDatePairs": 0,
+          "currencies": {
+            "EUR": {
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
+            },
+            "USD": {
+              "observations": 0,
+              "eligibleStartDates": 0,
+              "excludedComparisons": 0,
+              "exclusionReasons": {},
+              "status": "pending",
+              "mae": null,
+              "directional": null,
+              "reason": "Need >= 3 independently dated and source-qualified start snapshots and >= 30 matched provider updates with stable physical printing identity"
+            }
+          }
+        },
+        {
+          "modelVersion": "0.9-evidence-gated-iq-peer-fair-v0.8",
           "candidateDatePairs": 0,
           "currencies": {
             "EUR": {
