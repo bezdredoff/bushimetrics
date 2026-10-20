@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
   "status": "vetted-subtype-matching-v1",
-  "retrievedAt": "2026-10-19T08:57:20.302869+00:00",
-  "matchedPrintings": 2039,
+  "retrievedAt": "2026-10-20T08:37:01.044189+00:00",
+  "matchedPrintings": 2038,
   "sourceStats": {
     "groups": 177,
     "products": 32123,
-    "pricedRows": 30058,
-    "exactNumber": 2059,
+    "pricedRows": 30036,
+    "exactNumber": 2058,
     "missingNumber": 910,
     "unmatchedNumber": 28643,
     "duplicateProducts": 10,
     "subtypeRejections": {
-      "missing-price": 511
+      "missing-price": 512
     },
     "subtypeSelection": {
       "preferred-normal": 1303,
-      "single-opposite-subtype-unverified-treatment": 756
+      "single-opposite-subtype-unverified-treatment": 755
     },
     "collisionCodeGroups": 10,
     "collisionExamples": [
@@ -91,7 +91,7 @@
         ]
       }
     ],
-    "matchedCards": 2039,
+    "matchedCards": 2038,
     "failures": 0
   },
   "note": "Normal and Foil selections require rarity-aware product subtype data. Only one unspecified subtype is provisional; conflicting vendor products for a collector number are excluded. Older cached records are not retroactively validated."
