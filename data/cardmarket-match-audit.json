@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "status": "vetted-identity-matching-v1",
-  "priceGuideCreatedAt": "2026-10-25T02:47:44+0200",
-  "cacheRetrievedAt": "2026-10-25T08:28:11.382161+00:00",
+  "priceGuideCreatedAt": "2026-10-26T02:47:43+0100",
+  "cacheRetrievedAt": "2026-10-26T08:59:40.927799+00:00",
   "matchedPrintings": 7434,
   "pricedPrintings": 7434,
   "sourceStats": {
@@ -10,11 +10,11 @@
     "publishedProducts": 28140,
     "priceRows": 29203,
     "productsWithoutPrice": 0,
-    "invalidPriceRows": 3848,
+    "invalidPriceRows": 3847,
     "explicitNumberNotFound": 0,
     "explicitNumberAmbiguous": 0,
     "explicitRarityConflict": 0,
-    "insufficientIdentity": 16348,
+    "insufficientIdentity": 16349,
     "unmatchedProducts": 0,
     "ambiguousProducts": 0,
     "duplicateSourceRows": 0,
@@ -791,7 +791,7 @@
     },
     "titleOnlyProvisional": 7434,
     "numberMatched": 0,
-    "rejectedProductRows": 16348,
+    "rejectedProductRows": 16349,
     "notes": [
       "A Cardmarket trend value is a price guide, not a verified completed sale.",
       "Explicit collector numbers that do not match this catalog never fall back to title.",

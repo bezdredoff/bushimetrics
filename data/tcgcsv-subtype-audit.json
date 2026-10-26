@@ -1,24 +1,24 @@
 {
   "schemaVersion": 1,
   "status": "vetted-subtype-matching-v1",
-  "retrievedAt": "2026-10-25T08:28:50.507025+00:00",
-  "matchedPrintings": 2039,
+  "retrievedAt": "2026-10-26T09:00:17.299453+00:00",
+  "matchedPrintings": 2038,
   "sourceStats": {
     "groups": 177,
     "products": 32352,
-    "pricedRows": 30248,
-    "exactNumber": 2059,
+    "pricedRows": 30254,
+    "exactNumber": 2062,
     "missingNumber": 916,
     "unmatchedNumber": 28866,
-    "duplicateProducts": 10,
+    "duplicateProducts": 12,
     "subtypeRejections": {
-      "missing-price": 511
+      "missing-price": 508
     },
     "subtypeSelection": {
-      "preferred-normal": 1301,
-      "single-opposite-subtype-unverified-treatment": 758
+      "preferred-normal": 1307,
+      "single-opposite-subtype-unverified-treatment": 755
     },
-    "collisionCodeGroups": 10,
+    "collisionCodeGroups": 12,
     "collisionExamples": [
       {
         "collectorCode": "NK/WE22-E03",
@@ -32,6 +32,20 @@
         "productIds": [
           121695,
           121696
+        ]
+      },
+      {
+        "collectorCode": "NK/WE22-E08",
+        "productIds": [
+          121699,
+          121700
+        ]
+      },
+      {
+        "collectorCode": "NK/WE22-E24",
+        "productIds": [
+          121733,
+          121734
         ]
       },
       {
@@ -91,7 +105,7 @@
         ]
       }
     ],
-    "matchedCards": 2039,
+    "matchedCards": 2038,
     "failures": 0
   },
   "note": "Normal and Foil selections require rarity-aware product subtype data. Only one unspecified subtype is provisional; conflicting vendor products for a collector number are excluded. Older cached records are not retroactively validated."
