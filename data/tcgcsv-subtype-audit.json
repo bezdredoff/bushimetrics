@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
   "status": "vetted-subtype-matching-v1",
-  "retrievedAt": "2026-10-30T10:05:19.864038+00:00",
+  "retrievedAt": "2026-10-31T09:42:21.914316+00:00",
   "matchedPrintings": 2039,
   "sourceStats": {
     "groups": 177,
-    "products": 32354,
-    "pricedRows": 30327,
+    "products": 32557,
+    "pricedRows": 30320,
     "exactNumber": 2063,
     "missingNumber": 918,
-    "unmatchedNumber": 28866,
+    "unmatchedNumber": 29069,
     "duplicateProducts": 12,
     "subtypeRejections": {
       "missing-price": 507
     },
     "subtypeSelection": {
-      "preferred-normal": 1309,
-      "single-opposite-subtype-unverified-treatment": 754
+      "preferred-normal": 1310,
+      "single-opposite-subtype-unverified-treatment": 753
     },
     "collisionCodeGroups": 12,
     "collisionExamples": [
@@ -56,17 +56,17 @@
         ]
       },
       {
-        "collectorCode": "SY/WE09-E01",
-        "productIds": [
-          118116,
-          118117
-        ]
-      },
-      {
         "collectorCode": "SY/WE09-E12",
         "productIds": [
           118138,
           118139
+        ]
+      },
+      {
+        "collectorCode": "SY/WE09-E19c",
+        "productIds": [
+          118154,
+          118272
         ]
       },
       {
