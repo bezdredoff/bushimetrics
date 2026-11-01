@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "status": "vetted-subtype-matching-v1",
-  "retrievedAt": "2026-10-31T09:42:21.914316+00:00",
+  "retrievedAt": "2026-11-01T10:31:00.731808+00:00",
   "matchedPrintings": 2039,
   "sourceStats": {
     "groups": 177,
     "products": 32557,
-    "pricedRows": 30320,
+    "pricedRows": 30311,
     "exactNumber": 2063,
     "missingNumber": 918,
     "unmatchedNumber": 29069,
@@ -15,8 +15,8 @@
       "missing-price": 507
     },
     "subtypeSelection": {
-      "preferred-normal": 1310,
-      "single-opposite-subtype-unverified-treatment": 753
+      "preferred-normal": 1309,
+      "single-opposite-subtype-unverified-treatment": 754
     },
     "collisionCodeGroups": 12,
     "collisionExamples": [
