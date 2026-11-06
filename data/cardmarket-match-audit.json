@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "status": "vetted-identity-matching-v1",
-  "priceGuideCreatedAt": "2026-11-05T02:50:33+0100",
-  "cacheRetrievedAt": "2026-11-05T10:59:25.681235+00:00",
+  "priceGuideCreatedAt": "2026-11-06T02:43:21+0100",
+  "cacheRetrievedAt": "2026-11-06T10:56:46.119777+00:00",
   "matchedPrintings": 7434,
   "pricedPrintings": 7434,
   "sourceStats": {
     "catalogCards": 30983,
     "publishedProducts": 28140,
-    "priceRows": 29203,
+    "priceRows": 29231,
     "productsWithoutPrice": 0,
     "invalidPriceRows": 3831,
     "explicitNumberNotFound": 0,
