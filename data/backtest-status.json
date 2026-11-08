@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-07T10:16:14.144152+00:00",
-  "snapshots": 23,
+  "generatedAt": "2026-11-08T10:28:02.984048+00:00",
+  "snapshots": 24,
   "earliestSnapshot": "2026-10-16",
-  "latestSnapshot": "2026-11-07",
+  "latestSnapshot": "2026-11-08",
   "modelVersions": [
     "0.7-peer-fair-value",
     "0.9-evidence-gated-iq-peer-fair-v0.8"
