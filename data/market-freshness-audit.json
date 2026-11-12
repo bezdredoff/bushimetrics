@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T11:02:48.595765+00:00",
+  "generatedAt": "2026-11-12T11:18:50.780678+00:00",
   "staleAfterDays": 14,
   "currencies": {
     "USD": {
-      "priced": 2302,
+      "priced": 2303,
       "fresh": 0,
       "stale": 253,
-      "undated": 2049,
+      "undated": 2050,
       "invalid-or-future-date": 0
     },
     "EUR": {
@@ -34,8 +34,8 @@
     {
       "currency": "USD",
       "name": "TCGCSV / TCGplayer price guide",
-      "priced": 2049,
-      "undated": 2049
+      "priced": 2050,
+      "undated": 2050
     }
   ],
   "notes": [
