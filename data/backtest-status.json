@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-16T11:26:04.848563+00:00",
-  "snapshots": 32,
+  "generatedAt": "2026-11-17T11:56:41.701336+00:00",
+  "snapshots": 33,
   "earliestSnapshot": "2026-10-16",
-  "latestSnapshot": "2026-11-16",
+  "latestSnapshot": "2026-11-17",
   "modelVersions": [
     "0.7-peer-fair-value",
     "0.9-evidence-gated-iq-peer-fair-v0.8"
@@ -48,13 +48,17 @@
         },
         {
           "modelVersion": "0.9-evidence-gated-iq-peer-fair-v0.8",
-          "candidateDatePairs": 0,
+          "candidateDatePairs": 1,
           "currencies": {
             "EUR": {
               "observations": 0,
               "eligibleStartDates": 0,
-              "excludedComparisons": 0,
-              "exclusionReasons": {},
+              "excludedComparisons": 9577,
+              "exclusionReasons": {
+                "invalid-or-missing-numeric-price-or-forecast": 6104,
+                "missing-future-card-printing": 42,
+                "missing-verified-physical-source-identity": 3431
+              },
               "status": "pending",
               "mae": null,
               "directional": null,
@@ -63,8 +67,14 @@
             "USD": {
               "observations": 0,
               "eligibleStartDates": 0,
-              "excludedComparisons": 0,
-              "exclusionReasons": {},
+              "excludedComparisons": 9577,
+              "exclusionReasons": {
+                "invalid-or-missing-numeric-price-or-forecast": 7793,
+                "missing-future-card-printing": 42,
+                "missing-verified-physical-source-identity": 633,
+                "provider-explicitly-marked-stale": 163,
+                "undated-provider-observation": 946
+              },
               "status": "pending",
               "mae": null,
               "directional": null,
