@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-18T11:47:13.044885+00:00",
-  "snapshots": 34,
+  "generatedAt": "2026-11-19T11:45:15.840673+00:00",
+  "snapshots": 35,
   "earliestSnapshot": "2026-10-16",
-  "latestSnapshot": "2026-11-18",
+  "latestSnapshot": "2026-11-19",
   "modelVersions": [
     "0.7-peer-fair-value",
     "0.9-evidence-gated-iq-peer-fair-v0.8"
@@ -48,16 +48,16 @@
         },
         {
           "modelVersion": "0.9-evidence-gated-iq-peer-fair-v0.8",
-          "candidateDatePairs": 2,
+          "candidateDatePairs": 3,
           "currencies": {
             "EUR": {
               "observations": 0,
               "eligibleStartDates": 0,
-              "excludedComparisons": 19152,
+              "excludedComparisons": 28726,
               "exclusionReasons": {
-                "invalid-or-missing-numeric-price-or-forecast": 12208,
-                "missing-future-card-printing": 82,
-                "missing-verified-physical-source-identity": 6862
+                "invalid-or-missing-numeric-price-or-forecast": 18311,
+                "missing-future-card-printing": 122,
+                "missing-verified-physical-source-identity": 10293
               },
               "status": "pending",
               "mae": null,
@@ -67,13 +67,13 @@
             "USD": {
               "observations": 0,
               "eligibleStartDates": 0,
-              "excludedComparisons": 19152,
+              "excludedComparisons": 28726,
               "exclusionReasons": {
-                "invalid-or-missing-numeric-price-or-forecast": 15588,
-                "missing-future-card-printing": 82,
-                "missing-verified-physical-source-identity": 1266,
-                "provider-explicitly-marked-stale": 326,
-                "undated-provider-observation": 1890
+                "invalid-or-missing-numeric-price-or-forecast": 23385,
+                "missing-future-card-printing": 122,
+                "missing-verified-physical-source-identity": 1898,
+                "provider-explicitly-marked-stale": 489,
+                "undated-provider-observation": 2832
               },
               "status": "pending",
               "mae": null,
