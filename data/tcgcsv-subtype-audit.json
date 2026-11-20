@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "status": "vetted-subtype-matching-v1",
-  "retrievedAt": "2026-11-19T11:45:07.187800+00:00",
+  "retrievedAt": "2026-11-20T11:45:24.176397+00:00",
   "matchedPrintings": 2052,
   "sourceStats": {
     "groups": 179,
     "products": 32561,
-    "pricedRows": 30511,
+    "pricedRows": 30489,
     "exactNumber": 2074,
     "missingNumber": 922,
     "unmatchedNumber": 29069,
