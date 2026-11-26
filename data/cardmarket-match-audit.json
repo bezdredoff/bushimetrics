@@ -1,24 +1,24 @@
 {
   "schemaVersion": 1,
   "status": "vetted-identity-matching-v1",
-  "priceGuideCreatedAt": "2026-11-25T02:43:05+0100",
-  "cacheRetrievedAt": "2026-11-25T12:59:43.035729+00:00",
-  "matchedPrintings": 7434,
-  "pricedPrintings": 7434,
+  "priceGuideCreatedAt": "2026-11-26T09:09:24+0100",
+  "cacheRetrievedAt": "2026-11-26T12:39:48.282218+00:00",
+  "matchedPrintings": 7440,
+  "pricedPrintings": 7440,
   "sourceStats": {
     "catalogCards": 30983,
     "publishedProducts": 28140,
     "priceRows": 29231,
     "productsWithoutPrice": 0,
-    "invalidPriceRows": 3810,
+    "invalidPriceRows": 3791,
     "explicitNumberNotFound": 0,
     "explicitNumberAmbiguous": 0,
     "explicitRarityConflict": 0,
-    "insufficientIdentity": 16386,
+    "insufficientIdentity": 16399,
     "unmatchedProducts": 0,
     "ambiguousProducts": 0,
     "duplicateSourceRows": 0,
-    "candidateProducts": 7944,
+    "candidateProducts": 7950,
     "collisionCodeGroups": 251,
     "collisionProducts": 510,
     "collisionExamples": [
@@ -785,13 +785,13 @@
         "expansion": ""
       }
     ],
-    "matchedCards": 7434,
+    "matchedCards": 7440,
     "matchMethods": {
-      "unique-normal-name-unverified-source-treatment": 7434
+      "unique-normal-name-unverified-source-treatment": 7440
     },
-    "titleOnlyProvisional": 7434,
+    "titleOnlyProvisional": 7440,
     "numberMatched": 0,
-    "rejectedProductRows": 16386,
+    "rejectedProductRows": 16399,
     "notes": [
       "A Cardmarket trend value is a price guide, not a verified completed sale.",
       "Explicit collector numbers that do not match this catalog never fall back to title.",

@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-25T13:01:26.117743+00:00",
+  "generatedAt": "2026-11-26T12:40:45.069760+00:00",
   "staleAfterDays": 14,
   "currencies": {
     "USD": {
-      "priced": 2306,
+      "priced": 2305,
       "fresh": 0,
       "stale": 253,
-      "undated": 2053,
+      "undated": 2052,
       "invalid-or-future-date": 0
     },
     "EUR": {
-      "priced": 7434,
-      "fresh": 7434,
+      "priced": 7440,
+      "fresh": 7440,
       "stale": 0,
       "undated": 0,
       "invalid-or-future-date": 0
@@ -22,8 +22,8 @@
     {
       "currency": "EUR",
       "name": "Cardmarket price guide",
-      "priced": 7434,
-      "fresh": 7434
+      "priced": 7440,
+      "fresh": 7440
     },
     {
       "currency": "USD",
@@ -34,8 +34,8 @@
     {
       "currency": "USD",
       "name": "TCGCSV / TCGplayer price guide",
-      "priced": 2053,
-      "undated": 2053
+      "priced": 2052,
+      "undated": 2052
     }
   ],
   "notes": [
